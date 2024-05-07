@@ -1,8 +1,9 @@
 HTTP/1.1 200 OK
 Content-type: text/html
-Connection: close
+Connection: keep-alive
+Content-Length: 86
 
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <body>
 
