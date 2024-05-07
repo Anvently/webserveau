@@ -3,12 +3,14 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/epoll.h>
+#include <string.h>
 
 int	error(char *str)
 {
@@ -86,6 +88,16 @@ int	main(void)
 					epoll_ctl(epollfd, EPOLL_CTL_DEL, client_sock, NULL);
 				buffer[ret] = '\0';
 				printf("%d bytes were read : %s", ret, buffer);
+				int	fd = open("response", O_RDONLY);
+				int	nread = 0;
+				char	str[1024];
+				while ((nread = read(fd, str, 1023)) > 0)
+				{
+					str[nread] = 0;
+					write (client_sock, str, strlen(str));
+				}
+				close(client_sock);
+				
 			}
 			else if (events[i].data.fd == STDIN_FILENO)
 			{
