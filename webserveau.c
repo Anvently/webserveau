@@ -11,53 +11,127 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <string.h>
+#include <netdb.h>
 
-int	error(char *str)
+#define NBR_CLIENTS 10
+
+typedef	struct s_client {
+	int				fd;
+	struct sockaddr	addr;
+	socklen_t		addr_size;
+	char			addr_str[16];
+}				t_client;
+
+int	error(char *str, t_client* clients, int passive_socket)
 {
 	printf("EXIT\n");
 	perror(str);
+	if (passive_socket)
+		close(passive_socket);
+	if (clients == NULL)
+		exit(1);
+	for (int i = 0; i < NBR_CLIENTS; i++)
+		if (clients[i].fd >= 0)
+			close(clients[i].fd);
 	exit(1);
 }
 
-int	main(void)
+char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 {
-	int	passive_sock = 0, client_sock[10] = {0}, client_index = 0;
-	struct sockaddr_in	local_addr = {.sin_family = AF_INET,
-									.sin_addr = {inet_addr("127.0.0.1")},
-									.sin_port = htons(1080)};
-	struct sockaddr_in	client_addr;
-	socklen_t			client_addr_size = sizeof(client_addr);
-	int 	epollfd = 0;
-	struct epoll_event ev, events[10];
-	char	buffer[1024] = {0};
-	int		ret = 0, nbr_events;
+	switch(sa->sa_family) {
+		case AF_INET:
+			inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
+					s, maxlen);
+			break;
 
-	passive_sock = socket(AF_INET, SOCK_STREAM, 0);
+		case AF_INET6:
+			inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
+					s, maxlen);
+			break;
+
+		default:
+			strncpy(s, "Unknown AF", maxlen);
+			return NULL;
+	}
+	return s;
+}
+
+int	create_listen_socket(void)
+{
+	int	passive_sock = 0, val = 1;
+	struct	addrinfo	*addr, hints;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_PASSIVE; //Suitable for binding a listening socket
+	hints.ai_family = AF_UNSPEC; //getaddrinfo() will return address for any family
+	hints.ai_socktype = SOCK_STREAM;
+	if (getaddrinfo("127.0.0.1", "8080", &hints, &addr))
+		return (-1);
+	passive_sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 	if (passive_sock < 0)
-		error("socket");
-	int i = 1;
-	setsockopt(passive_sock, SOL_SOCKET, SO_REUSEADDR, &i, sizeof(i));
-	if (bind(passive_sock, (struct sockaddr *)&local_addr, sizeof(local_addr)))
+		return (-1);
+	setsockopt(passive_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+	if (bind(passive_sock, addr->ai_addr, addr->ai_addrlen) || listen(passive_sock, 10))
 	{
 		close(passive_sock);
-		error("bind");
+		return (-1);
 	}
-	if (listen(passive_sock, 3))
-		error("listen");
-	printf("Socket is listening...\n");
+	return (passive_sock);
+}
 
+int	accept_new_client(t_client*	clients, int epollfd, int passive_sock)
+{
+	int	i = 0;
+	struct epoll_event	ev;
 
-	epollfd = epoll_create(1);
-	if (epollfd < 0)
-		error("epoll");
-	ev.events = EPOLLIN;
-	ev.data.fd = passive_sock;
-	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, passive_sock, &ev))
-		error("epoll_ctl");
-	// ev.events = EPOLLIN;
-	// ev.data.fd = STDIN_FILENO;
-	// if (epoll_ctl(epollfd, EPOLL_CTL_ADD, STDIN_FILENO, &ev))
-	// 	error("epoll_ctl");
+	while (i < NBR_CLIENTS && clients[i].fd >= 0)
+		i++;
+	if (i == NBR_CLIENTS)
+		return (printf("Maximum number of clients reach"), 0);
+	clients[i].fd = accept(passive_sock, &clients[i].addr, &clients[i].addr_size);
+	if (clients[i].fd < 0)
+		error ("accept", clients, passive_sock);
+	get_ip_str(&clients[i].addr, clients[i].addr_str, sizeof(clients[i].addr_str));
+	inet_ntop(AF_INET, &((struct sockaddr_in *)&clients[i].addr)->sin_addr, clients[i].addr_str, 16);
+	printf("accept was done\n");
+	ev.data.fd = clients[i].fd;
+	ev.events = EPOLLIN | EPOLLHUP;// | EPOLLET;
+	// fcntl(client_sock[client_index], F_SETFL , fcntl(client_sock[client_index], F_GETFL, 0) | O_NONBLOCK);
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, clients[i].fd, &ev))
+		error("epoll_ctl", clients, passive_sock);
+	return (0);
+}
+
+int	connection_close_client(t_client* client)
+{
+	printf("Interruption asked by client (fd %d), %s", client->fd, client->addr_str);
+	close(client->fd);
+	return (0);
+}
+
+int	read_client(t_client* client)
+{
+	int		nread;
+	char	buffer[1024] = {0} ;
+
+	printf("Reading from client (fd %d), %s\n", client->fd, client->addr_str);
+	nread = read(client->fd, buffer, 1023);
+	if (nread < 0)
+		return (nread);
+	if (nread == 0) //Chrome doing chrome
+	{
+		printf("Received POLLIN with nothing to read, closing connection\n");
+		close(client->fd);
+	}
+	buffer[nread] = '\0';
+	printf("%d bytes were read : %s", nread, buffer);
+	fflush(stdout);
+	return(0);
+}
+
+int	event_loop(t_client* clients, int epollfd, int passive_sock)
+{
+	struct epoll_event events[10];
+	int				nbr_events, index;
 
 	while (1)
 	{
@@ -65,60 +139,61 @@ int	main(void)
 		if (nbr_events == 0)
 			continue;
 		else if (nbr_events < 0)
-			error("epoll_wait");
-		printf("%d events occured\n", nbr_events);
+			error("epoll_wait", clients, passive_sock);
+		// printf("%d events : %d\n", nbr_events, events[0].events);
 		for (int i = 0; i < nbr_events; i++)
 		{
-			// printf("client sock = %d | passive sock = %d\n", client_sock, passive_sock);
-			// printf("fd = %d | event = %d\n", events[i].data.fd, events[i].events);
 			if (events[i].data.fd == passive_sock)
 			{
-				client_sock[client_index] = accept(passive_sock, (struct sockaddr *)&client_addr, &client_addr_size);
-				if (client_sock[client_index] < 0)
-					error ("accept");
-				printf("accept was done\n");
-				ev.data.fd = client_sock[client_index];
-				ev.events = EPOLLIN | EPOLLHUP;// | EPOLLET;
-				// fcntl(client_sock[client_index], F_SETFL , fcntl(client_sock[client_index], F_GETFL, 0) | O_NONBLOCK);
-				if (epoll_ctl(epollfd, EPOLL_CTL_ADD, client_sock[client_index], &ev))
-					error("epoll_ctl");
-				client_index++;
+				if (accept_new_client(clients, epollfd, passive_sock))
+					return (-1);
 			}
 			else
 			{
-				// printf("event = %u\n", events[i].events);
+				for (index = 0; index < NBR_CLIENTS && clients[index].fd != events[i].data.fd; i++);
+				if (index == NBR_CLIENTS)
+				{
+					printf("event (%u) from unkown client (fd %d)\n", events[i].events, events[i].data.fd);
+					error(NULL, clients, passive_sock);
+				}
 				if (events[i].events & EPOLLHUP)
-				{
-					printf("Interruption asked by client");
-					close(events[i].data.fd);
-				}
+					connection_close_client(&clients[index]);
 				else if (events[i].events & EPOLLIN)
-				{
-					ret = read(events[i].data.fd, buffer, 1023);
-					if (ret < 0)
-						error("read");
-					if (ret == 0) //Chrome doing chrome
-					{
-						printf("Received POLLIN with nothing to read\n");
-						close(events[i].data.fd);
-						continue;
-					}
-					buffer[ret] = '\0';
-					printf("%d bytes were read : %s", ret, buffer);
-					// int	fd = open("response", O_RDONLY);
-					// int	nread = 0;
-					// char	str[1024];
-					// while ((nread = read(fd, str, 1023)) > 0)
-					// 	write (events[i].data.fd, str, nread);
-					// // if (write(events[i].data.fd, "\0", 1) < 0)
-					// // 	error("writing null byte");
-					// close(fd);
-				}
+					if (read_client(&clients[index]) < 0)
+						error("reading from client", clients, passive_sock);
 			}
 		}
 	}
+}
+
+int	main(void)
+{
+	int	passive_sock = 0;
+	t_client	clients[NBR_CLIENTS] = {0};
+	int 	epollfd = 0;
+	struct epoll_event ev;
+
+	for (int i = 0; i < NBR_CLIENTS; i++)
+		clients[i].fd = -1;
+
+	passive_sock = create_listen_socket();
+	if (passive_sock < 0)
+		error("creating passive socket", NULL, 0);
+	printf("Socket is listening...\n");
+
+	epollfd = epoll_create(1);
+	if (epollfd < 0)
+		error("epoll", NULL, passive_sock);
+	ev.events = EPOLLIN;
+	ev.data.fd = passive_sock;
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, passive_sock, &ev))
+		error("epoll_ctl", NULL, passive_sock);
+
+	event_loop(clients, epollfd, passive_sock);
+
 	close(passive_sock);
-	for (int i = 0; i < client_index; i++)
-		close(client_sock[i]);
+	for (int i = 0; i < NBR_CLIENTS; i++)
+		if (clients[i].fd >= 0)
+			close(clients[i].fd);
 	return (0);
 }
