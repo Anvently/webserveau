@@ -19,7 +19,7 @@ typedef	struct s_client {
 	int				fd;
 	struct sockaddr	addr;
 	socklen_t		addr_size;
-	char			addr_str[16];
+	char			addr_str[32];
 }				t_client;
 
 int	error(char *str, t_client* clients, int passive_socket)
@@ -86,13 +86,17 @@ int	accept_new_client(t_client*	clients, int epollfd, int passive_sock)
 	while (i < NBR_CLIENTS && clients[i].fd >= 0)
 		i++;
 	if (i == NBR_CLIENTS)
-		return (printf("Maximum number of clients reach"), 0);
+	{
+		close(accept(passive_sock, NULL, NULL));
+		return (printf("Maximum number of clients reach\n"), 0);
+	}
+	clients[i].addr_size = sizeof(clients[i].addr);
 	clients[i].fd = accept(passive_sock, &clients[i].addr, &clients[i].addr_size);
 	if (clients[i].fd < 0)
 		error ("accept", clients, passive_sock);
 	get_ip_str(&clients[i].addr, clients[i].addr_str, sizeof(clients[i].addr_str));
-	inet_ntop(AF_INET, &((struct sockaddr_in *)&clients[i].addr)->sin_addr, clients[i].addr_str, 16);
-	printf("accept was done\n");
+	// inet_ntop(AF_INET, &((struct sockaddr_in *)&clients[i].addr)->sin_addr, clients[i].addr_str, 16);
+	printf("accept was done (fd = %d / %s)\n", clients[i].fd, clients[i].addr_str);
 	ev.data.fd = clients[i].fd;
 	ev.events = EPOLLIN | EPOLLHUP;// | EPOLLET;
 	// fcntl(client_sock[client_index], F_SETFL , fcntl(client_sock[client_index], F_GETFL, 0) | O_NONBLOCK);
@@ -103,8 +107,22 @@ int	accept_new_client(t_client*	clients, int epollfd, int passive_sock)
 
 int	connection_close_client(t_client* client)
 {
-	printf("Interruption asked by client (fd %d), %s", client->fd, client->addr_str);
+	printf("Interruption detected with client (fd %d), %s", client->fd, client->addr_str);
 	close(client->fd);
+	client->fd = -1;
+	return (0);
+}
+
+int	response_200(t_client* client)
+{
+	int	fd = open("response", O_RDONLY);
+	int	nread = 0;
+	char	str[1024];
+	while ((nread = read(fd, str, 1024)) > 0)
+		write(client->fd, str, nread);
+	// if (write(events[i].data.fd, "\0", 1) < 0)
+	// 	error("writing null byte");
+	close(fd);
 	return (0);
 }
 
@@ -113,19 +131,43 @@ int	read_client(t_client* client)
 	int		nread;
 	char	buffer[1024] = {0} ;
 
-	printf("Reading from client (fd %d), %s\n", client->fd, client->addr_str);
 	nread = read(client->fd, buffer, 1023);
 	if (nread < 0)
 		return (nread);
-	if (nread == 0) //Chrome doing chrome
+	if (nread == 0)
 	{
-		printf("Received POLLIN with nothing to read, closing connection\n");
+		printf("Received POLLIN with nothing to read, closing connection (fd = %d / %s)\n", client->fd, client->addr_str);
 		close(client->fd);
+		client->fd = -1;
+		return(0);
 	}
 	buffer[nread] = '\0';
-	printf("%d bytes were read : %s", nread, buffer);
+	printf("%d bytes were read from client (fd = %d / %s): %s", nread, client->fd, client->addr_str, buffer);
 	fflush(stdout);
+	response_200(client);
 	return(0);
+}
+
+void	print_clients(t_client* clients)
+{
+	for (int i=0; i < NBR_CLIENTS; i++)
+		if (clients[i].fd >= 0)
+			printf("	- fd %d / %s\n", clients[i].fd, clients[i].addr_str);
+}
+	
+int	read_stdin(t_client* clients, struct epoll_event* ev)
+{
+	char	buffer[16] = {0};
+	int		i = 0, nread = 0;
+
+	if (!(ev->events & EPOLLIN))
+		return (0);
+	nread = read(STDIN_FILENO, buffer + i, 16 - i);
+	if (nread <= 0)
+		return (-1);
+	if (strncmp(buffer, "status", 6) == 0)
+		print_clients(clients);
+	return (0);
 }
 
 int	event_loop(t_client* clients, int epollfd, int passive_sock)
@@ -148,23 +190,34 @@ int	event_loop(t_client* clients, int epollfd, int passive_sock)
 				if (accept_new_client(clients, epollfd, passive_sock))
 					return (-1);
 			}
+			else if (events[i].data.fd == STDIN_FILENO)
+			{
+				if (read_stdin(clients, &events[i]))
+					error("reading stdin", clients, passive_sock);
+			}
 			else
 			{
-				for (index = 0; index < NBR_CLIENTS && clients[index].fd != events[i].data.fd; i++);
+				for (index = 0; index < NBR_CLIENTS && clients[index].fd != events[i].data.fd; index++);
 				if (index == NBR_CLIENTS)
 				{
 					printf("event (%u) from unkown client (fd %d)\n", events[i].events, events[i].data.fd);
 					error(NULL, clients, passive_sock);
 				}
+				// printf("Client index = %d\n", index);
 				if (events[i].events & EPOLLHUP)
-					connection_close_client(&clients[index]);
+					connection_close_client(&clients[index]);	
 				else if (events[i].events & EPOLLIN)
+				{
 					if (read_client(&clients[index]) < 0)
 						error("reading from client", clients, passive_sock);
+				}
+					
 			}
 		}
 	}
 }
+
+
 
 int	main(void)
 {
@@ -187,6 +240,11 @@ int	main(void)
 	ev.events = EPOLLIN;
 	ev.data.fd = passive_sock;
 	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, passive_sock, &ev))
+		error("epoll_ctl", NULL, passive_sock);
+
+	ev.events = EPOLLIN;
+	ev.data.fd = STDIN_FILENO;
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, STDIN_FILENO, &ev))
 		error("epoll_ctl", NULL, passive_sock);
 
 	event_loop(clients, epollfd, passive_sock);
