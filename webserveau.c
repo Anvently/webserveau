@@ -15,6 +15,11 @@
 
 #define NBR_CLIENTS 10
 
+#define HTTP_HEADER_200(length) "HTTP/1.1 200 OK\r\n" \
+								"Content-type: text/html\r\n" \
+								"Connection: keep-alive\r\n" \
+								"Content-Length: "length"\r\n\r\n"
+
 typedef	struct s_client {
 	int				fd;
 	struct sockaddr	addr;
@@ -123,6 +128,14 @@ int	response_200(t_client* client)
 	// if (write(events[i].data.fd, "\0", 1) < 0)
 	// 	error("writing null byte");
 	close(fd);
+	return (0);
+}
+
+int	response_php(t_client* client)
+{
+	char**	args = {"-r", "echo \"Hello world\\n\""};
+
+
 	return (0);
 }
 
