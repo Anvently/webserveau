@@ -154,7 +154,7 @@ void	print_clients(t_client* clients)
 		if (clients[i].fd >= 0)
 			printf("	- fd %d / %s\n", clients[i].fd, clients[i].addr_str);
 }
-	
+
 int	read_stdin(t_client* clients, struct epoll_event* ev)
 {
 	char	buffer[16] = {0};
@@ -211,13 +211,10 @@ int	event_loop(t_client* clients, int epollfd, int passive_sock)
 					if (read_client(&clients[index]) < 0)
 						error("reading from client", clients, passive_sock);
 				}
-					
 			}
 		}
 	}
 }
-
-
 
 int	main(void)
 {
