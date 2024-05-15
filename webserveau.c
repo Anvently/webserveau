@@ -20,11 +20,15 @@
 								"Connection: keep-alive\r\n" \
 								"Content-Length: "length"\r\n\r\n"
 
+#define HTTP_HEADER_301(location) "HTTP/1.1 301 Moved Permanently\r\n" \
+								"Location: "location"\r\n\r\n"
+
 typedef	struct s_client {
 	int				fd;
 	struct sockaddr	addr;
 	socklen_t		addr_size;
 	char			addr_str[32];
+	int				nbr_request;
 }				t_client;
 
 int	error(char *str, t_client* clients, int passive_socket)
@@ -69,7 +73,7 @@ int	create_listen_socket(void)
 	hints.ai_flags = AI_PASSIVE; //Suitable for binding a listening socket
 	hints.ai_family = AF_UNSPEC; //getaddrinfo() will return address for any family
 	hints.ai_socktype = SOCK_STREAM;
-	if (getaddrinfo("127.0.0.1", "8080", &hints, &addr))
+	if (getaddrinfo("localhost", "80", &hints, &addr))
 		return (-1);
 	passive_sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 	if (passive_sock < 0)
@@ -118,6 +122,15 @@ int	connection_close_client(t_client* client)
 	return (0);
 }
 
+int	response_301(t_client* client)
+{
+	const char*	res = HTTP_HEADER_301("response2");
+	write(client->fd, res, strlen(res));
+	close(client->fd);
+	client->fd = -1;
+	return (0);
+}
+
 int	response_200(t_client* client)
 {
 	int	fd = open("response", O_RDONLY);
@@ -131,13 +144,13 @@ int	response_200(t_client* client)
 	return (0);
 }
 
-int	response_php(t_client* client)
-{
-	char**	args = {"-r", "echo \"Hello world\\n\""};
+// int	response_php(t_client* client)
+// {
+// 	char**	args = {"-r", "echo \"Hello world\\n\""};
 
 
-	return (0);
-}
+// 	return (0);
+// }
 
 int	read_client(t_client* client)
 {
@@ -157,7 +170,11 @@ int	read_client(t_client* client)
 	buffer[nread] = '\0';
 	printf("%d bytes were read from client (fd = %d / %s): %s", nread, client->fd, client->addr_str, buffer);
 	fflush(stdout);
-	response_200(client);
+	if (client->nbr_request == 0)
+		response_301(client);
+	else
+		response_200(client);
+	client->nbr_request++;
 	return(0);
 }
 
