@@ -18,6 +18,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <unistd.h>
+#include <string>
+#include <string.h>
 
 
 class ListenServer
@@ -26,19 +29,21 @@ class ListenServer
 
 		ListenServer(void);
 		ListenServer(std::string const &hostAddr, std::string const &hostPort);
-		~ListenServer();
+
 
 		static	std::list<ListenServer>	serverList;
 
-		std::list<Host*>	_hostList;
 		int					_sockFd;
+		std::list<Host*>	_hostList;
 		std::string			_ip;
-		std::string			_port
+		std::string			_port;
 		// ....
 
 		static ListenServer	*addServer(const std::string& hostAddr, const std::string& hostPort);
 
 	public:
+
+		~ListenServer();
 
 		static int	addHost(Host* host);
 
@@ -48,7 +53,7 @@ class ListenServer
 		void		pushHost(Host* host);
 
 		int			start(int epollfd); //open socket
-		int			close(void);
+		int			terminate(void);
 
 		bool			isMatch(std::string const &hostAddr, std::string const &hostPort);
 

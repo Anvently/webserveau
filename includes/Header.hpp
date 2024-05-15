@@ -9,7 +9,7 @@ class Header{
 	private:
 		std::string							_method; //could be an int with an enum defined somewhere ?
 		std::map<std::string, std::string>	_headers; //example <"Content type", "text/html">
-		bool								_is_complete // set to one if "/r/n/r/n has been encoutered" ??
+		bool								_is_complete; // set to one if "/r/n/r/n has been encoutered" ??
 		//Should hold a pointer to the request/response it belongs to ? its fd ?
 
 		//following attributes might refer to the last unfinished header treated (writen or read)

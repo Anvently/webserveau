@@ -69,13 +69,16 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 int	create_listen_socket(void)
 {
 	int	passive_sock = 0, val = 1;
+	int	geta = 0;
 	struct	addrinfo	*addr, hints;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_PASSIVE; //Suitable for binding a listening socket
 	hints.ai_family = AF_UNSPEC; //getaddrinfo() will return address for any family
 	hints.ai_socktype = SOCK_STREAM;
-	if (getaddrinfo(NULL, "8080", &hints, &addr))
+	if ((geta = getaddrinfo(NULL, "8080", &hints, &addr)))
+	{
 		return (-1);
+	}
 	passive_sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 	if (passive_sock < 0)
 		return (-1);
