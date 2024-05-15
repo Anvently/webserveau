@@ -42,6 +42,8 @@ class ILogger
 		template <typename T>
 		static inline void			print(T param, int lvl);
 
+		static inline void			print(std::string* param, int lvl);
+
 		template <typename T>
 		static inline void			print(va_list* args, int lvl);
 
@@ -94,6 +96,14 @@ static const char*	colors[LOG_LVL_MAX + 1] = {
 						TERM_CL_MAGENTA, //Debug
 						TERM_CL_WHITE //Verbose
 };
+
+inline void	ILogger::print(std::string* param, int lvl)
+{
+	if (ILogger::_logLvlConsole >= lvl)
+		std::cout << (param ? *param : "(NULL)");
+	if (ILogger::_logLvlFile >= lvl && ILogger::_logFile.is_open())
+		ILogger::_logFile << (param ? *param : "(NULL)");
+}
 
 template <typename T>
 inline void	ILogger::print(va_list* args, int lvl)

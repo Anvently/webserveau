@@ -64,7 +64,13 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 					break;
 				
 				case 's':
-					print<char*>(args, lvl);
+					if (*(format + 2) == 's')
+					{
+						print<std::string*>(args, lvl);
+						++format;
+					}
+					else
+						print<char*>(args, lvl);
 					break;
 
 				case 'f':

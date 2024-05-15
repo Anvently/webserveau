@@ -32,6 +32,8 @@ std::string	IParseConfig::getNextBlock(std::istream& stream)
 	do
 	{
 		std::getline(stream, _lineBuffer);
+		LOGD("%ss", &_lineBuffer);
+		std::cout << "line buffeer = " <<  _lineBuffer << std::endl;
 		_fileLineNum++;
 		start = _lineBuffer.begin();
 		end = _lineBuffer.end();
@@ -59,16 +61,22 @@ std::string	IParseConfig::getNextBlock(std::istream& stream)
 			else if (isQuoted == false && *it == '}' && enclosedDepth < 0)
 				throw (UnexpectedBraceException());
 		}
-		stream.seekg(std::distance(it, end), std::ios_base::cur);
+		std::cout << "distance = " << std::distance(it + 1, _lineBuffer.end()) << std::endl;
+		if (it != _lineBuffer.end())
+		{
+			stream.clear();
+			stream.seekg(std::distance(it + 1, _lineBuffer.end()), std::ios_base::cur);
+		}
+		// LOGD("After seekg : good = %d | eof = %d", stream.good(), stream.eof());
 		if (enclosedDepth != 0 || (enclosedDepth == 0 && (start != _lineBuffer.begin() || end != _lineBuffer.end())))
 			block += _lineBuffer.substr(std::distance(_lineBuffer.begin(), start), std::distance(start, end));
 	} while (stream.good() && stream.eof() == false && it == _lineBuffer.end());
-	if (_fileStream.eof() == false)
+	// std::cout << "PING : " << "isGood = " << stream.good() << " | eof?=" << stream.eof() \
+		// << " | buffer =|" << _lineBuffer.substr(std::distance(_lineBuffer.begin(), start)) << "|" << std::endl;
+	if (stream.bad() && stream.eof() == false)
 		throw (FileStreamException());
 	if (enclosedDepth > 0)
 		throw (UnclosedBlockException());
-	if (_fileStream.eof() == true)
-		throw (LastBlockException());
 	return (block);
 }
 
@@ -136,6 +144,8 @@ int	IParseConfig::parseConfigFile(const char* path)
 		{
 			std::string block = getNextServerBlock();
 			std::cout << "BLOCK = " << block << std::endl;
+			if (_fileStream.eof())
+				break;
 		}
 		catch (const LastBlockException& e)
 		{
