@@ -28,6 +28,7 @@ typedef	struct s_client {
 	struct sockaddr	addr;
 	socklen_t		addr_size;
 	char			addr_str[32];
+	char			port_str[16];
 	int				nbr_request;
 }				t_client;
 
@@ -106,7 +107,7 @@ int	accept_new_client(t_client*	clients, int epollfd, int passive_sock)
 		error ("accept", clients, passive_sock);
 	get_ip_str(&clients[i].addr, clients[i].addr_str, sizeof(clients[i].addr_str));
 	// inet_ntop(AF_INET, &((struct sockaddr_in *)&clients[i].addr)->sin_addr, clients[i].addr_str, 16);
-	printf("accept was done (fd = %d / %s)\n", clients[i].fd, clients[i].addr_str);
+	printf("accept was done (fd = %d / %s / %d)\n", clients[i].fd, clients[i].addr_str, htons((((struct sockaddr_in *)clients[i].addr.sa_data)->sin_port)));
 	ev.data.fd = clients[i].fd;
 	ev.events = EPOLLIN | EPOLLHUP;// | EPOLLET;
 	// fcntl(client_sock[client_index], F_SETFL , fcntl(client_sock[client_index], F_GETFL, 0) | O_NONBLOCK);
@@ -183,7 +184,7 @@ void	print_clients(t_client* clients)
 {
 	for (int i=0; i < NBR_CLIENTS; i++)
 		if (clients[i].fd >= 0)
-			printf("	- fd %d / %s\n", clients[i].fd, clients[i].addr_str);
+			printf("	- fd %d / %s / %d\n", clients[i].fd, clients[i].addr_str, htons((((struct sockaddr_in *)clients[i].addr.sa_data)->sin_port)));
 }
 
 int	read_stdin(t_client* clients, struct epoll_event* ev)
