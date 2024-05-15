@@ -1,11 +1,15 @@
 #ifndef HOST_HPP
-#include HOST_HPP
+# define HOST_HPP
 
 #include <iostream>
 #include <vector>
 #include <list>
-#include <Host.hpp>
 #include <map>
+#include <string>
+// #include <Client.hpp>
+
+class IParseConfig;
+class Client;
 
 typedef struct location
 {
@@ -18,9 +22,9 @@ typedef struct location
 	std::string	dir_upload;
 
 	bool	redirection;
-	std::map<int, string>	addr_redir;
+	std::map<int, std::string>	addr_redir;
 
-}	location;
+}	t_location;
 
 typedef struct cgi_loc
 {
@@ -34,13 +38,14 @@ class	Host {
 
 	private:
 
-		Host();
+		Host() {} friend class IParseConfig; //Throw an exception if block is invalid
 		//Construct from what ?
 		Host(Host &Copy);
-		Host	&operator=(Host &rhs);
 		~Host();
 
-		friend class IParseConfig		Host(const std::string& block); //Throw an exception if block is invalid
+		Host	&operator=(Host &rhs);
+		
+		// friend class IParseConfig		Host(const std::string& block); //Throw an exception if block is invalid
 
 		// friend class	IParseConfig;
 
@@ -54,12 +59,12 @@ class	Host {
 		std::map<std::string, location>	_locations;
 		cgi_loc							_php_loc;
 		cgi_loc							_py_loc;
-		std::map<int, *Client>			_Clients; //<fd, Client> ?
+		std::list<Client*>				_Clients; //<fd, Client> ?
 		// a log file per Host ?
 
 	public:
 
-		static							addHost(Host& host);
+		static int						addHost(Host& host);
 
 		std::string	getPort() const;
 		int	getMaxSize() const;

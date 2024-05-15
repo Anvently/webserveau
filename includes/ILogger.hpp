@@ -26,7 +26,7 @@ class ILogger
 	private:
 
 		ILogger(void);
-		~ILogger(void);
+		virtual ~ILogger(void) = 0;
 
 		static int					_logLvlConsole;
 		static int					_logLvlFile;
