@@ -1,17 +1,17 @@
+#include <stdio.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/epoll.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <sys/epoll.h>
 #include <string.h>
-#include <netdb.h>
 
 #define NBR_CLIENTS 10
 
@@ -73,7 +73,7 @@ int	create_listen_socket(void)
 	hints.ai_flags = AI_PASSIVE; //Suitable for binding a listening socket
 	hints.ai_family = AF_UNSPEC; //getaddrinfo() will return address for any family
 	hints.ai_socktype = SOCK_STREAM;
-	if (getaddrinfo("localhost", "80", &hints, &addr))
+	if (getaddrinfo(NULL, "8080", &hints, &addr))
 		return (-1);
 	passive_sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 	if (passive_sock < 0)
@@ -84,6 +84,7 @@ int	create_listen_socket(void)
 		close(passive_sock);
 		return (-1);
 	}
+	freeaddrinfo(addr);
 	return (passive_sock);
 }
 
@@ -197,6 +198,8 @@ int	read_stdin(t_client* clients, struct epoll_event* ev)
 		return (-1);
 	if (strncmp(buffer, "status", 6) == 0)
 		print_clients(clients);
+	if (strncmp(buffer, "exit", 5) == 0)
+		exit(0);
 	return (0);
 }
 
@@ -235,7 +238,7 @@ int	event_loop(t_client* clients, int epollfd, int passive_sock)
 				}
 				// printf("Client index = %d\n", index);
 				if (events[i].events & EPOLLHUP)
-					connection_close_client(&clients[index]);	
+					connection_close_client(&clients[index]);
 				else if (events[i].events & EPOLLIN)
 				{
 					if (read_client(&clients[index]) < 0)
