@@ -3,6 +3,9 @@
 
 #include <iostream>
 #include <vector>
+#include <list>
+#include <Host.hpp>
+#include <map>
 
 typedef struct location
 {
@@ -27,8 +30,22 @@ typedef struct cgi_loc
 } cgi_loc;
 
 
-class	Host{
+class	Host {
+
 	private:
+
+		Host();
+		//Construct from what ?
+		Host(Host &Copy);
+		Host	&operator=(Host &rhs);
+		~Host();
+
+		friend class IParseConfig		Host(const std::string& block); //Throw an exception if block is invalid
+
+		// friend class	IParseConfig;
+
+		static std::list<Host>			hostList;
+
 		std::string						_host;
 		int								_port;
 		int								_client_max_size;
@@ -42,21 +59,17 @@ class	Host{
 
 	public:
 
-	Host();
-	//Construct from what ?
-	Host(Host &Copy);
-	Host	&operator=(Host &rhs);
-	~Host();
+		static							addHost(Host& host);
 
-	std::string	getPort() const;
-	int	getMaxSize() const;
-	std::string	getHost() const;
-	Client	*getClient(int fd);
-	location	&getLocation(std::string const &path) const; //return the "/" loc if no match
-	bool	checkServerName(std::string const &name) const; // check if the name refers to a server_name
+		std::string	getPort() const;
+		int	getMaxSize() const;
+		std::string	getHost() const;
+		Client	*getClient(int fd);
+		location	&getLocation(std::string const &path) const; //return the "/" loc if no match
+		bool	checkServerName(std::string const &name) const; // check if the name refers to a server_name
 
-	void	removeClient(int fd); //remove the Client associated with fd
-	void	addClient(int fd, Client *newClient);
+		void	removeClient(int fd); //remove the Client associated with fd
+		void	addClient(int fd, Client *newClient);
 
 };
 

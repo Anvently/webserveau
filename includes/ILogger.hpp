@@ -77,12 +77,12 @@ class ILogger
 #define LOGD(format, ...) ILogger::log(ILogger::LOG_DEBUG, format"\n" __VA_OPT__(,) __VA_ARGS__);
 #define LOGV(format, ...) ILogger::log(ILogger::LOG_VERBOSE, format"\n" __VA_OPT__(,) __VA_ARGS__);
 
-#define LOG_AUTO_LOGFILE 1 //A logfile will be generated without calling openLogFile()
+#define LOG_AUTO_LOGFILE 0 //A logfile will be generated without calling openLogFile()
 #define LOG_DFT_LOGFILE_PATH "webserv.log"
 #define LOG_LOGFILE_COLOR 0 //Toggle colors inside log file
 
-#define LOG_DFT_LVL_CONSOLE LOG_DISABLE
-#define LOG_DFT_LVL_LOGFILE LOG_DISABLE
+#define LOG_DFT_LVL_CONSOLE ILogger::LOG_DEBUG
+#define LOG_DFT_LVL_LOGFILE ILogger::LOG_DEBUG
 
 #define LOG_LVL_NO_CHANGE ILogger::LOG_NO_CHANGE
 
