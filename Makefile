@@ -8,7 +8,7 @@ CPP			=	c++
 SRCS_FOLDER	=	srcs/
 OBJS_FOLDER	=	.objs/
 
-SRCS_FILES	=	main.cpp ILogger.cpp IParseConfig.cpp
+SRCS_FILES	=	main.cpp ILogger.cpp IParseConfig.cpp ListenServer.cpp
 
 SRCS	=	$(addprefix $(SRCS_FOLDER), $(SRCS_FILES))
 OBJS	=	$(addprefix $(OBJS_FOLDER), $(SRCS_FILES:.cpp=.o))
