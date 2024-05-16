@@ -140,7 +140,8 @@ int	IParseConfig::parseConfigFile(const char* path)
 		try
 		{
 			std::string block = getNextServerBlock();
-			std::cout << "BLOCK =|" << block << "|" << std::endl;
+			LOGD("BLOCK = |%ss|", &block);
+			// std::cout << "BLOCK =|" << block << "|" << std::endl;
 			if (_fileStream.eof())
 				break;
 		}

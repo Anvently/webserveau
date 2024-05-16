@@ -6,6 +6,10 @@
 #include <fstream>
 #include <stdarg.h>
 #include <ctime>
+#include <string.h>
+#include <map>
+#include <cstdlib>
+#include <list>
 
 #define TERM_CL_RED "\033[31m"
 #define TERM_CL_GREEN "\033[32m"
@@ -19,23 +23,119 @@
 #define TERM_CL_BK_RED "\033[41m"
 #define TERM_CL_BOLD "\033[1m"
 
+enum LOG_LVL
+{
+	LOG_FILE = -1,
+	LOG_DISABLE,
+	LOG_ERROR,
+	LOG_WARNING,
+	LOG_INFO,
+	LOG_DEBUG,
+	LOG_VERBOSE
+};
+
+#define LOG_LVL_MAX LOG_VERBOSE
+#define LOG_AUTO_LOGFILE 1 //A logfile will be generated without calling openLogFile()
+#define LOG_DFT_LOGFILE_PATH "logs/webserv.log"
+#define LOG_LOGFILE_COLOR 0 //Toggle colors inside log file
+
+#define LOG_CONFIG_ARRAY_VERBOSE {true, true, true, true, true}
+#define LOG_CONFIG_ARRAY_DEBUG {true, true, true, true, false}
+#define LOG_CONFIG_ARRAY_INFO {true, true, true, false, false}
+#define LOG_CONFIG_ARRAY_WARNING {true, true, false, false, false}
+#define LOG_CONFIG_ARRAY_ERROR {true, false, false, false, false}
+#define LOG_CONFIG_ARRAY_DISABLE {false, false, false, false, false}
+
+#define LOG_DFT_LVL_CONSOLE LOG_CONFIG_DEBUG
+#define LOG_DFT_LVL_LOGFILE LOG_CONFIG_INFO
+
+#define LOG_ERROR_BIT (0)
+#define LOG_WARNING_BIT (1)
+#define LOG_INFO_BIT (2)
+#define LOG_DEBUG_BIT (3)
+#define LOG_VERBOSE_BIT (4)
+#define LOG_COLORIZE_BIT (5)
+
+#define LOG_ERROR_MSK (1 << LOG_ERROR_BIT)
+#define LOG_WARNING_MSK (1 << LOG_WARNING_BIT)
+#define LOG_INFO_MSK (1 << LOG_INFO_BIT)
+#define LOG_DEBUG_MSK (1 << LOG_DEBUG_BIT)
+#define LOG_VERBOSE_MSK (1 << LOG_VERBOSE_BIT)
+#define LOG_COLORIZE_MSK (1 << LOG_COLORIZE_BIT)
+
+#define LOG_CONFIG_VERBOSE (LOG_ERROR_MSK | LOG_WARNING_MSK | LOG_INFO_MSK | LOG_DEBUG_MSK | LOG_VERBOSE_MSK)
+#define LOG_CONFIG_DEBUG (LOG_ERROR_MSK | LOG_WARNING_MSK | LOG_INFO_MSK | LOG_DEBUG_MSK)
+#define LOG_CONFIG_INFO (LOG_ERROR_MSK | LOG_WARNING_MSK | LOG_INFO_MSK)
+#define LOG_CONFIG_WARNING (LOG_ERROR_MSK | LOG_WARNING_MSK)
+#define LOG_CONFIG_ERROR (LOG_ERROR_MSK)
+
+#define LOG_LVL_NO_CHANGE LOG_NO_CHANGE
+
+typedef	unsigned char	uint8_t;
+
 /// @brief Provide an interface for logging messages in console and a log file
 /// provided a logging level.
 class ILogger
 {
+
+	class LogStream
+	{
+
+		// struct LogStreamEntry;
+		public:
+
+				struct LogStreamEntry {
+				std::ostream&				os;
+				bool						levels[LOG_LVL_MAX];
+				bool						colorize;
+				bool						file;
+			};
+
+
+			bool									fastCheck(int level) const;
+
+			void									addStream(std::ostream& os, bool (&levels)[LOG_LVL_MAX], bool colorize, bool file);
+			void									removeStream(std::ostream& os);
+
+			void									editStream(std::ostream& os, const bool (&levels)[LOG_LVL_MAX], bool colorize);
+
+			template<typename T>
+			const LogStream&						operator<<(const T& param) const;
+
+			template<typename T>
+			void									print(const T& param, int lvl) const;
+
+			void									colorize(const char* code, int lvl) const;
+
+			// bool									(&getLevels(std::ostream& os) const)[LOG_LVL_MAX];
+			bool*									getLevels(std::ostream& os);
+			bool									getColorize(std::ostream& os);
+			LogStreamEntry*							getStreamEntry(std::ostream& os);
+
+			int										getNbr(void) const;
+
+		private:
+
+			std::list<LogStreamEntry>					_streams;
+			std::list<std::ofstream>					_fileStreams;
+
+			std::list<LogStreamEntry>::iterator		findOs(std::ostream& os);
+	
+
+	};
+
 	private:
 
 		ILogger(void);
 		virtual ~ILogger(void) = 0;
 
-		static int					_logLvlConsole;
-		static int					_logLvlFile;
-
-		static std::ofstream		_logFile;
+		static LogStream													_logStream;
+		static std::list<std::ofstream*>										_files;
+		static std::map<std::string, std::list<std::ofstream*>::iterator>	_fileTable;
 
 		static std::time_t			_startTime;
 
-		static inline std::ostream&	printTimestamp(std::ostream& os);
+		static inline void			printTimestamp(int level);
 
 		static void					parseFormat(const char* format, va_list* args, int lvl);
 
@@ -47,46 +147,42 @@ class ILogger
 		template <typename T>
 		static inline void			print(va_list* args, int lvl);
 
-	public:
+		static bool					isInit;
 
-		enum LOG_LVL
-		{
-			LOG_NO_CHANGE = -1,
-			LOG_DISABLE,
-			LOG_ERROR,
-			LOG_WARNING,
-			LOG_INFO,
-			LOG_DEBUG,
-			LOG_VERBOSE
-		};
+		static void					initDefault(void);
+
+	public:
 
 		static void	log(int lvl, const char *format, ...);
 
-		static int	openLogFile(const char* path);
-		static int	openLogFile(const std::string& path);
+		static void addStream(std::ostream& os, uint8_t flags);
+		static void	addStream(std::ostream& os, bool (&levels)[LOG_LVL_MAX], bool colorize);
+		static void	removeStream(std::ostream& os);
 
-		static void	setLogLvl(int lvlConsole, int lvlFile);
+		static int	addLogFile(const std::string& path, uint8_t flags);
+		static int	addLogFile(const std::string& path, bool (&levels)[LOG_LVL_MAX], bool colorize);
+		static void	removeLogFile(const std::string& path);
 
-		static void	closeLogFile(void);
+		static void	setLogLvl(const std::string& path, bool (&levels)[LOG_LVL_MAX], bool colorize);
+		static void	setLogLvl(std::ostream& os, bool (&levels)[LOG_LVL_MAX], bool colorize);
+
+		static void	printLogConfig(void);
+		static void	clearFiles(void);
+
+		static void	logDate(int level);
+		static void	setInit(void);
+
 };
 
+#ifndef LOG_LVL_MAX
+# define LOG_LVL_MAX (ILogger::LOG_VERBOSE)
+#endif
 
-#define LOG_LVL_MAX (ILogger::LOG_VERBOSE)
-
-#define LOGE(format, ...) ILogger::log(ILogger::LOG_ERROR, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGW(format, ...) ILogger::log(ILogger::LOG_WARNING, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGI(format, ...) ILogger::log(ILogger::LOG_INFO, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGD(format, ...) ILogger::log(ILogger::LOG_DEBUG, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGV(format, ...) ILogger::log(ILogger::LOG_VERBOSE, format"\n" __VA_OPT__(,) __VA_ARGS__);
-
-#define LOG_AUTO_LOGFILE 0 //A logfile will be generated without calling openLogFile()
-#define LOG_DFT_LOGFILE_PATH "webserv.log"
-#define LOG_LOGFILE_COLOR 0 //Toggle colors inside log file
-
-#define LOG_DFT_LVL_CONSOLE ILogger::LOG_DEBUG
-#define LOG_DFT_LVL_LOGFILE ILogger::LOG_DEBUG
-
-#define LOG_LVL_NO_CHANGE ILogger::LOG_NO_CHANGE
+#define LOGE(format, ...) ILogger::log(LOG_ERROR, format"\n" __VA_OPT__(,) __VA_ARGS__);
+#define LOGW(format, ...) ILogger::log(LOG_WARNING, format"\n" __VA_OPT__(,) __VA_ARGS__);
+#define LOGI(format, ...) ILogger::log(LOG_INFO, format"\n" __VA_OPT__(,) __VA_ARGS__);
+#define LOGD(format, ...) ILogger::log(LOG_DEBUG, format"\n" __VA_OPT__(,) __VA_ARGS__);
+#define LOGV(format, ...) ILogger::log(LOG_VERBOSE, format"\n" __VA_OPT__(,) __VA_ARGS__);
 
 static const char*	colors[LOG_LVL_MAX + 1] = {
 						TERM_CL_WHITE, //0 - Ignore level
@@ -97,12 +193,29 @@ static const char*	colors[LOG_LVL_MAX + 1] = {
 						TERM_CL_WHITE //Verbose
 };
 
+template<typename T>
+const ILogger::LogStream&	ILogger::LogStream::operator<<(const T& param) const
+{
+	for (std::list<ILogger::LogStream::LogStreamEntry>::const_iterator it = _streams.begin(); it !=  _streams.end(); it++)
+	{
+		it->os << param;
+	}
+	return (*this);
+}
+
+template<typename T>
+void	ILogger::LogStream::print(const T& param, int lvl) const
+{
+	for (std::list<ILogger::LogStream::LogStreamEntry>::const_iterator it = _streams.begin(); it !=  _streams.end(); it++)
+	{
+		if ((lvl == -1 && it->file) || lvl == 0 || (lvl > 0 && it->levels[lvl - 1]))
+			it->os << param;
+	}
+}
+
 inline void	ILogger::print(std::string* param, int lvl)
 {
-	if (ILogger::_logLvlConsole >= lvl)
-		std::cout << (param ? *param : "(NULL)");
-	if (ILogger::_logLvlFile >= lvl && ILogger::_logFile.is_open())
-		ILogger::_logFile << (param ? *param : "(NULL)");
+	ILogger::_logStream.print((param ? *param : "(NULL)"), lvl);
 }
 
 template <typename T>
@@ -115,10 +228,11 @@ inline void	ILogger::print(va_list* args, int lvl)
 template <typename T>
 inline void	ILogger::print(T param, int lvl)
 {
-	if (ILogger::_logLvlConsole >= lvl)
-		std::cout << param;
-	if (ILogger::_logLvlFile >= lvl && ILogger::_logFile.is_open())
-		ILogger::_logFile << param;
+	ILogger::_logStream.print(param, lvl);
+	// if (ILogger::_logLvlConsole >= lvl)
+	// 	std::cout << param;
+	// if (ILogger::_logLvlFile >= lvl && ILogger::_logFile.is_open())
+	// 	ILogger::_logFile << param;
 }
 
 #endif
