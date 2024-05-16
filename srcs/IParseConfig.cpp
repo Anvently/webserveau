@@ -32,24 +32,17 @@ std::string	IParseConfig::getNextBlock(std::istream& stream)
 	do
 	{
 		std::getline(stream, _lineBuffer);
-		LOGD("%ss", &_lineBuffer);
-		std::cout << "line buffeer = " <<  _lineBuffer << std::endl;
+		// std::cout << "line buffeer =|" <<  _lineBuffer << "|" << std::endl;
 		_fileLineNum++;
 		start = _lineBuffer.begin();
 		end = _lineBuffer.end();
 		for (it = start; it != end; it++)
 		{
 			if (isEscaped)
-			{
 				isEscaped = false;
-				continue;
-			}
-			if (*it == '\\')
-			{
+			else if (*it == '\\')
 				isEscaped = true;
-				continue;
-			}
-			if (*it == '"')
+			else if (*it == '"')
 				isQuoted = !isQuoted;
 			else if (isQuoted == false && *it == '{' && enclosedDepth++ == 0)
 				start = it + 1;
@@ -61,22 +54,26 @@ std::string	IParseConfig::getNextBlock(std::istream& stream)
 			else if (isQuoted == false && *it == '}' && enclosedDepth < 0)
 				throw (UnexpectedBraceException());
 		}
-		std::cout << "distance = " << std::distance(it + 1, _lineBuffer.end()) << std::endl;
-		if (it != _lineBuffer.end())
+		if (it != _lineBuffer.end() && std::distance(it, _lineBuffer.end()) > 1)
 		{
-			stream.clear();
-			stream.seekg(std::distance(it + 1, _lineBuffer.end()), std::ios_base::cur);
+			if (stream.eof())
+			{
+				stream.clear();
+				stream.seekg(stream.tellg() - std::distance(it, _lineBuffer.end() - 1));
+			}
+			else
+				stream.seekg(stream.tellg() - std::distance(it, _lineBuffer.end()));
+			_fileLineNum--;
 		}
-		// LOGD("After seekg : good = %d | eof = %d", stream.good(), stream.eof());
 		if (enclosedDepth != 0 || (enclosedDepth == 0 && (start != _lineBuffer.begin() || end != _lineBuffer.end())))
 			block += _lineBuffer.substr(std::distance(_lineBuffer.begin(), start), std::distance(start, end));
 	} while (stream.good() && stream.eof() == false && it == _lineBuffer.end());
-	// std::cout << "PING : " << "isGood = " << stream.good() << " | eof?=" << stream.eof() \
-		// << " | buffer =|" << _lineBuffer.substr(std::distance(_lineBuffer.begin(), start)) << "|" << std::endl;
 	if (stream.bad() && stream.eof() == false)
 		throw (FileStreamException());
 	if (enclosedDepth > 0)
 		throw (UnclosedBlockException());
+	if (it == _lineBuffer.end() && stream.eof())
+		throw (LastBlockException());
 	return (block);
 }
 
@@ -143,7 +140,7 @@ int	IParseConfig::parseConfigFile(const char* path)
 		try
 		{
 			std::string block = getNextServerBlock();
-			std::cout << "BLOCK = " << block << std::endl;
+			std::cout << "BLOCK =|" << block << "|" << std::endl;
 			if (_fileStream.eof())
 				break;
 		}
