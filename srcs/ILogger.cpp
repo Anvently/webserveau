@@ -1,41 +1,123 @@
 #include <ILogger.hpp>
+#include <iterator>
 
-int				ILogger::_logLvlConsole = LOG_DFT_LVL_CONSOLE;
-int				ILogger::_logLvlFile = LOG_DFT_LVL_LOGFILE;
-std::ofstream	ILogger::_logFile;
-std::time_t		ILogger::_startTime = time(NULL);
+std::list<std::ofstream*>	ILogger::_files;
+std::map<std::string, std::list<std::ofstream*>::iterator>	ILogger::_fileTable;
+ILogger::LogStream			ILogger::_logStream;
+std::time_t					ILogger::_startTime = time(NULL);
+bool						ILogger::isInit = false;
 
 ILogger::ILogger(void) {}
 
+void	ILogger::LogStream::addStream(std::ostream& os, bool (&levels)[LOG_LVL_MAX], bool colorize = true, bool file = false)
+{
+	if (findOs(os) != _streams.end())
+		return;
+	LogStreamEntry	newStream = {
+					.os = os,
+					.levels = {},
+					.colorize = colorize,
+					.file = file
+	};
+	std::copy(&levels[0], &levels[0] + LOG_LVL_MAX, &newStream.levels[0]);
+	this->_streams.push_back(newStream);
+}
+
+std::list<ILogger::LogStream::LogStreamEntry>::iterator	ILogger::LogStream::findOs(std::ostream& os)
+{
+	std::list<LogStreamEntry>::iterator	it;
+	for (it = _streams.begin(); it != _streams.end(); it++)
+	{
+		if (&it->os == &os)
+			break;
+	}
+	return (it);
+}
+
+void	ILogger::LogStream::removeStream(std::ostream& os)
+{
+	std::list<LogStreamEntry>::iterator	pos = findOs(os);
+	if (pos != _streams.end())
+		_streams.erase(pos);
+}
+
+bool	ILogger::LogStream::fastCheck(int level) const
+{
+	std::list<LogStreamEntry>::const_iterator	it;
+	for (it = _streams.begin(); it != _streams.end(); it++)
+	{
+		if (it->levels[(level > LOG_LVL_MAX ? LOG_LVL_MAX : level)])
+			return (true);
+	}
+	return (false);
+}
+
+void	ILogger::LogStream::editStream(std::ostream& os, const bool (&levels)[LOG_LVL_MAX], bool colorize)
+{
+	std::list<LogStreamEntry>::iterator	pos = findOs(os);
+	if (pos == _streams.end())
+		return;
+	pos->colorize = colorize;
+	std::copy(&levels[0], &levels[0] + LOG_LVL_MAX, &pos->levels[0]);
+}
+
+bool*	ILogger::LogStream::getLevels(std::ostream& os)
+{
+	std::list<LogStreamEntry>::iterator	pos = findOs(os);
+	if (pos == _streams.end())
+		return (NULL);
+	return (pos->levels);
+}
+
+ILogger::LogStream::LogStreamEntry*	ILogger::LogStream::getStreamEntry(std::ostream& os)
+{
+	std::list<LogStreamEntry>::iterator	pos = findOs(os);
+	if (pos == _streams.end())
+		return (NULL);
+	return (&(*pos));
+}
+
+bool	ILogger::LogStream::getColorize(std::ostream& os)
+{
+	std::list<LogStreamEntry>::iterator	pos = findOs(os);
+	if (pos == _streams.end())
+		return (false);
+	return (&pos->levels[0]);
+}
+
+void	ILogger::LogStream::colorize(const char* code, int lvl) const
+{
+	for (std::list<ILogger::LogStream::LogStreamEntry>::const_iterator it = _streams.begin(); it !=  _streams.end(); it++)
+	{
+		if (((lvl == -1 && it->file) || lvl == 0 || (lvl > 0 && it->levels[lvl - 1])) && it->colorize)
+			it->os << code;
+	}
+}
+
+int	ILogger::LogStream::getNbr(void) const
+{
+	return (_streams.size());
+}
+
 /// @brief Printf equivalent without flag formats.
-/// @param lvl Defines the log level of the text to be printed/written. A level greater
-/// than configured lvl is ignored. ```0``` to ignore configured level.
+/// @param lvl Defines the log level of the text to be printed/written.
+/// ```0``` to print to all stream. ```-1``` to print to file streams.
 /// @param format 
 /// @param 
 void	ILogger::log(int lvl, const char* format, ...)
 {
 	va_list	args;
 
-	if (lvl > ILogger::_logLvlConsole && lvl > ILogger::_logLvlFile)
-		return ;
-	if (LOG_AUTO_LOGFILE && ILogger::_logFile.is_open() == false)
-		ILogger::openLogFile(std::string(LOG_DFT_LOGFILE_PATH));
-	// std::cout << "PING : " << (int)_logLvlConsole << " | " << (int)lvl << "\n";
-	if (ILogger::_logLvlConsole >= lvl)
+	if (isInit == false)
 	{
-		std::cout << TERM_CL_BOLD << colors[lvl];
-		printTimestamp(std::cout) << TERM_CL_RESET;
+		isInit = true;
+		initDefault();
 	}
-	if (ILogger::_logLvlFile >= lvl && ILogger::_logFile.good())
-	{
-		if (LOG_LOGFILE_COLOR)
-		{
-			ILogger::_logFile << TERM_CL_BOLD << colors[lvl];
-			printTimestamp(ILogger::_logFile) << TERM_CL_RESET;
-		}
-		else
-			printTimestamp(ILogger::_logFile);
-	}
+	if (lvl > LOG_LVL_MAX)
+		lvl = LOG_LVL_MAX;
+	else if (lvl < -1)
+		lvl = -1;
+	printTimestamp(lvl);
 	va_start(args, format);
 	parseFormat(format, &args, lvl);
 	va_end(args);
@@ -105,53 +187,151 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 	}
 }
 
-/// @brief Open given log file file in append mode. If a log file was already opened,
-/// it is closed before.
-/// @param path 
-/// @return ```0``` for success else ```1```.
-int	ILogger::openLogFile(const std::string& path)
+void	ILogger::addStream(std::ostream& os, uint8_t flags)
 {
-	return (ILogger::openLogFile(path.c_str()));
+	bool	levels[LOG_LVL_MAX];
+
+	for (uint8_t i = 0; i < LOG_LVL_MAX; i++)
+		levels[i] = ((flags & (1 << i)) != 0);
+	addStream(os, levels, ((flags & LOG_COLORIZE_MSK) != 0));
 }
 
-/// @brief Open given log file file in append mode. If a log file was already opened,
-/// it is closed before.
-/// @param path 
-/// @return ```0``` for success else ```1```.
-int	ILogger::openLogFile(const char* path)
+void	ILogger::addStream(std::ostream& os, bool (&levels)[LOG_LVL_MAX], bool colorize = true)
 {
-	if (path == NULL)
+	_logStream.addStream(os, levels, colorize);
+}
+
+int	ILogger::addLogFile(const std::string& path, uint8_t flags)
+{
+	bool	levels[LOG_LVL_MAX];
+
+	for (uint8_t i = 0; i < LOG_LVL_MAX; i++)
+		levels[i] = ((flags & (1 << i)) != 0);
+	return (addLogFile(path, levels, ((flags & LOG_COLORIZE_MSK) != 0)));
+}
+
+int	ILogger::addLogFile(const std::string& path, bool (&levels)[LOG_LVL_MAX], bool colorize)
+{
+	std::ofstream						_emptyStream;
+
+	if (_fileTable.find(path) != _fileTable.end())
+		return (0);
+	_files.push_front(new std::ofstream());
+	std::ofstream&	fileStream = *_files.front();
+	_fileTable[path] = _files.begin();
+	// _files.insert(std::pair<char*, std::ofstream>(path, _fileStream));
+	fileStream.open(path.c_str(), std::ofstream::app);
+	if (fileStream.fail())
+	{
+		removeLogFile(path);
+		LOGE("Error adding log file : unable to open %ss", &path);
 		return (1);
-	if (ILogger::_logFile.is_open())
-		ILogger::_logFile.close();
-	ILogger::_logFile.open(path, std::ofstream::app);
-	if (_logFile.fail())
-		return (1);
-	// May want to print date;
+	}
+	_logStream.addStream(fileStream, levels, colorize, true);
 	return (0);
 }
 
-void	ILogger::closeLogFile(void)
+void	ILogger::removeStream(std::ostream& os)
 {
-	ILogger::_logFile.close();
+	_logStream.removeStream(os);
 }
 
-/// @brief Update log levels. ```LOG_NO_CHANGE``` can be used.
-/// @param lvlConsole 
-/// @param lvlFile 
-void	ILogger::setLogLvl(int lvlConsole, int lvlFile)
+void	ILogger::removeLogFile(const std::string& path)
 {
-	if (lvlConsole >= 0 && lvlConsole <= LOG_LVL_MAX)
-		ILogger::_logLvlConsole = lvlConsole;
-	else if (lvlConsole > LOG_LVL_MAX)
-		ILogger::_logLvlConsole = LOG_LVL_MAX;
-	if (lvlFile >= 0 && lvlFile <= LOG_LVL_MAX)
-		ILogger::_logLvlFile = lvlFile;
-	else if (lvlFile > LOG_LVL_MAX) 
-		ILogger::_logLvlFile = LOG_LVL_MAX;
+	std::map<std::string, std::list<std::ofstream*>::iterator>::iterator	posTable;
+	posTable = _fileTable.find(path);
+	if (posTable == _fileTable.end())
+		return;
+	std::list<std::ofstream*>::iterator	posList = posTable->second;
+	std::ofstream* fileStream = *posList;
+	removeStream(*fileStream);
+	_files.remove(fileStream);
+	delete (fileStream);
+	_fileTable.erase(posTable);
 }
 
-inline std::ostream&	ILogger::printTimestamp(std::ostream& os)
+void	ILogger::setLogLvl(std::ostream& os, bool (&levels)[LOG_LVL_MAX], bool colorize = true)
 {
-	return (os << '[' << std::time(NULL) - ILogger::_startTime << "] ");
+	_logStream.editStream(os, levels, colorize);
+}
+
+void	ILogger::setLogLvl(const std::string& path, bool (&levels)[LOG_LVL_MAX], bool colorize = false)
+{
+	std::map<std::string, std::list<std::ofstream*>::iterator>::iterator	posTable;
+	posTable = _fileTable.find(path);
+	if (posTable == _fileTable.end())
+		return;
+	std::list<std::ofstream*>::iterator	posList = posTable->second;
+	std::ofstream* fileStream = *posList;
+	setLogLvl(*fileStream, levels, colorize);
+}
+
+inline void	ILogger::printTimestamp(int level)
+{
+	_logStream.colorize(TERM_CL_BOLD, level);
+	_logStream.colorize(colors[level], level);
+	_logStream.print('[', level);
+	_logStream.print(std::time(NULL) - ILogger::_startTime, level);
+	_logStream.print("] ", level);
+	_logStream.colorize(TERM_CL_RESET, level);
+}
+
+void	ILogger::clearFiles(void)
+{
+	for (std::map<std::string, std::list<std::ofstream*>::iterator>::iterator it = _fileTable.begin(); it != _fileTable.end(); it++)
+	{
+		std::list<std::ofstream*>::iterator	posList = it->second;
+		std::ofstream* fileStream = *posList;
+		removeStream(*fileStream);
+		_files.remove(fileStream);
+		delete (fileStream);
+	}
+	_fileTable.clear();
+}
+
+void	ILogger::printLogConfig(void)
+{
+	std::cout << TERM_CL_BOLD TERM_CL_MAGENTA "------- [LOG CONFIG] -------" "\n";
+	std::cout << _logStream.getNbr() << " stream(s) registered, including " << _files.size() << " file(s) :\n";
+	for (std::map<std::string, std::list<std::ofstream*>::iterator>::iterator it = _fileTable.begin(); it != _fileTable.end(); it++)
+	{
+		std::cout << "	- " << it->first << "\n		";
+		ILogger::LogStream::LogStreamEntry*	entry = _logStream.getStreamEntry(**it->second);
+		std::cout << (entry->levels[0] ? " | ERROR" : "");
+		std::cout << (entry->levels[1] ? " | WARNING" : "");	
+		std::cout << (entry->levels[2] ? " | INFO" : "");
+		std::cout << (entry->levels[3] ? " | DEBUG" : "");
+		std::cout << (entry->levels[4] ? " | VERBOSE" : "");
+		std::cout << "\n		 colorize = " << entry->colorize << std::endl;
+	}
+	std::cout << TERM_CL_RESET;
+}
+
+/// @brief Default configuration. Is called at the first call to log()
+/// @param  
+void	ILogger::initDefault(void)
+{
+	addStream(std::cout, LOG_CONFIG_DEBUG | LOG_COLORIZE_MSK);
+	if (LOG_AUTO_LOGFILE)
+		addLogFile(LOG_DFT_LOGFILE_PATH, LOG_CONFIG_INFO);
+	logDate(-1);
+}
+
+void	ILogger::logDate(int level = -1)
+{
+	std::time_t	time;
+	char time_str[sizeof("YY-YY-MM-DD HH-MM-SS")];
+
+	std::time(&time);
+	std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H-%M-%S", std::localtime(&time));
+	_logStream.colorize(TERM_CL_BOLD TERM_CL_GREEN, level);
+	_logStream.print("\n	---", level);
+	_logStream.print(time_str, level);
+	_logStream.print("---\n\n", level);
+	_logStream.colorize(TERM_CL_RESET, level);
+}
+
+void	ILogger::setInit(void)
+{
+	isInit = true;
 }
