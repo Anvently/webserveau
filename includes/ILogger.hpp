@@ -84,7 +84,7 @@ class ILogger
 		// struct LogStreamEntry;
 		public:
 
-			struct LogStreamEntry {
+				struct LogStreamEntry {
 				std::ostream&				os;
 				bool						levels[LOG_LVL_MAX];
 				bool						colorize;
