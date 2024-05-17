@@ -49,7 +49,7 @@ class	Host {
 
 		// friend class	IParseConfig;
 
-		static std::list<Host>			hostList;
+		static std::list<Host>			_hostList;
 
 		std::string						_host;
 		int								_port;

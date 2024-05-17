@@ -38,6 +38,7 @@ enum LOG_LVL
 #define LOG_AUTO_LOGFILE 0 //A logfile will be generated without calling openLogFile()
 #define LOG_DFT_LOGFILE_PATH "logs/webserv.log"
 #define LOG_LOGFILE_COLOR 0 //Toggle colors inside log file
+#define LOG_DFT_OPEN_MODE (std::ios_base::trunc)
 
 #define LOG_CONFIG_ARRAY_VERBOSE {true, true, true, true, true}
 #define LOG_CONFIG_ARRAY_DEBUG {true, true, true, true, false}
@@ -178,11 +179,11 @@ class ILogger
 # define LOG_LVL_MAX (ILogger::LOG_VERBOSE)
 #endif
 
-#define LOGE(format, ...) ILogger::log(LOG_ERROR, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGW(format, ...) ILogger::log(LOG_WARNING, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGI(format, ...) ILogger::log(LOG_INFO, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGD(format, ...) ILogger::log(LOG_DEBUG, format"\n" __VA_OPT__(,) __VA_ARGS__);
-#define LOGV(format, ...) ILogger::log(LOG_VERBOSE, format"\n" __VA_OPT__(,) __VA_ARGS__);
+#define LOGE(format, ...) ILogger::log(LOG_ERROR, format"\n" __VA_OPT__(,) __VA_ARGS__)
+#define LOGW(format, ...) ILogger::log(LOG_WARNING, format"\n" __VA_OPT__(,) __VA_ARGS__)
+#define LOGI(format, ...) ILogger::log(LOG_INFO, format"\n" __VA_OPT__(,) __VA_ARGS__)
+#define LOGD(format, ...) ILogger::log(LOG_DEBUG, format"\n" __VA_OPT__(,) __VA_ARGS__)
+#define LOGV(format, ...) ILogger::log(LOG_VERBOSE, format"\n" __VA_OPT__(,) __VA_ARGS__)
 
 static const char*	colors[LOG_LVL_MAX + 1] = {
 						TERM_CL_WHITE, //0 - Ignore level

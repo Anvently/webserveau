@@ -28,9 +28,8 @@ class IParseConfig
 
 		static std::string		getNextBlock(std::istream& stream);
 
-		static void				parseServerBlock(const std::string& block);
+		static void				parseServerBlock(std::istringstream& serverBlock);
 		static void				parseLocation(t_location* location, const std::string& block);
-
 
 	public:
 
