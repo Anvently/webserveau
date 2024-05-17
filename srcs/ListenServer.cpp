@@ -15,7 +15,11 @@ int	ListenServer::addHost(Host *host)
 {
 	std::list<ListenServer>::iterator	it;
 
-	it = std::find_if(serverList.begin(), serverList.end(), [](ListenServer inst){return (inst.isMatch(host->getHost(), host->getPort()))});
+	for (std::list<ListenServer>::iterator it = serverList.begin(); it != serverList.end(); it++)
+	{
+		if ((it->_ip == host->getHost()) && (it->_port == host->getPort()))
+			break;
+	}
 	if (it != serverList.end())
 		it->pushHost(host);
 	else
