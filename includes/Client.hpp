@@ -1,12 +1,15 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
+#include <IObject.hpp>
+
 class Request;
 class Response;
 class Host;
 
 
-class	Client{
+class	Client : public IObject
+{
 
 	private:
 	int			_fd;

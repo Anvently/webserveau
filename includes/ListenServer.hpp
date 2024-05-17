@@ -21,9 +21,10 @@
 #include <unistd.h>
 #include <string>
 #include <string.h>
+#include <IObject.hpp>
 
 
-class ListenServer
+class ListenServer : public IObject
 {
 	private:
 
@@ -43,7 +44,7 @@ class ListenServer
 
 	public:
 
-		~ListenServer();
+		virtual ~ListenServer();
 
 		static int	addHost(Host* host);
 
