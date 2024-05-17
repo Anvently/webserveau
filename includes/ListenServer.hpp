@@ -56,7 +56,7 @@ class ListenServer : public IObject
 		int			start(int epollfd); //open socket
 		int			terminate(void);
 
-		bool			isMatch(std::string const &hostAddr, std::string const &hostPort);
+		bool		isMatch(std::string const &hostAddr, std::string const &hostPort);
 
 		/// @brief Check for
 		/// @param header

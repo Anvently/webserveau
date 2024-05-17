@@ -220,7 +220,7 @@ int	ILogger::addLogFile(const std::string& path, bool (&levels)[LOG_LVL_MAX], bo
 	std::ofstream&	fileStream = *_files.front();
 	_fileTable[path] = _files.begin();
 	// _files.insert(std::pair<char*, std::ofstream>(path, _fileStream));
-	fileStream.open(path.c_str(), std::ofstream::app);
+	fileStream.open(path.c_str(), LOG_DFT_OPEN_MODE);
 	if (fileStream.fail())
 	{
 		removeLogFile(path);
