@@ -4,9 +4,17 @@
 #include <map>
 #include <iterator>
 #include <string>
+#include <iostream>
+
+#define HEADER_MAX_SIZE 4096
+#define	HEADER_MAX_BUFFER 4
+
+#define CRLF "\r\n"
+#define SP " "
+
 
 enum {GET, POST, DELETE};
-enum {COMPLETE, METHOD, URI, HEADER, VALUE};
+enum {COMPLETE, ONGOING, NEW};
 
 
 class Header{
@@ -17,11 +25,17 @@ class Header{
 		std::string		_formated_headers;
 		//Should hold a pointer to the request/response it belongs to ? its fd ?
 
+		std::string	_line;
+		int			_buffer_count;
+		int			_error_num;
+		std::string	_error_verbose;
 		//following attributes might refer to the last unfinished io (write or read)
-		int	_laststop; // -1 if brand new object, otherwise see enum above
+		int	_status; // see enum abov
 		std::string::iterator				_current_it; // where to restart write/read on the next epoll
 		std::string							_current_header;
 		std::string							_current_value;
+
+
 
 
 	public:
@@ -40,6 +54,14 @@ class Header{
 		// following function should parse the buffer and add the eventual headers and their values,
 		//update current header and current iterator if not complete
 		int		parseInput(std::string &buffer);
+		int		parseLine();
+		int		getLine(std::string &buffer);
+		int		parseFirstLine();
+
+		void	printLine();
+		void	printHeaders() const;
+		void	printRequest() const;
+		int		getStatus() const;
 
 
 };
