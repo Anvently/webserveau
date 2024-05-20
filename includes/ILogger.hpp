@@ -10,6 +10,7 @@
 #include <map>
 #include <cstdlib>
 #include <list>
+#include <iomanip>
 
 #define TERM_CL_RED "\033[31m"
 #define TERM_CL_GREEN "\033[32m"
@@ -104,7 +105,7 @@ class ILogger
 			const LogStream&						operator<<(const T& param) const;
 
 			template<typename T>
-			void									print(const T& param, int lvl) const;
+			void									print(const T& param, int lvl, int len = -1) const;
 
 			void									colorize(const char* code, int lvl) const;
 
@@ -141,12 +142,12 @@ class ILogger
 		static void					parseFormat(const char* format, va_list* args, int lvl);
 
 		template <typename T>
-		static inline void			print(T param, int lvl);
+		static inline void			print(T param, int lvl, int len = -1);
 
-		static inline void			print(std::string* param, int lvl);
+		static inline void			print(std::string* param, int lvl, int len = -1);
 
 		template <typename T>
-		static inline void			print(va_list* args, int lvl);
+		static inline void			print(va_list* args, int lvl, int len = -1);
 
 		static bool					isInit;
 
@@ -205,31 +206,30 @@ const ILogger::LogStream&	ILogger::LogStream::operator<<(const T& param) const
 }
 
 template<typename T>
-void	ILogger::LogStream::print(const T& param, int lvl) const
+void	ILogger::LogStream::print(const T& param, int lvl, int len) const
 {
 	for (std::list<ILogger::LogStream::LogStreamEntry>::const_iterator it = _streams.begin(); it !=  _streams.end(); it++)
 	{
 		if ((lvl == -1 && it->file) || lvl == 0 || (lvl > 0 && it->levels[lvl - 1]))
+		{
+			if (len >= 0)
+				it->os << std::setw(len);
 			it->os << param;
+		}
 	}
 }
 
-inline void	ILogger::print(std::string* param, int lvl)
-{
-	ILogger::_logStream.print((param ? *param : "(NULL)"), lvl);
-}
-
 template <typename T>
-inline void	ILogger::print(va_list* args, int lvl)
+inline void	ILogger::print(va_list* args, int lvl, int len)
 {
 	T	var = va_arg(*args, T);
-	print(var, lvl);
+	print(var, lvl, len);
 }
 
 template <typename T>
-inline void	ILogger::print(T param, int lvl)
+inline void	ILogger::print(T param, int lvl, int len)
 {
-	ILogger::_logStream.print(param, lvl);
+	ILogger::_logStream.print(param, lvl, len);
 }
 
 #endif

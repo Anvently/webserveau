@@ -64,6 +64,15 @@ int	main(void)
 	// 	LOGI("SUCCESS : %s", "");
 	// (void)zebrePtr;
 	// LOGI("size of uinptr = %d", sizeof(Zebra*));
+	// std::string buffer = "Hi this is! a test\n \nwdw\n\n";
+	// std::stringstream	stream(buffer);
+	// stream << '\0' << "defde ";
+	// while (stream.eof() == false)
+	// {
+		// std::string word;
+		// stream >> word;
+		// std::cout << word << '|';
+	// }
 	IParseConfig::parseConfigFile("conf/template.conf");
 	ILogger::clearFiles();
 	return (0);

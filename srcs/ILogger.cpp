@@ -94,6 +94,11 @@ void	ILogger::LogStream::colorize(const char* code, int lvl) const
 	}
 }
 
+inline void	ILogger::print(std::string* param, int lvl, int len)
+{
+	ILogger::_logStream.print((param ? *param : "(NULL)"), lvl, len);
+}
+
 int	ILogger::LogStream::getNbr(void) const
 {
 	return (_streams.size());
@@ -147,12 +152,15 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 				
 				case 's':
 					if (*(format + 2) == 's')
-					{
 						print<std::string*>(args, lvl);
-						++format;
-					}
+					else if (*(format + 2) == 'h')
+						print<std::string*>(args, lvl);
 					else
-						print<char*>(args, lvl);
+					{
+						print<char*>(args, lvl, 10);
+						break;
+					}
+					++format;
 					break;
 
 				case 'f':
@@ -171,7 +179,7 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 					else if (*(format + 2) == 'f')
 						print<double>(args, lvl);
 					else
-						break;;
+						break;
 					++format;
 					break;
 

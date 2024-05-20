@@ -19,10 +19,12 @@ typedef struct location
 	std::string	default_uri;
 
 	bool		upload; //ignore if POST not allowed
-	std::string	dir_upload;
+	std::string	upload_root;
 
 	bool	redirection;
 	std::map<int, std::string>	addr_redir;
+
+	std::string	cgi_exec; //example '/bin/bash'
 
 }	t_location;
 
@@ -38,6 +40,8 @@ class	Host {
 
 	private:
 
+		friend class IParseConfig;
+
 		Host() {} friend class IParseConfig; //Throw an exception if block is invalid
 		//Construct from what ?
 		Host(Host &Copy);
@@ -51,7 +55,7 @@ class	Host {
 
 		static std::list<Host>			_hostList;
 
-		std::string						_host;
+		std::string						_name;
 		int								_port;
 		int								_client_max_size;
 		std::string						_dir_errors;
