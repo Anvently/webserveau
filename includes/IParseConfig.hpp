@@ -24,11 +24,11 @@ class IParseConfig
 		static bool				checkFilePath(const char* path);
 		static int				openFile(const char* path);
 		
-		static std::string		getNextServerBlock(void);
+		// static std::string		getNextServerBlock(void);
 
-		static std::string		getNextBlock(std::istream& stream);
+		static std::stringstream&	getNextBlock(std::istream& istream, std::stringstream& ostream);
 
-		static void				parseServerBlock(std::istringstream& serverBlock);
+		static void				parseServerBlock(std::istream& serverBlock);
 		static void				parseLocation(t_location* location, const std::string& block);
 
 	public:

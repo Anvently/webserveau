@@ -23,17 +23,15 @@ bool	IParseConfig::checkFilePath(const char* path)
 /// any block ```LastBlockException``` is raised.
 /// @param stream can be a ifstream or istringstream
 /// @return 
-std::string	IParseConfig::getNextBlock(std::istream& stream)
+std::stringstream&	IParseConfig::getNextBlock(std::istream& istream, std::stringstream& ostream)
 {
-	std::string				block;
 	int						enclosedDepth = 0;
 	bool					isEscaped = false, isQuoted = false;
 	std::string::iterator	it, start, end;
 
 	do
 	{
-		std::getline(stream, _lineBuffer);
-		_fileLineNum++;
+		std::getline(istream, _lineBuffer);
 		start = _lineBuffer.begin();
 		end = _lineBuffer.end();
 		for (it = start; it != end; it++)
@@ -56,54 +54,53 @@ std::string	IParseConfig::getNextBlock(std::istream& stream)
 		}
 		if (it != _lineBuffer.end() && std::distance(it, _lineBuffer.end()) > 1)
 		{
-			if (stream.eof())
+			if (istream.eof())
 			{
-				stream.clear();
-				stream.seekg(stream.tellg() - std::distance(it, _lineBuffer.end() - 1));
+				istream.clear();
+				istream.seekg(istream.tellg() - std::distance(it, _lineBuffer.end() - 1));
 			}
 			else
-				stream.seekg(stream.tellg() - std::distance(it, _lineBuffer.end()));
+				istream.seekg(istream.tellg() - std::distance(it, _lineBuffer.end()));
 			_fileLineNum--;
 		}
 		if (enclosedDepth != 0 || (enclosedDepth == 0 && (start != _lineBuffer.begin() || end != _lineBuffer.end())))
-			block += _lineBuffer.substr(std::distance(_lineBuffer.begin(), start), std::distance(start, end));
-	} while (stream.good() && stream.eof() == false && it == _lineBuffer.end());
-	if (stream.bad() && stream.eof() == false)
+			ostream << _lineBuffer.substr(std::distance(_lineBuffer.begin(), start), std::distance(start, end)) << '\n';
+		ostream.flush();
+	} while (istream.good() && istream.eof() == false && it == _lineBuffer.end());
+	if (istream.bad() && istream.eof() == false)
 		throw (FileStreamException());
 	if (enclosedDepth > 0)
 		throw (UnclosedBlockException());
-	if (stream.eof() && end == _lineBuffer.end())
+	if (istream.eof() && end == _lineBuffer.end())
 		throw (LastBlockException());
-	return (block);
+	return (ostream);
 }
 
-/// @brief Return a string containing the next block found in config file.
-/// Block  start at the first ```{``` encountered.
-/// Block is defined by content delimited with ```{}```. Nested block are ignored.
-/// ```\\``` is an escape character, ```{}``` within quote (```"```) are ignored.
-/// Syntax error will raise exceptions. When the function reach eof without finding
-/// any block ```LastBlockException``` is raised.
-/// @param  
-/// @return 
-std::string		IParseConfig::getNextServerBlock(void)
-{
-	if (_fileStream.is_open() == false || _fileStream.good() == false)
-		throw(FileStreamException());
-	return (getNextBlock(_fileStream));
-}
+// /// @brief Return a string containing the next block found in config file.
+// /// Block  start at the first ```{``` encountered.
+// /// Block is defined by content delimited with ```{}```. Nested block are ignored.
+// /// ```\\``` is an escape character, ```{}``` within quote (```"```) are ignored.
+// /// Syntax error will raise exceptions. When the function reach eof without finding
+// /// any block ```LastBlockException``` is raised.
+// /// @param  
+// /// @return 
+// std::string		IParseConfig::getNextServerBlock(void)
+// {
+// 	if (_fileStream.is_open() == false || _fileStream.good() == false)
+// 		throw(FileStreamException());
+// 	return (getNextBlock(_fileStream));
+// }
 
-void	IParseConfig::parseServerBlock(std::istringstream& serverBlock)
+void	IParseConfig::parseServerBlock(std::istream& serverBlock)
 {
-	// std::string test = "	listen 8080;	host 127.0.0.1;	server_name server1 another.name.fr;	error_pages /errors/my_custom_errors1/;	client_max_size 1024;	location /{ # ce loc block est obligatoireroot /var/www/server1/ #obligatoire		methods GET POST DELETE;		dir_listing off;		default_uri index_images.html;		upload off;	}	location /images/ {		root /var/www/server1/data/; //override the root above?		methods GET POST DELETE;		dir_listing on;		default_uri index_images.html//error?;		upload on;upload_root /var/www/server1/tmp/;	}	location /tmp/ {	}	location *.php{		root /var/www/server1/cgi/php/;		methods POST GET;		exec_cgi php;		upload off; // mandatory	}";
-	// std::istringstream	stream(test);
-	// LOGD("BLOCK = |%ss|", &test);
 	while (1)
 	{
 		try
 		{
-			// std::string block = getNextBlock(stream);
-			std::string block = getNextBlock(serverBlock);
-			LOGD("location_block = |%ss|", &block);
+			std::stringstream	locationStream;
+			getNextBlock(serverBlock, locationStream);
+			std::string location = locationStream.str();
+			LOGD("location_block = |%ss|", &location);
 			if (serverBlock.eof())
 				break;
 		}
@@ -165,10 +162,11 @@ int	IParseConfig::parseConfigFile(const char* path)
 	{
 		try
 		{
-			std::string block = getNextServerBlock();
+			std::stringstream serverBlock;
+			getNextBlock(_fileStream, serverBlock);
+			std::string block = serverBlock.str();
 			LOGD("BLOCK = |%ss|", &block);
-			std::istringstream	stream(block);
-			parseServerBlock(stream);
+			parseServerBlock(serverBlock);
 			if (_fileStream.eof())
 				break;
 		}
