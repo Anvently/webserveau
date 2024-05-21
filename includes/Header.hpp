@@ -17,7 +17,7 @@ enum {GET, POST, DELETE};
 enum {COMPLETE, ONGOING, NEW};
 
 
-class Header{
+class Header {
 	private:
 		int							_method; // -1 if the method is invalid/unknown
 		std::string					_uri;
@@ -34,8 +34,6 @@ class Header{
 		std::string::iterator				_current_it; // where to restart write/read on the next epoll
 		std::string							_current_header;
 		std::string							_current_value;
-
-
 
 
 	public:
