@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <deque>
+#include <stdint.h>
 
 //Parse config file into host vector
 
@@ -29,7 +30,7 @@ class IParseConfig
 		// static std::string		getNextServerBlock(void);
 
 		static int				parseWord(std::istream& istream, std::string& word);
-		static void				parseValues(std::istream& istream, std::deque<std::string>& words, int maxNbr = INT32_MAX);
+		static void				parseValues(std::istream& istream, std::deque<std::string>& words, int maxNbr);
 		static void				parseQuote(std::istream& istream, std::string& dest);
 		static void				parseComment(std::istream& istream);
 		// static void				parseEscape(std::istream& istream);

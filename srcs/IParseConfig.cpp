@@ -210,7 +210,7 @@ int	IParseConfig::parseWord(std::istream& istream, std::string& word)
 	int		ret = 0;
 
 	c = istream.get();
-	if ((c == '/' && (word.size() == 1 && word.front() == '/')) || c == '#')
+	if ((c == '/' && (word.size() == 1 && *word.begin() == '/')) || c == '#')
 	{
 		parseComment(istream);
 		word.clear();
@@ -352,16 +352,16 @@ void	IParseConfig::parseHostName(std::istream& istream, Host& host)
 	std::string	word;
 	int			ret = 0;
 
-	while (_fileStream.good())
+	while (istream.good())
 	{
 		word.clear();
-		ret = parseWord(_fileStream, word);
+		ret = parseWord(istream, word);
 		if (ret == WORD_IS_COMMENT)
 			continue;
 		else if (ret & WORD_IS_CITATION)
 			throw (UnexpectedTokenException());
 		host._name = word;
-		if (!(parseWord(_fileStream, word) & WORD_IS_BRACE))
+		if (!(parseWord(istream, word) & WORD_IS_BRACE))
 			throw (UnexpectedTokenException());
 		break;
 	}
@@ -406,6 +406,110 @@ int	IParseConfig::parseConfigFile(const char* path)
 	}
 	return (0);
 }
+
+void	IParseConfig::parsePort(std::istream& istream, Host& host)
+{
+	(void)host;
+	std::string word;
+	if (!(parseWord(istream, word) & WORD_IS_LAST))
+		LOGE("Port missing");
+	else
+		LOGI("Port : %ss", &word);
+}
+
+void	IParseConfig::parseHost(std::istream& istream, Host& host)
+{
+	(void)host;
+	std::string	word;
+	if (!(parseWord(istream, word) & WORD_IS_LAST))
+		LOGE("Host missing");
+	else
+		LOGI("Host : %ss", &word);
+}
+
+void	IParseConfig::parseServerName(std::istream& istream, Host& host)
+{
+	(void)host;
+	std::deque<std::string>	serverNames;
+	parseValues(istream, serverNames);
+	if (serverNames.size() == 0)
+		LOGE("Server name missing");
+	else
+	{
+		LOGI("Server names :");
+		for (std::deque<std::string>::iterator it = serverNames.begin(); it != serverNames.end(); it++)
+			LOGI("	- %ss", &*it);
+	}
+}
+
+void	IParseConfig::parseBodyMaxSize(std::istream& istream, Host& host)
+{
+	(void)host;
+	std::string word;
+	if (!(parseWord(istream, word) & WORD_IS_LAST))
+		LOGE("Max body size is missing");
+	else
+		LOGI("Max body size : %ss", &word);
+}
+
+void	IParseConfig::parseAllowedMethods(std::istream& istream, t_location& location)
+{
+	(void)location;
+	std::deque<std::string>	methods;
+	parseValues(istream, methods);
+	if (methods.size() == 0)
+		LOGE("Method missing");
+	else
+	{
+		LOGI("Allowed methods :");
+		for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
+			LOGI("	- %ss", &*it);
+	}
+}
+
+void	IParseConfig::parseRedirection(std::istream& istream, t_location& location)
+{
+	(void)location;
+	std::deque<std::string>	values;
+	parseValues(istream, values);
+	if (values.size() == 0)
+		LOGE("Empty redirection");
+	else if (values.size() != 2)
+		LOGE("Too many values for redirection");
+	else
+	{
+		LOGI("Redirections :");
+		for (std::deque<std::string>::iterator it = values.begin(); it != values.end(); it++)
+			LOGI("	- %ss", &*it);
+	}
+}
+
+void	IParseConfig::parsePath(std::istream& istream, std::string& dest)
+{
+	if (!(parseWord(istream, dest) & WORD_IS_LAST))
+		LOGE("Path is missing");
+	else
+		LOGI("Path : %ss", &dest);
+}
+
+void	IParseConfig::parseBoolean(std::istream& istream, bool& dest)
+{
+	(void) dest;
+	std::string word;
+	if (!(parseWord(istream, word) & WORD_IS_LAST))
+		LOGE("Boolean is missing");
+	else
+		LOGI("Boolean : %ss", &word);
+}
+
+void	IParseConfig::parseUri(std::istream& istream, std::string& dest)
+{
+	if (!(parseWord(istream, dest) & WORD_IS_LAST))
+		LOGE("Uri is missing");
+	else
+		LOGI("Uri : %ss", &dest);
+}
+
 
 const char*	IParseConfig::UnclosedQuoteException::what(void) const throw()
 {
