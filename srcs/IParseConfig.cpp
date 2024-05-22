@@ -5,11 +5,11 @@
 // #define WORD_IS_COMMENT 2
 // #define WORD_IS_CITATION 3
 
-#define WORD_IS_EOF (1 << 4)
-#define WORD_IS_BRACED (1 << 3)
-#define WORD_IS_CITATION (1 << 2)
-#define WORD_IS_LAST (1 << 1)
-#define WORD_IS_COMMENT (1 << 0)
+// #define WORD_IS_EOF (1 << 4)
+// #define WORD_IS_BRACED (1 << 3)
+// #define WORD_IS_CITATION (1 << 2)
+// #define WORD_IS_LAST (1 << 1)
+// #define WORD_IS_COMMENT (1 << 0)
 
 std::ifstream	IParseConfig::_fileStream;
 std::string		IParseConfig::_lineBuffer;
@@ -135,93 +135,99 @@ void	IParseConfig::parseQuote(std::istream& istream, std::string& dest)
 	throw (UnclosedQuoteException());
 }
 
-/// @brief Suppose a comment token has already been found in the last read of the stream
-/// Advance the stream to the next ```\\n``` or ```\\0```. Throw exception is not found.
+/// @brief Suppose a comment has been detected from the next character in the stream
+/// or because an unescaped ```#``` was read.
+/// Advance the stream to the position following the next ```\\n``` or ```\\0```.
 /// @param istream 
-void IParseConfig::parseComment(std::istream& istream)
+void IParseConfig::skipComment(std::istream& istream)
 {
 	char	c;
 
-	while (istream.good())
+	c = istream.peek();
+	while (c != EOF)
 	{
 		c = istream.get();
-		if (c == '\n' || c == '\0')
+		if (c == '\n')
 		{
 			_lineNbr++;
 			return;
 		}
 	}
-	// throw (StreamException());
 }
 
-/// @brief Read the next word in the stream and assign it to ```word``` string,
-/// checking if it's a comment, if there are quote to expand, and if the word ends
-/// with a semicolon.
-/// If word is (or start with) a comment token, stream is readed until ```\\n```
-/// or ```\\0```, and ```WORD_IS_COMMENT``` is returned. If word is a quoted sequence, the
-/// full sequence is appended to word. If word ends with a semicolon (```;```).
-/// then ```WORD_IS_LAST``` is returned. If word ends with a brace ```{}```, stream cursor
-/// is moved back of one char and ```WORD_IS_LAST | WORD_IS_BRACED``` is returned.
-/// ```WORD_IS_LAST``` and ```WORD_IS_CITATION``` can be ORed. ```WORD_IS_EOF``` means
-/// the full stream was read.
+/// @brief Skip next spaces character in stream and set stream position
+/// at the first non space character or ```EOF```.
 /// @param istream 
-/// @param word 
-/// @return  ```-1``` if an erroor occured
-int	IParseConfig::	getNextWord(std::istream& istream, std::string& word)
+/// @return 
+inline void	IParseConfig::skipSpace(std::istream& istream)
 {
 	char	c;
-	bool	isEscaped = false;
-	int		ret = 0;
 
-	if (istream.eof() == true)
-		return (WORD_IS_EOF);
-	else if (istream.good() == false)
-		return (-1);
-	do {
+	while (std::isspace(istream.peek())) {
 		c = istream.get();
 		if (c == '\n')
 			_lineNbr++;
-	} while (std::isspace(c) && istream.good());
-	while (istream.good() && ((std::isspace(c) == false && c != ';' && c != '{' && c != '}') || isEscaped == true))
-	{
-		if (isEscaped == true)
-		{
-			word += c;
-			isEscaped = false;
-		}
-		else if (c == '\\')
-			isEscaped = true;
-		else if (c == '"')
-		{
-			parseQuote(istream, word);
-			ret |= WORD_IS_CITATION;
-		}
-		else if ((c == '/' && (word.size() == 1 && *word.begin() == '/')) || c == '#')
-		{
-			parseComment(istream);
-			word.clear();
-			return (WORD_IS_COMMENT);
-		}
-		else
-			word += c;
-		c = istream.get();
 	}
-	if (c == ';')
-		ret |= WORD_IS_LAST;
-	else if (c == '{' || c== '}')
-	{
-		istream.clear();
-		istream.seekg(-1, std::ios_base::cur);
-		ret |= WORD_IS_BRACED | WORD_IS_LAST;
-	}
-	else if (c == '\n')
-		_lineNbr++;
-	else if (istream.good() == false)
-		ret |= WORD_IS_EOF;
-	return (ret);
 }
 
-/// @brief Parse ```maxNbr``` words in ```istream``` until a semicolon (```;```) is found at the end of  
+/// @brief Check if the next word in the stream is a semicolon.
+/// If so skip it, else stop at the first non-whitespace character.
+/// @param istream 
+/// @return 
+inline bool	IParseConfig::checkSemiColon(std::istream& istream)
+{
+	skipSpace(istream);
+	if (istream.peek() == ';')
+	{
+		istream.get();
+		return (true);
+	}
+	return (false);
+}
+
+/// @brief Read the next word in the stream and assign it to ```word``` string if it
+/// is indeed a word. A valid word is delimited by [ ```whitespace``` ```;``` ```{```
+/// ```}``` ```EOF``` ].
+/// Check and skip for leading spaces and/or comments.
+/// Expand quotes as single word. Handles escaping character with ```\\```.
+/// @param istream 
+/// @param word 
+/// @return  ```0``` if a word was successfully extracted. If a delimiter
+/// (excepting whitespaces) without preceding word is found, return the delimiter.
+int	IParseConfig::	getNextWord(std::istream& istream, std::string& word)
+{
+	char	cur, next;
+	bool	isEscaped = false;
+
+	skipSpace(istream);
+	next = istream.peek();
+	while (isEscaped || (std::isspace(next) == false && next != EOF && next != ';' && next != '{' && next != '}'))
+	{
+		cur = istream.get();
+		if (isEscaped == true)
+		{
+			word += cur;
+			isEscaped = false;
+		}
+		else if (cur == '\\')
+			isEscaped = true;
+		else if (cur == '"')
+			parseQuote(istream, word);
+		else if ((cur == '/' && (word.size() == 0 && istream.peek() == '/')) || cur == '#')
+		{
+			skipComment(istream);
+			skipSpace(istream);
+		}
+		else
+			word += cur;
+		next = istream.peek();
+	}
+	if (word.size())
+		return (0);
+	return (next);
+}
+
+/// @brief Parse ```maxNbr``` words in ```istream```
 /// @param istream 
 /// @param words 
 /// @param maxNbr 
@@ -232,16 +238,12 @@ void	IParseConfig::parseValues(std::istream& istream, std::deque<std::string>& w
 
 	do
 	{
-		ret = getNextWord(istream, word);
-		if ((ret & WORD_IS_COMMENT) == 0 && word != ";") //If word is not a comment
-			words.push_front(word);
-		if (ret & WORD_IS_LAST)
-			break;
-		i++;
 		word.clear();
-	} while (istream.good() && i < maxNbr);
-	if (words.size() == 0 || (ret & WORD_IS_LAST) == 0)
-		throw (MissingSemicolonException());
+		ret = getNextWord(istream, word);
+		if (ret == 0)
+			words.push_front(word);
+		i++;
+	} while (ret == 0 && i < maxNbr);
 }
 
 void	IParseConfig::parseHostBlock(std::stringstream& hostBlock, Host& host)
@@ -251,17 +253,19 @@ void	IParseConfig::parseHostBlock(std::stringstream& hostBlock, Host& host)
 	
 	try
 	{
-		while (hostBlock.good())
+		do
 		{
 			token.clear();
 			ret = getNextWord(hostBlock, token);
-			if (ret == WORD_IS_EOF)
-				break;
 			if (ret == 0)
 				handleToken(hostBlock, token, host);
-			else if ((ret & WORD_IS_COMMENT) == 0)
+			else if (ret == EOF)
+				break;
+			else
 				throw (UnexpectedTokenException(token));
-		}
+			if (checkSemiColon(hostBlock) == false)
+				throw (MissingSemicolonException());
+		} while (ret == 0);
 	}
 	catch (IParseConfigException& e)
 	{
@@ -314,17 +318,19 @@ void	IParseConfig::parseLocationBlock(std::istream& locationBlock, t_location& l
 	std::string				token;
 	int						ret;
 	
-	while (locationBlock.good())
+	do
 	{
 		token.clear();
 		ret = getNextWord(locationBlock, token);
-		if (ret == WORD_IS_EOF)
-			break;
 		if (ret == 0)
 			handleLocationToken(locationBlock, token, location);
-		else if ((ret & WORD_IS_COMMENT) == 0)
+		else if (ret == EOF)
+			break;
+		else
 			throw (UnexpectedTokenException(token));
-	}
+		if (checkSemiColon(locationBlock) == false)
+			throw (MissingSemicolonException());
+	} while (ret == 0);
 }
 
 int	IParseConfig::openFile(const char* path)
@@ -350,22 +356,18 @@ void	IParseConfig::parseHostName(std::istream& istream, Host& host)
 	std::string	word;
 	int			ret = 0;
 
-	while (istream.good())
-	{
-		word.clear();
-		ret = getNextWord(istream, word);
-		if (ret == WORD_IS_COMMENT)
-			continue;
-		else if (ret & WORD_IS_CITATION)
-			throw (UnexpectedTokenException(word));
-		else if (word.size() == 0)
-			throw (MissingTokenException("host_name"));
-		host._name = word;
-		ret = getNextWord(istream, word);
-		if (!(ret & WORD_IS_BRACED))
-			throw (TooManyValuesException("host name"));
-		break;
-	}
+	ret = getNextWord(istream, word);
+	if (ret == EOF)
+		throw (LastBlockException());
+	else if (ret)
+		throw (UnexpectedTokenException(word));
+	host._name = word;
+	word.clear();
+	ret = getNextWord(istream, word);
+	if (ret == EOF)
+		throw (MissingOpeningBraceException());
+	else if (ret != '{')
+		throw (UnexpectedTokenException(word + "instead of {"));
 }
 
 /// @brief Open given file and try to parse server block, creating server/host 
@@ -453,7 +455,7 @@ void	IParseConfig::parsePort(std::istream& istream, Host& host)
 {
 	(void)host;
 	std::string word;
-	if (!(getNextWord(istream, word) & WORD_IS_LAST))
+	if (getNextWord(istream, word))
 		LOGE("Port missing");
 	else
 		LOGI("Port : %ss", &word);
@@ -463,7 +465,7 @@ void	IParseConfig::parseHost(std::istream& istream, Host& host)
 {
 	(void)host;
 	std::string	word;
-	if (!(getNextWord(istream, word) & WORD_IS_LAST))
+	if (getNextWord(istream, word))
 		LOGE("Host missing");
 	else
 		LOGI("Host : %ss", &word);
@@ -488,7 +490,7 @@ void	IParseConfig::parseBodyMaxSize(std::istream& istream, Host& host)
 {
 	(void)host;
 	std::string word;
-	if (!(getNextWord(istream, word) & WORD_IS_LAST))
+	if (getNextWord(istream, word))
 		LOGE("Max body size is missing");
 	else
 		LOGI("Max body size : %ss", &word);
@@ -528,7 +530,7 @@ void	IParseConfig::parseRedirection(std::istream& istream, t_location& location)
 
 void	IParseConfig::parsePath(std::istream& istream, std::string& dest)
 {
-	if (!(getNextWord(istream, dest) & WORD_IS_LAST))
+	if (getNextWord(istream, dest))
 		LOGE("Path is missing");
 	else
 		LOGI("Path : %ss", &dest);
@@ -538,7 +540,7 @@ void	IParseConfig::parseBoolean(std::istream& istream, bool& dest)
 {
 	(void) dest;
 	std::string word;
-	if (!(getNextWord(istream, word) & WORD_IS_LAST))
+	if (getNextWord(istream, word))
 		LOGE("Boolean is missing");
 	else
 		LOGI("Boolean : %ss", &word);
@@ -546,7 +548,7 @@ void	IParseConfig::parseBoolean(std::istream& istream, bool& dest)
 
 void	IParseConfig::parseUri(std::istream& istream, std::string& dest)
 {
-	if (!(getNextWord(istream, dest) & WORD_IS_LAST))
+	if (getNextWord(istream, dest))
 		LOGE("Uri is missing");
 	else
 		LOGI("Uri : %ss", &dest);

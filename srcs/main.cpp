@@ -73,14 +73,6 @@ int	main(void)
 		// stream >> word;
 		// std::cout << word << '|';
 	// }
-	try
-	{
-		throw(IParseConfig::UnexpectedTokenException("test"));
-	}
-	catch(const IParseConfig::IParseConfigException& e)
-	{
-		std::cerr << e.what() << '\n';
-	}
 	
 	IParseConfig::parseConfigFile("conf/template.conf");
 	ILogger::clearFiles();

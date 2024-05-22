@@ -26,16 +26,16 @@ class IParseConfig
 		static bool				checkFilePath(const char* path);
 		static int				openFile(const char* path);
 		
-
-		// static std::string		getNextServerBlock(void);
 		static int					getNextWord(std::istream& istream, std::string& word);
 		static std::stringstream&	getNextBlock(std::istream& istream, std::stringstream& ostream);
+		static inline void			skipSpace(std::istream& istream);
+		static void					skipComment(std::istream& istream);
+		static void					parseQuote(std::istream& istream, std::string& dest);
+		static inline bool			checkSemiColon(std::istream& istream);
 
 		static void				parseHostName(std::istream& istream, Host& host);
 		static void				parseValues(std::istream& istream, std::deque<std::string>& words, int maxNbr);
 
-		static void				parseComment(std::istream& istream);
-		static void				parseQuote(std::istream& istream, std::string& dest);
 		// static void				parseEscape(std::istream& istream);
 
 		static void				parseHostBlock(std::stringstream& hostBlock, Host& host);
