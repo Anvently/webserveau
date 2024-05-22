@@ -40,8 +40,8 @@ Client*	Host::getClientByFd(int fd) const {
 	return (NULL);
 }
 
-t_location*	Host::getLocation(const std::string& path) {
-	std::map<std::string, t_location>::iterator	pos = _locations.find(path);
+Location*	Host::getLocation(const std::string& path) {
+	std::map<std::string, Location>::iterator	pos = _locations.find(path);
 	if (pos == _locations.end())
 		return (NULL);
 	return (&pos->second);

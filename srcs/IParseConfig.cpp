@@ -1,16 +1,6 @@
 #include <IParseConfig.hpp>
 #include <sys/stat.h>
 
-// #define WORD_IS_LAST 1
-// #define WORD_IS_COMMENT 2
-// #define WORD_IS_CITATION 3
-
-// #define WORD_IS_EOF (1 << 4)
-// #define WORD_IS_BRACED (1 << 3)
-// #define WORD_IS_CITATION (1 << 2)
-// #define WORD_IS_LAST (1 << 1)
-// #define WORD_IS_COMMENT (1 << 0)
-
 std::ifstream	IParseConfig::_fileStream;
 std::string		IParseConfig::_lineBuffer;
 int				IParseConfig::_lineNbr = 1;
@@ -91,21 +81,6 @@ std::stringstream&	IParseConfig::getNextBlock(std::istream& istream, std::string
 		throw (LastBlockException());
 	return (ostream);
 }
-
-// /// @brief Return a string containing the next block found in config file.
-// /// Block  start at the first ```{``` encountered.
-// /// Block is defined by content delimited with ```{}```. Nested block are ignored.
-// /// ```\\``` is an escape character, ```{}``` within quote (```"```) are ignored.
-// /// Syntax error will raise exceptions. When the function reach eof without finding
-// /// any block ```LastBlockException``` is raised.
-// /// @param  
-// /// @return 
-// std::string		IParseConfig::getNextServerBlock(void)
-// {
-// 	if (_fileStream.is_open() == false || _fileStream.good() == false)
-// 		throw(StreamException());
-// 	return (getNextBlock(_fileStream));
-// }
 
 /// @brief Suppose that an opening quote has been detected in dest,
 /// stream will be parsed storing every cited word in dest.
@@ -273,26 +248,50 @@ void	IParseConfig::parseHostBlock(std::stringstream& hostBlock, Host& host)
 		if (hostBlock.good())
 			tmp = hostBlock.str().substr(hostBlock.tellg());
 		else
-		{
 			tmp = "[End of block]";
-		}
 		LOGE("parsing host (%ss) configuration at line %d : %s\n -> ...%sl...", &host._name, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
 	}
 }
 
+void	IParseConfig::parseCGIConfig(std::stringstream& istream, Host& host)
+{
+	std::deque<std::string>	locationsName;
+	CGIConfig				cgiConfig;
+
+	parseValues(istream, locationsName); //May need to check what happens gere
+	std::stringstream	CGIConfigStream;
+	_lineNbrEndOfBlock = _lineNbr;
+	getNextBlock(istream, CGIConfigStream);
+	std::string tmp = CGIConfigStream.str();
+	try {
+		parseCGIConfigBlock(CGIConfigStream, cgiConfig);
+	}
+	catch (const LastBlockException& e) {
+		throw (MissingOpeningBraceException());
+	}
+	catch (IParseConfigException& e)
+	{
+		std::string	tmp;
+		if (CGIConfigStream.good())
+			tmp = CGIConfigStream.str().substr(CGIConfigStream.tellg());
+		else
+			tmp = "[End of block]";
+		LOGE("parsing host (%ss) cgi config at line %d : %s\n -> %sl", &host._name, _lineNbr, e.what(), &tmp);
+		_lineNbr = _lineNbrEndOfBlock;
+	}
+}
 
 void	IParseConfig::parseLocation(std::stringstream& istream, Host& host)
 {
 	std::deque<std::string>	locationsName;
-	t_location				location;
+	Location				location;
 
 	parseValues(istream, locationsName); //May need to check what happens gere
 	std::stringstream	locationStream;
 	_lineNbrEndOfBlock = _lineNbr;
 	getNextBlock(istream, locationStream);
 	std::string tmp = locationStream.str();
-	// LOGD("location block start at = %d | _lineEoB = %d", _lineNbr, _lineNbrEndOfBlock);
 	try {
 		parseLocationBlock(locationStream, location);
 	}
@@ -305,15 +304,13 @@ void	IParseConfig::parseLocation(std::stringstream& istream, Host& host)
 		if (locationStream.good())
 			tmp = locationStream.str().substr(locationStream.tellg());
 		else
-		{
 			tmp = "[End of block]";
-		}
 		LOGE("parsing host (%ss) location at line %d : %s\n -> %sl", &host._name, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
 	}
 }
 
-void	IParseConfig::parseLocationBlock(std::istream& locationBlock, t_location& location)
+void	IParseConfig::parseLocationBlock(std::istream& locationBlock, Location& location)
 {
 	std::string				token;
 	int						ret;
@@ -329,6 +326,26 @@ void	IParseConfig::parseLocationBlock(std::istream& locationBlock, t_location& l
 		else
 			throw (UnexpectedTokenException(token));
 		if (checkSemiColon(locationBlock) == false)
+			throw (MissingSemicolonException());
+	} while (ret == 0);
+}
+
+void	IParseConfig::parseCGIConfigBlock(std::istream& cgiStream, CGIConfig& cgiConfig)
+{
+	std::string				token;
+	int						ret;
+	
+	do
+	{
+		token.clear();
+		ret = getNextWord(cgiStream, token);
+		if (ret == 0)
+			handleCGIConfigToken(cgiStream, token, cgiConfig);
+		else if (ret == EOF)
+			break;
+		else
+			throw (UnexpectedTokenException(token));
+		if (checkSemiColon(cgiStream) == false)
 			throw (MissingSemicolonException());
 	} while (ret == 0);
 }
@@ -425,16 +442,30 @@ void	IParseConfig::handleToken(std::stringstream& istream, const std::string& to
 		parseBodyMaxSize(istream, host);
 	else if (token == "location")
 		parseLocation(istream, host);
+	else if (token == "cgi")
+		parseCGIConfig(istream, host);
 	else
 		throw (UnknownTokenException(token));
 }
 
-void	IParseConfig::handleLocationToken(std::istream& istream, const std::string& token, t_location& location)
+void	IParseConfig::handleCGIConfigToken(std::istream& istream,  const std::string& token, CGIConfig& location)
 {
 	if (token == "root")
 		parsePath(istream, location.root);
 	else if (token == "methods")
-		parseAllowedMethods(istream, location);
+		parseAllowedMethods(istream, location.methods);
+	else if (token == "exec")
+		parsePath(istream, location.exec);
+	else
+		throw (UnknownTokenException(token));
+}
+
+void	IParseConfig::handleLocationToken(std::istream& istream, const std::string& token, Location& location)
+{
+	if (token == "root")
+		parsePath(istream, location.root);
+	else if (token == "methods")
+		parseAllowedMethods(istream, location.methods);
 	else if (token == "dir_listing")
 		parseBoolean(istream, location.dir_listing);
 	else if (token == "upload")
@@ -443,8 +474,6 @@ void	IParseConfig::handleLocationToken(std::istream& istream, const std::string&
 		parseUri(istream, location.default_uri);
 	else if (token == "upload_root")
 		parsePath(istream, location.upload_root);
-	else if (token == "exec_cgi")
-		parsePath(istream, location.cgi_exec);
 	else if (token == "return")
 		parseRedirection(istream, location);
 	else
@@ -496,9 +525,9 @@ void	IParseConfig::parseBodyMaxSize(std::istream& istream, Host& host)
 		LOGI("Max body size : %ss", &word);
 }
 
-void	IParseConfig::parseAllowedMethods(std::istream& istream, t_location& location)
+void	IParseConfig::parseAllowedMethods(std::istream& istream, bool (&dest)[METHODS_NBR])
 {
-	(void)location;
+	(void)dest;
 	std::deque<std::string>	methods;
 	parseValues(istream, methods);
 	if (methods.size() == 0)
@@ -511,7 +540,7 @@ void	IParseConfig::parseAllowedMethods(std::istream& istream, t_location& locati
 	}
 }
 
-void	IParseConfig::parseRedirection(std::istream& istream, t_location& location)
+void	IParseConfig::parseRedirection(std::istream& istream, Location& location)
 {
 	(void)location;
 	std::deque<std::string>	values;

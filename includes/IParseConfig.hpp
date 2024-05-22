@@ -39,18 +39,22 @@ class IParseConfig
 		// static void				parseEscape(std::istream& istream);
 
 		static void				parseHostBlock(std::stringstream& hostBlock, Host& host);
-		static void				parseLocationBlock(std::istream& locationBlock, t_location& location);
+		static void				parseLocationBlock(std::istream& locationBlock, Location& location);
+		static void				parseCGIConfigBlock(std::istream& cgiStream, CGIConfig& cgiConfig);
 
 		static void				handleToken(std::stringstream& istream, const std::string& token, Host& host);
 		static void				parseLocation(std::stringstream& istream, Host& host);
+		static void				parseCGIConfig(std::stringstream& istream, Host& host);
 		static void				parsePort(std::istream& istream, Host& host);
 		static void				parseHost(std::istream& istream, Host& host);
 		static void				parseServerName(std::istream& istream, Host& host);
 		static void				parseBodyMaxSize(std::istream& istream, Host& host);
+		
+		static void				handleLocationToken(std::istream& istream, const std::string& token, Location& location);
+		static void				parseAllowedMethods(std::istream& istream, bool (&dest)[METHODS_NBR]);
+		static void				parseRedirection(std::istream& istream, Location& location);
 
-		static void				handleLocationToken(std::istream& istream, const std::string& token, t_location& location);
-		static void				parseAllowedMethods(std::istream& istream, t_location& location);
-		static void				parseRedirection(std::istream& istream, t_location& location);
+		static void				handleCGIConfigToken(std::istream& istream,  const std::string& token, CGIConfig& location);
 
 		static void				parsePath(std::istream& istream, std::string& dest);
 		static void				parseBoolean(std::istream& istream, bool& dest);

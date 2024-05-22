@@ -73,7 +73,8 @@ int	main(void)
 		// stream >> word;
 		// std::cout << word << '|';
 	// }
-	
+	// Location*	loc = new CGIConfig();
+	// LOGD("%ss", loc->default_uri);
 	IParseConfig::parseConfigFile("conf/template.conf");
 	ILogger::clearFiles();
 	return (0);
