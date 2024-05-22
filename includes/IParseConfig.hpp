@@ -62,102 +62,115 @@ class IParseConfig
 
 		class IParseConfigException : public std::exception {
 			public:
-				virtual const char*	what(void) const throw();
-				virtual const char*	what(void) throw() = 0;
+				virtual const char*	what(void) const throw() = 0;
 		};
 
 		class FileException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) throw() = 0;
+				virtual const char*	what(void) const throw() = 0;
 		};
 
 		class InvalidFileTypeException : public FileException {
 			public:
-				virtual const char*	what(void) throw();
+				virtual const char*	what(void) const throw() {
+					return ("invalid config file type");
+				}
 		};
 
 		class FileOpenException : public FileException {
 			public:
-				virtual const char*	what(void) throw();
+				virtual const char*	what(void) const throw() {
+					return ("could not open config file");
+				}
 		};
 
 		class StreamException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) throw();
+				virtual const char*	what(void) const throw() {
+					return ("error with the stream");
+				}
 		};
 
 		class UnclosedQuoteException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) throw();
+				virtual const char*	what(void) const throw() {
+					return ("unclosed quotes");
+				}
 		};
 
 		class UnclosedBlockException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) throw();
+				virtual const char*	what(void) const throw() {
+					return ("block has unclosed braces");
+				}
 		};
 
 		class UnexpectedBraceException : public IParseConfigException {
 			public:
-				virtual const char* what(void) throw();
+				virtual const char* what(void) const throw() {
+					return ("closing brace without prior opening brace");
+				}
 		};
 
 		class LastBlockException : public IParseConfigException {
 			public:
-				virtual const char* what(void) throw();
+				virtual const char* what(void) const throw() {
+					return ("last block reached");
+				}
 		};
 
 		class MissingSemicolonException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) throw();
+				virtual const char*	what(void) const throw() {
+					return ("missing semicolon (`;')");
+				}
 		};
 
 		class MissingOpeningBraceException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) throw();
+				virtual const char*	what(void) const throw() {
+					return ("missing opening brace `{'");
+				}
 		};
 
 		class UnexpectedTokenException : public IParseConfigException {
 			private:
-				const std::string	fieldName;
-				std::string			message;
+				const std::string	message;
 			public:
-				UnexpectedTokenException(const std::string& param);
-				virtual ~UnexpectedTokenException(void) throw();
-				virtual const char*	what(void) const throw();
-				virtual const char*	what(void) throw();
+				UnexpectedTokenException(const std::string& param)
+					: message("unexpected token (`" + param + "')") {}
+				virtual ~UnexpectedTokenException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
 		};
 
 		class MissingTokenException : public IParseConfigException {
 			private:
-				const std::string	fieldName;
-				std::string			message;
+				const std::string	message;
 			public:
-				MissingTokenException(const std::string& param);
-				virtual ~MissingTokenException(void) throw();
-				virtual const char*	what(void) const throw();
-				virtual const char*	what(void) throw();
+				MissingTokenException(const std::string& param)
+					: message("missing token or field (`" + param + "')") {}
+				virtual ~MissingTokenException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
 		};
 
 		class UnknownTokenException : public IParseConfigException {
 			private:
-				const std::string	fieldName;
-				std::string			message;
+				const std::string	message;
 			public:
-				UnknownTokenException(const std::string& param);
-				virtual ~UnknownTokenException(void) throw();
-				virtual const char*	what(void) const throw();
-				virtual const char*	what(void) throw();
+				UnknownTokenException(const std::string& param)
+					: message("unknown token (`" + param + "')") {}
+				virtual ~UnknownTokenException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
 		};
 
 		class TooManyValuesException : public IParseConfigException {
 			private:
-				const std::string	fieldName;
-				std::string			message;
+				const std::string	message;
 			public:
-				TooManyValuesException(const std::string& param);
-				virtual ~TooManyValuesException(void) throw();
-				virtual const char*	what(void) const throw();
-				virtual const char*	what(void) throw();
+				TooManyValuesException(const std::string& param)
+					: message("too many values for given token (`" + param + "')") {}
+				virtual ~TooManyValuesException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
 		};
 		
 };

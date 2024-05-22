@@ -6,6 +6,15 @@ std::map<std::string, std::list<std::ofstream*>::iterator>	ILogger::_fileTable;
 ILogger::LogStream			ILogger::_logStream;
 std::time_t					ILogger::_startTime = time(NULL);
 bool						ILogger::isInit = false;
+const char*					ILogger::colors[LOG_LVL_MAX + 1] = {
+								TERM_CL_WHITE, //0 - Ignore level
+								TERM_CL_RED, //Error
+								TERM_CL_YELLOW, //Warning
+								TERM_CL_GREEN, //Info
+								TERM_CL_MAGENTA, //Debug
+								TERM_CL_WHITE //Verbose
+};
+
 
 ILogger::ILogger(void) {}
 

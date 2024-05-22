@@ -153,6 +153,8 @@ class ILogger
 
 		static void					initDefault(void);
 
+		static const char*			colors[LOG_LVL_MAX + 1];
+
 	public:
 
 		static void	log(int lvl, const char *format, ...);
@@ -185,15 +187,6 @@ class ILogger
 #define LOGI(format, ...) ILogger::log(LOG_INFO, format"\n" __VA_OPT__(,) __VA_ARGS__)
 #define LOGD(format, ...) ILogger::log(LOG_DEBUG, format"\n" __VA_OPT__(,) __VA_ARGS__)
 #define LOGV(format, ...) ILogger::log(LOG_VERBOSE, format"\n" __VA_OPT__(,) __VA_ARGS__)
-
-static const char*	colors[LOG_LVL_MAX + 1] = {
-						TERM_CL_WHITE, //0 - Ignore level
-						TERM_CL_RED, //Error
-						TERM_CL_YELLOW, //Warning
-						TERM_CL_GREEN, //Info
-						TERM_CL_MAGENTA, //Debug
-						TERM_CL_WHITE //Verbose
-};
 
 template<typename T>
 const ILogger::LogStream&	ILogger::LogStream::operator<<(const T& param) const
