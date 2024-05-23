@@ -1,7 +1,7 @@
 #include <Request.hpp>
 
 
-Request::Request(): _method(-1), _error_num(0), _status(NEW), _buffer_count(0)
+Request::Request(): _method(-1), _error_num(0), _status(NEW), _buffer_count(0), _len(0), _content_length(-1), _chunked(0), _b_status(NEW), _chunked_status(0)
 {
 }
 
@@ -12,6 +12,11 @@ void	Request::trimSpace()
 {
 	while (this->_line[0] == 32 || this->_line[0] == 9)
 		this->_line.erase(0,1);
+}
+
+std::string	Request::getHeader(std::string const &key)
+{
+	return (this->_headers[key]);
 }
 
 int	Request::_fillError(int error, std::string const &verbose)
@@ -187,17 +192,130 @@ int	Request::parseHeaders(std::string &buffer)
 	return (0);
 }
 
-
-int	Request::parseInput(std::string &buffer)
+int	Request::_parseMesured(std::string &buffer)
 {
-	if (this->_status != COMPLETE)
-		this->parseHeaders(buffer);
-	if (this->_error_num)
-		return (this->_error_num);
-	if (this->_status == COMPLETE && buffer != "")
-		this->parseBody();
+	size_t	left_to_complete;
+	size_t	cut;
+	size_t	n_writen;
+	std::string	extract;
 
-	//need to check for trailing headers.
+	left_to_complete = this->_content_length - this->_len;
+	if (left_to_complete > buffer.size())
+		cut = buffer.size();
+	else
+		cut = left_to_complete;
+	extract = buffer.substr(0, cut);
+	buffer = buffer.substr(cut, std::string::npos);
+	if (this->_len == this->_content_length)
+		this->_b_status = COMPLETE;
+	return (0);
+}
 
+int	Request::getLenInfo()
+{
+	std::string	str = this->getHeader("Content-Length");
+	int	res = 0;
+	if (nocase_string_eq(this->getHeader("Transfer-Encoding"), "chunked"))
+	{
+		this->_chunked = 1;
+		this->_content_length = -1;
+	}
+	else if (this->getHeader("Content-Length") != "")
+	{
+		if (getInt(this->getHeader("Content-Length"), 10, res))
+			return (this->_fillError(400, "Incorrect content-length provided"));
+		this->_content_length = res;
+	}
+	else
+		this->_b_status = COMPLETE;
+	return (0);
+}
+
+
+int	Request::getChunkedSize(std::string &buffer)
+{
+	std::string::size_type	idx;
+	int	len = 0;
+
+	if (this->_chunked_status == 1)
+		return (0);
+	idx = buffer.find(CRLF, 0);
+	if (idx == std::string::npos)
+	{
+		this->_line	+= buffer;
+		buffer = "";
+		return (0);
+	}
+	this->_line += buffer.substr(0, idx);
+	if (getInt(this->_line, 16, len) || len < 0)
+		return (this->_fillError(400, "Syntax error parsing chunked body"));
+	this->_len = len;
+	this->_line = "";
+	buffer = buffer.substr(idx + 2, std::string::npos);
+	this->_chunked_status = 1;
+	return (0);
+}
+
+int	Request::_parseChunked(std::string &buffer)
+{
+	if (this->_b_status == COMPLETE)
+		return (0);
+	while (buffer != "")
+	{
+		if (this->getChunkedSize(buffer))
+			return (this->_error_num);
+		if (this->_chunked_status == 1 && this->_len == 0)
+		{
+			this->_b_status = COMPLETE;
+			this->_line = "";
+			return (0);
+		}
+		if (this->getLine(buffer))
+			return (0);
+		if (this->_line.size() != this->_len)
+			return(this->_fillError(400, "Size error in chunked body"));
+		this->_filestream << this->_line;
+		this->_line = "";
+		this->_len = -1;
+		this->_chunked_status = 0;
+	}
+	return (0);
+}
+
+int	Request::parseBody(std::string &buffer)
+{
+	if (this->_b_status == COMPLETE)
+		return (0);
+	if (this->_b_status == NEW)
+	{
+		if (this->getLenInfo() || this->_b_status == COMPLETE)
+			return (this->_error_num);
+		this->_tmp_filename = generate_name(this->_hostname);
+		this->_filestream.open(this->_tmp_filename, std::ios::out | std::ios::app | std::ios::binary);
+		this->_b_status = ONGOING;
+	}
+	if (this->_chunked)
+	{
+		while (!isalnum(buffer[0]))
+			buffer.erase(0,1);
+		return (this->_parseChunked(buffer));
+	}
+	else
+		return (this->_parseMesured(buffer));
 
 }
+
+//Client should call the different parsing methods itself and set the body max size value ?
+// int	Request::parseInput(std::string &buffer)
+// {
+// 	if (this->_status != COMPLETE)
+// 		this->parseHeaders(buffer);
+// 	if (this->_error_num)
+// 		return (this->_error_num);
+// 	if (this->_status == COMPLETE && buffer != "")
+// 		this->parseBody(buffer);
+
+// 	//need to check for trailing headers.
+
+
+// }

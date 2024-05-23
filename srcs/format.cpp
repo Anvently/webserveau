@@ -6,6 +6,7 @@
 #include <cctype>
 #include <iostream>
 #include <sstream>
+#include <sys/time.h>
 
 static const std::string deci = "0123456789";
 static const std::string hexa = "0123456789ABCDEF";
@@ -15,7 +16,7 @@ char	to_upper(unsigned char c)
 	return (std::toupper(c));
 }
 
-int	getInt(std::string &str, int base, int &res)
+int	getInt(std::string str, int base, int &res)
 {
 	std::transform(str.begin(), str.end(), str.begin(), to_upper);
 	std::string	sbase;
@@ -66,3 +67,21 @@ bool nocase_string_eq(const std::string& a, const std::string& b)
     return a.size() == b.size() &&
            std::equal(a.begin(), a.end(), b.begin(), ichar_equals);
 }
+
+
+std::string	generate_name(std::string &hostname)
+{
+	struct timeval	t;
+	long long		time;
+	std::ostringstream	filename;
+
+	gettimeofday(&t, NULL);
+	time = t.tv_sec * 1000000 + t.tv_usec;
+	filename << "tmp/";
+	filename << hostname;
+	filename << "_";
+	filename << time;
+	return (filename.str());
+}
+
+
