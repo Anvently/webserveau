@@ -1,32 +1,49 @@
 #ifndef BODY_HPP
 #define BODY_HPP
 
+#include <string>
+#include <iostream>
+#include <Header.hpp>
+
+std::string	IntToString(int x, int base);
+int	getInt(std::string &str, int base, int &res);
+bool nocase_string_eq(const std::string& a, const std::string& b);
+
+
 class	Body{
 
 	private:
 		int			_length;
-		int			_expected_length // if the header content length was present will be positive else -1 ?
+		int			_content_length; // if the header content length was present will be positive else -1 ?
+		int			_max_body_size;
 		bool		_chuncked;
+		int			_error_num;
 
-		//choose one_ between both under ?
-		std::string	_content;
-		int			_fd;
+		Header		*_header;
 
 		bool		_is_complete;
-		std::string::iterator	_current_it; // if _content is a string and it is being writen somewhere will remember where to start again
 
+		int	_parseChunked(std::string &buffer);
+		int	_parseMesured(std::string &buffer);
+		Body();
 
 	public:
 
-		Body();
-		Body(Body const &Copy);
+		Body(Header *header, int max_size);
 		~Body();
-		Body	&operator=(Body const &Rhs);
 
-		int	addContent(std::string buffer); //add the buffer to the body return 1 if it is now complete ?
-		int	writeContent(int fd);
-		int	writeContent(std::string &output);
+		int	parseInput(std::string &buffer); //add the buffer to the body return 0 or an error code
+		int	getChunkedLine(std::string &buffer);
 
+
+		std::string	getHeader(std::string &key);
+
+		class	SizeRelatedHeaderMissing: public std::exception
+		{
+			public:
+				SizeRelatedHeaderMissing();
+				const char* what() const throw();
+		};
 };
 
 #endif

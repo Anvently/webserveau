@@ -2,7 +2,7 @@
 
 static std::string methds[] = {"GET", "POST", "DELETE"};
 
-Header::Header(): _method(-1), _error_num(0), _status(NEW)
+Header::Header(): _method(-1), _buffer_count(0), _error_num(0), _status(NEW)
 {
 }
 
@@ -64,25 +64,32 @@ static	int	getHeaderName(std::string &line, std::string &header)
 	return (0);
 }
 
+int	Header::_fillError(int error, std::string const &verbose)
+{
+	this->_error_num = error;
+	this->_error_verbose = verbose;
+	this->_line = "";
+	return (error);
+}
+
+// Where to add the error in case of too long header (4 buffer already parsed ?) here or in the request obj ?
 
 int	Header::parseInput(std::string &buffer)
 {
 	std::string	header_name;
 	std::string	header_value;
 
+	this->_buffer_count++;
 	if (this->_status == COMPLETE)
 		return (0);
 	if (this->_status == NEW)
 	{
-		//might need to skip some CRLF - SP first ?
+		while (!isalpha(buffer[0]))
+			buffer.erase(0,1);
 		if (this->getLine(buffer))
 			return (0);
 		if (this->_line.size() > HEADER_MAX_SIZE)
-		{
-			this->_error_num = 414;
-			this->_error_verbose = "Request uri too long";
-			return (this->_error_num);
-		}
+			return (this->_fillError(414, "Request uri too long"));
 		if (this->parseFirstLine())
 			return (this->_error_num);
 		this->_line = "";
@@ -99,19 +106,11 @@ int	Header::parseInput(std::string &buffer)
 			return (0);
 		}
 		if (getHeaderName(this->_line, header_name))
-		{
-			this->_error_verbose = "Invalid header line";
-			this->_error_num = 400;
-			this->_line = "";
-			return (this->_error_num);
-		}
+			return (this->_fillError(400, "Invalid header line"));
 		if (this->_line.size() > HEADER_MAX_SIZE)
-		{
-			this->_error_verbose = "The " + header_name + "header was too large";
-			this->_error_num = 431;
-			this->_line = "";
-			return (this->_error_num);
-		}
+			return (this->_fillError(431, "The " + header_name + " header was too large"));
+		while (this->_line[0] == 32 || this->_line[0] == 9)
+			this->_line.erase(0,1);
 		header_value = this->_line;
 		if (this->_headers[header_name] != "")
 			this->_headers[header_name] += ", ";
@@ -119,7 +118,6 @@ int	Header::parseInput(std::string &buffer)
 		this->_line = "";
 	}
 	return (0);
-
 }
 
 
@@ -154,36 +152,24 @@ static void	nextSpace(std::string::size_type &idx, std::string &str)
 static	int	checkVersion(std::string &str)
 {
 	std::string::size_type idx = 0;
-	if (str.size() < 8)
-	{
+	if ((str.size() < 8) || str.find("HTTP/", idx) != 0)
 		return (1);
-	}
-	if (str.find("HTTP/", idx) != 0)
-	{
-		return (1);
-	}
 	idx = 5;
 	if (!isdigit(str[idx]))
-	{
 		return (1);
-	}
 	while (isdigit(str[idx]))
 		idx++;
+	if (idx == str.size())
+		return (0);
 	if (str[idx] != '.')
-	{
 		return(1);
-	}
 	idx++;
 	if(!isdigit(str[idx]))
-	{
 		return (1);
-	}
 	while (isdigit(str[idx]))
 		idx++;
 	if (idx != str.size())
-	{
 		return (1);
-	}
 	return (0);
 }
 
@@ -194,22 +180,14 @@ int	Header::parseFirstLine()
 	std::string				version;
 	nextSpace(idx, this->_line);
 	if ((this->_method = identifyMethod(this->_line.substr(0, idx))) < 0)
-	{
-		this->_error_num = 405;
-		this->_error_verbose = "Method Not Allowed";
-		return (this->_error_num);
-	}
+		return (this->_fillError(405, "Method Not Allowd"));
 	skipSpaces(idx, this->_line);
 	r_idx = idx;
 	nextSpace(r_idx, this->_line);
 	this->_uri = std::string(this->_line, idx, r_idx - idx);
 	version = this->_line.substr(r_idx + 1, std::string::npos);
 	if (checkVersion(version))
-	{
-		this->_error_num = 400;
-		this->_error_verbose = "Request line incorrect syntax";
-		return (this->_error_num);
-	}
+		return (this->_fillError(400, "Request line incorrect syntax"));
 	return(0);
 }
 
@@ -230,4 +208,10 @@ void	Header::printRequest() const
 	std::cout << "uri is: " << this->_uri << std::endl;
 	std::cout << "status is: " << this->getStatus() << std::endl;
 	std::cout << "error is: " << this->_error_num << std::endl;
+}
+
+
+std::string	Header::getHeader(std::string const &key)
+{
+	return (this->_headers[key]);
 }
