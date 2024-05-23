@@ -2,7 +2,9 @@
 #include <sstream>
 #include <algorithm>
 
-std::list<Host>		Host::_hostList;
+std::list<Host>			Host::_hostList;
+std::vector<CGIConfig>	Host::_cgis;
+std::vector<Location>	Host::_locations;
 
 Host::~Host(void) {}
 
@@ -17,6 +19,8 @@ Host::Host(const Host& copy) {
 	(void) copy;
 }
 
+/// @brief Append a h
+/// @param host 
 void	Host::addHost(Host& host) {
 	_hostList.push_back(host);
 }
@@ -41,10 +45,10 @@ Client*	Host::getClientByFd(int fd) const {
 }
 
 Location*	Host::getLocation(const std::string& path) {
-	std::map<std::string, Location>::iterator	pos = _locations.find(path);
-	if (pos == _locations.end())
+	std::map<std::string, Location*>::iterator	pos = _locationMap.find(path);
+	if (pos == _locationMap.end())
 		return (NULL);
-	return (&pos->second);
+	return (pos->second);
 }
 
 bool	Host::checkServerName(const std::string& name) const {
@@ -63,4 +67,133 @@ void	Host::removeClient(Client* client) {
 void	Host::addClient(Client* newClient) {
 	if (newClient)
 		this->_clients.push_back(newClient);
+}
+
+bool	CGIConfig::operator==(const CGIConfig& rhs) const {
+	if (this->exec != rhs.exec
+		|| this->root != rhs.root
+		|| !std::equal(&rhs.methods[0], &rhs.methods[METHOD_NBR], &this->methods[0]))
+		return (false);
+	return (true);
+}
+
+bool	Location::operator==(const Location& rhs) const {
+	if (!std::equal(rhs.addr_redir.begin(), rhs.addr_redir.end(), this->addr_redir.begin())
+		|| this->default_uri != rhs.default_uri
+		|| this->dir_listing != rhs.dir_listing
+		|| !std::equal(&rhs.methods[0], &rhs.methods[METHOD_NBR], &this->methods[0])
+		|| this->upload != rhs.upload
+		|| this->upload_root != rhs.upload_root)
+		return (false);
+	return (true);
+}
+
+void	Host::addCGIConfig(const std::deque<std::string>& names, CGIConfig& cgiConfig)
+{
+	std::vector<CGIConfig>::iterator pos;
+
+	pos = std::find(_cgis.begin(), _cgis.end(), cgiConfig);
+	if (pos == _cgis.end())
+		_cgis.insert(pos, cgiConfig);
+	for (std::deque<std::string>::const_iterator it = names.begin(); it != names.end(); it++)
+		_cgiMap[*it] = &*pos;
+}
+
+void	Host::addLocation(const std::deque<std::string>& names, Location& location)
+{
+	std::vector<Location>::iterator pos;
+
+	pos = std::find(_locations.begin(), _locations.end(), location);
+	if (pos == _locations.end())
+		_locations.insert(pos, location);
+	for (std::deque<std::string>::const_iterator it = names.begin(); it != names.end(); it++)
+		_locationMap[*it] = &*pos;
+}
+
+void	Host::printProperties(std::ostream& os) const
+{
+	os << "	Names :";
+	for (std::vector<std::string>::const_iterator it = _server_names.begin(); \
+		it != _server_names.end(); it++)
+		os << " " << *it;
+	os << std::endl;
+	os << "	Max body size : " << _client_max_size << std::endl;
+	os << "	Error dir : " << _dir_errors << std::endl;
+	
+}
+
+void	Host::printShort(std::ostream& os) const
+{
+	printProperties(os);
+	os << "	Locations :";
+	for (std::map<std::string, Location*>::const_iterator it = _locationMap.begin();\
+			it != _locationMap.end(); it++)
+		os << " " << it->first;
+	os << std::endl;
+	os << "	CGIs :";
+	for (std::map<std::string, CGIConfig*>::const_iterator it = _cgiMap.begin();\
+			it != _cgiMap.end(); it++)
+		os << " " << it->first;
+	os << std::endl;
+	os << "	Clients (" << _clients.size() << ") :";
+	// for (std::list<Client*>::const_iterator it = _clients.begin(); it != _clients.end(); it++)
+		// os << " " << (*it ? (**it).getfd() : -2);
+	os << std::endl;
+}
+
+void	Host::printFull(std::ostream& os) const
+{
+	printProperties(os);
+	os << "	Locations :" << std::endl;
+	for (std::map<std::string, Location*>::const_iterator it = _locationMap.begin();\
+			it != _locationMap.end(); it++)
+		os << "	  ->" << it->first << std::endl << it->second;
+	os << "	CGIs :";
+	for (std::map<std::string, CGIConfig*>::const_iterator it = _cgiMap.begin();\
+			it != _cgiMap.end(); it++)
+		os << "	  ->" << it->first << std::endl << it->second;
+	os << "	Clients (" << _clients.size() << ") :" << std::endl;
+	// for (std::list<Client*>::const_iterator it = _clients.begin(); it != _clients.end(); it++)
+	// {
+		// if (*it)
+			// os << "	  ->" << (**it).getfd() << std::endl << **it;
+		// else
+			// os << "	  => (null)" << std::endl;
+	// }
+	os << std::endl;
+}
+
+std::ostream&	operator<<(std::ostream& os, const Location& location)
+{
+	os << "		root: " << location.root << std::endl;
+	os << "		default_uri: " << location.default_uri << std::endl;
+	os << "		dir_listing: " << location.dir_listing << std::endl;
+	os << "		upload: " << location.upload << std::endl;
+	if (location.upload)
+		os << "		upload_root: " << location.upload_root << std::endl;
+	os << "		allowed methods: ";
+	for (int i = 0; i < METHOD_NBR; i++)
+		os << (location.methods[i] ? METHOD_STR[i] : "");
+	os << std::endl;
+	os << "		redirections: \n";
+	for (std::map<int, std::string>::const_iterator it = location.addr_redir.begin();\
+			it != location.addr_redir.end(); it++)
+		os << "		  - " << it->first << " => " << it->second << std::endl;
+	return (os);
+}
+
+std::ostream&	operator<<(std::ostream& os, const CGIConfig& CGIConfig)
+{
+	os << "		root: " << CGIConfig.root << std::endl;
+	os << "		exec_path: " << CGIConfig.exec << std::endl;
+	os << "		allowed methods: ";
+	for (int i = 0; i < METHOD_NBR; i++)
+		os << (CGIConfig.methods[i] ? METHOD_STR[i] : "");
+	os << std::endl;
+	return (os);
+}
+std::ostream&	operator<<(std::ostream& os, const Host& host)
+{
+	host.printShort(os);
+	return (os);
 }

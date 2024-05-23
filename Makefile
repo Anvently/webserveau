@@ -13,7 +13,7 @@ OBJS_FOLDER	=	.objs/
 
 OBJS_TFOLDER	= .objs_test/
 
-SRCS_FILES	=	main.cpp ILogger.cpp IParseConfig.cpp Host.cpp
+SRCS_FILES	=	main.cpp ILogger.cpp IParseConfig.cpp Host.cpp Header.cpp format.cpp
 SRCS_FTEST	= 	mainLouis.cpp Header.cpp
 
 SRCS	=	$(addprefix $(SRCS_FOLDER), $(SRCS_FILES))

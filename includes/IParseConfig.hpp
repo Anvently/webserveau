@@ -12,9 +12,13 @@
 
 //Parse config file into host vector
 
+int	getInt(std::string &str, int base, int &res);
+
 class IParseConfig
 {
 	private:
+
+		typedef void (*handleTokenFunc)(std::stringstream&, const std::string& token, void *obj);
 
 		virtual ~IParseConfig() = 0;
 
@@ -22,6 +26,7 @@ class IParseConfig
 		static int				_lineNbr;
 		static int				_lineNbrEndOfBlock;
 		static std::string		_lineBuffer;
+
 
 		static bool				checkFilePath(const char* path);
 		static int				openFile(const char* path);
@@ -34,31 +39,29 @@ class IParseConfig
 		static inline bool			checkSemiColon(std::istream& istream);
 
 		static void				parseHostName(std::istream& istream, Host& host);
-		static void				parseValues(std::istream& istream, std::deque<std::string>& words, int maxNbr);
+		template <typename T>
+		static void				parseValues(std::istream& istream, T& words, int maxNbr = INT32_MAX);
 
-		// static void				parseEscape(std::istream& istream);
+		static void				parseBlock(std::stringstream& blockStream, void* obj, handleTokenFunc handler);
+		// static void				parseHostBlock(std::stringstream& hostBlock, Host& host);
 
-		static void				parseHostBlock(std::stringstream& hostBlock, Host& host);
-		static void				parseLocationBlock(std::istream& locationBlock, Location& location);
-		static void				parseCGIConfigBlock(std::istream& cgiStream, CGIConfig& cgiConfig);
+		static void				handleConfigToken(const std::string& token);
+		static void				handleHostToken(std::stringstream& istream, const std::string& token, void* hostPtr);
+		static void				handleCGIConfigToken(std::stringstream& istream,  const std::string& token, void* CGIConfigPtr);
+		static void				handleLocationToken(std::stringstream& istream, const std::string& token, void* locationPtr);
 
-		static void				handleToken(std::stringstream& istream, const std::string& token, Host& host);
+		static void				parseHost(std::istream& istream);
 		static void				parseLocation(std::stringstream& istream, Host& host);
 		static void				parseCGIConfig(std::stringstream& istream, Host& host);
+
 		static void				parsePort(std::istream& istream, Host& host);
-		static void				parseHost(std::istream& istream, Host& host);
 		static void				parseServerName(std::istream& istream, Host& host);
 		static void				parseBodyMaxSize(std::istream& istream, Host& host);
-		
-		static void				handleLocationToken(std::istream& istream, const std::string& token, Location& location);
-		static void				parseAllowedMethods(std::istream& istream, bool (&dest)[METHODS_NBR]);
+		static void				parseAllowedMethods(std::istream& istream, bool (&dest)[METHOD_NBR]);
 		static void				parseRedirection(std::istream& istream, Location& location);
-
-		static void				handleCGIConfigToken(std::istream& istream,  const std::string& token, CGIConfig& location);
-
-		static void				parsePath(std::istream& istream, std::string& dest);
-		static void				parseBoolean(std::istream& istream, bool& dest);
-		static void				parseUri(std::istream& istream, std::string& dest);
+		static void				parsePath(std::istream& istream, std::string& dest, const char* id = NULL);
+		static void				parseBoolean(std::istream& istream, bool& dest, const char* id = NULL);
+		static void				parseUri(std::istream& istream, std::string& dest, const char* id = NULL);
 
 	public:
 
@@ -178,5 +181,26 @@ class IParseConfig
 		};
 		
 };
+
+/// @brief Parse ```maxNbr``` words in ```istream``` and store them into a container 
+/// ```words``` of ```std::string```
+/// @param istream 
+/// @param words 
+/// @param maxNbr 
+template <typename T>
+void	IParseConfig::parseValues(std::istream& istream, T& words, int maxNbr)
+{
+	std::string	word;
+	int			i = 0, ret = 0;
+
+	do
+	{
+		word.clear();
+		ret = getNextWord(istream, word);
+		if (ret == 0)
+			words.push_back(word);
+		i++;
+	} while (ret == 0 && i < maxNbr);
+}
 
 #endif // ICONFIG_HPP

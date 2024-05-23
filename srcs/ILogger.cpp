@@ -103,12 +103,19 @@ void	ILogger::LogStream::colorize(const char* code, int lvl) const
 	}
 }
 
-inline void	ILogger::print(std::string* param, int lvl, int len)
+inline void	ILogger::printCStr(va_list* args, int lvl)
 {
+	const char*	str = va_arg(*args, const char*);
+	ILogger::_logStream.print(str, lvl);
+}
+
+inline void	ILogger::printTruncStr(va_list* args, int lvl, int len)
+{
+	std::string*	var = va_arg(*args, std::string*);
 	if (len >= 0)
-		ILogger::_logStream.print((param ? (*param).substr(0, len) : "(NULL)"), lvl);
+		ILogger::_logStream.print((var ? (*var).substr(0, len) : "(NULL)"), lvl);
 	else
-		ILogger::_logStream.print((param ? *param : "(NULL)"), lvl);
+		ILogger::_logStream.print((var ? *var : "(NULL)"), lvl);
 }
 
 int	ILogger::LogStream::getNbr(void) const
@@ -164,14 +171,14 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 				
 				case 's':
 					if (*(format + 2) == 's')
-						print<std::string*>(args, lvl);
+						printTruncStr(args, lvl);
 					else if (*(format + 2) == 'h')
-						print<std::string*>(args, lvl, 10);
+						printTruncStr(args, lvl, 10);
 					else if (*(format + 2) == 'l')
-						print<std::string*>(args, lvl, 20);
+						printTruncStr(args, lvl, 20);
 					else
 					{
-						print<char*>(args, lvl);
+						printCStr(args, lvl);
 						break;
 					}
 					++format;
@@ -195,6 +202,18 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 					else
 						break;
 					++format;
+					break;
+
+				case 'H':
+					print<Host*>(args, lvl);
+					break;
+				
+				case 'L':
+					print<Location*>(args, lvl);
+					break;
+
+				case 'C':
+					print<CGIConfig*>(args, lvl);
 					break;
 
 				default:

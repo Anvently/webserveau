@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <list>
 #include <iomanip>
+#include <Host.hpp>
 
 #define TERM_CL_RED "\033[31m"
 #define TERM_CL_GREEN "\033[32m"
@@ -140,14 +141,19 @@ class ILogger
 		static inline void			printTimestamp(int level);
 
 		static void					parseFormat(const char* format, va_list* args, int lvl);
+		
+		template <typename T>
+		static inline void			print(T param, int lvl);
+		template <typename T>
+		static inline void			print(T* param, int lvl);
+		// static inline void			print(Host* param, int lvl, int len = -1);
+		// static inline void			print(Location* param, int lvl, int len = -1);
+		// static inline void			print(CGIConfig* param, int lvl, int len = -1);
 
 		template <typename T>
-		static inline void			print(T param, int lvl, int len = -1);
-
-		static inline void			print(std::string* param, int lvl, int len = -1);
-
-		template <typename T>
-		static inline void			print(va_list* args, int lvl, int len = -1);
+		static inline void			print(va_list* args, int lvl);
+		static inline void			printCStr(va_list* args, int lvl);
+		static inline void			printTruncStr(va_list* args, int lvl, int len = -1);
 
 		static bool					isInit;
 
@@ -211,16 +217,24 @@ void	ILogger::LogStream::print(const T& param, int lvl) const
 }
 
 template <typename T>
-inline void	ILogger::print(va_list* args, int lvl, int len)
+inline void	ILogger::print(va_list* args, int lvl)
 {
 	T	var = va_arg(*args, T);
-	print(var, lvl, len);
+	print(var, lvl);
 }
 
 template <typename T>
-inline void	ILogger::print(T param, int lvl, int len)
+inline void	ILogger::print(T* param, int lvl)
 {
-	(void)len;
+	if (param == NULL)
+		ILogger::_logStream.print("(NULL)", lvl);
+	else
+		ILogger::_logStream.print(*param, lvl);
+}
+
+template <typename T>
+inline void	ILogger::print(T param, int lvl)
+{
 	ILogger::_logStream.print(param, lvl);
 }
 

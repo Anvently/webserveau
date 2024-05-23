@@ -30,6 +30,7 @@ typedef	struct s_client {
 	char			addr_str[32];
 	char			port_str[16];
 	int				nbr_request;
+	char			buffer_out[256];
 }				t_client;
 
 int	error(char *str, t_client* clients, int passive_socket)
@@ -149,6 +150,24 @@ int	response_200(t_client* client)
 	return (0);
 }
 
+int	response_file(int epollfd, t_client* client)
+{
+	struct epoll_event ev;
+	FILE*				file;
+
+	file = fopen("response", "r");
+	if (file == NULL)
+		return (-1);
+	ev.data.ptr = client->buffer_out;
+	ev.events |= EPOLLIN;
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, file->_fileno, &ev)) {
+		perror("error: ");
+		printf("Cannot add file to epoll\n");
+		return (1);
+	}
+	return (0);
+}
+
 // int	response_php(t_client* client)
 // {
 // 	char**	args = {"-r", "echo \"Hello world\\n\""};
@@ -156,8 +175,17 @@ int	response_200(t_client* client)
 
 // 	return (0);
 // }
+\
+int	read_file(int epollfd, int filefd, void* buffer_out)
+{
+	(void) epollfd;
+	(void) filefd;
+	(void) buffer_out;
+	printf("Reading from file\n");
+	return (0);
+}
 
-int	read_client(t_client* client)
+int	read_client(int epollfd, t_client* client)
 {
 	int		nread;
 	char	buffer[1024] = {0} ;
@@ -175,12 +203,28 @@ int	read_client(t_client* client)
 	buffer[nread] = '\0';
 	printf("%d bytes were read from client (fd = %d / %s): %s", nread, client->fd, client->addr_str, buffer);
 	fflush(stdout);
-	if (client->nbr_request == 0)
-		response_301(client);
-	else
-		response_200(client);
+	response_file(epollfd, client);
 	client->nbr_request++;
 	return(0);
+}
+
+int	write_client(t_client* client, int epollfd)
+{
+	int		nwrite;
+	struct epoll_event ev;
+	
+	if (client->buffer_out[0] == -1) //If nothing left to write
+	{
+		ev.data.fd = client->fd;
+		ev.events = EPOLLIN | EPOLLHUP;
+		epoll_ctl(epollfd, EPOLL_CTL_MOD, client->fd, &ev);
+	}
+	else if (client->buffer_out[0] == '\0')
+		return (0);
+	nwrite = write(client->fd, client->buffer_out, strlen(client->buffer_out));
+	if (nwrite < 0)
+		return (nwrite);
+	return (0);
 }
 
 void	print_clients(t_client* clients)
@@ -237,16 +281,22 @@ int	event_loop(t_client* clients, int epollfd, int passive_sock)
 				for (index = 0; index < NBR_CLIENTS && clients[index].fd != events[i].data.fd; index++);
 				if (index == NBR_CLIENTS)
 				{
-					printf("event (%u) from unkown client (fd %d)\n", events[i].events, events[i].data.fd);
-					error(NULL, clients, passive_sock);
+					read_file(epollfd, events[i].events, events[i].data.ptr);
+					// printf("event (%u) from unkown client (fd %d)\n", events[i].events, events[i].data.fd);
+					// error(NULL, clients, passive_sock);
 				}
 				// printf("Client index = %d\n", index);
 				if (events[i].events & EPOLLHUP)
 					connection_close_client(&clients[index]);
 				else if (events[i].events & EPOLLIN)
 				{
-					if (read_client(&clients[index]) < 0)
+					if (read_client(epollfd, &clients[index]) < 0)
 						error("reading from client", clients, passive_sock);
+				}
+				else if (events[i].events & EPOLLOUT)
+				{
+					if (write_client(&clients[index], epollfd) < 0)
+						error("writing from client", clients, passive_sock);
 				}
 			}
 		}
