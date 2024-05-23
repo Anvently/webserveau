@@ -8,10 +8,12 @@
 #include <string>
 // #include <Client.hpp>
 
+#define METHODS_NBR 3
+
 class IParseConfig;
 class Client;
 
-typedef struct location
+struct Location
 {
 	std::string	root;
 	bool		methods[3]; //GET-POST-DELETE
@@ -23,17 +25,14 @@ typedef struct location
 
 	bool	redirection;
 	std::map<int, std::string>	addr_redir;
+};
 
-	std::string	cgi_exec; //example '/bin/bash'
-
-}	t_location;
-
-typedef struct cgi_loc
+struct CGIConfig
 {
-	std::string	root;
-	bool		methods[3];
 	std::string	exec; //example '/bin/bash'
-} cgi_loc;
+	std::string	root;
+	bool		methods[METHODS_NBR]; //GET-POST-DELETE
+};
 
 
 class	Host {
@@ -41,11 +40,6 @@ class	Host {
 	private:
 
 		friend class IParseConfig;
-
-		Host() {} friend class IParseConfig; //Throw an exception if block is invalid
-		//Construct from what ?
-		Host(Host &Copy);
-		~Host();
 
 		Host	&operator=(Host &rhs);
 		
@@ -60,25 +54,30 @@ class	Host {
 		int								_client_max_size;
 		std::string						_dir_errors;
 		std::vector<std::string>		_server_names;
-		std::map<std::string, location>	_locations;
-		cgi_loc							_php_loc;
-		cgi_loc							_py_loc;
-		std::list<Client*>				_Clients; //<fd, Client> ?
+		std::map<std::string, Location>	_locations;
+		CGIConfig						_php_loc;
+		CGIConfig						_py_loc;
+		std::list<Client*>				_clients; //<fd, Client> ?
 		// a log file per Host ?
 
 	public:
 
-		static int						addHost(Host& host);
+		Host(); //Throw an exception if block is invalid
+		//Construct from what ?
+		Host(const Host &Copy);
+		~Host();
 
-		std::string	getPort() const;
+		static void						addHost(Host& host);
+
+		int	getPort() const;
 		int	getMaxSize() const;
 		std::string	getHost() const;
-		Client	*getClient(int fd);
-		location	&getLocation(std::string const &path) const; //return the "/" loc if no match
+		Client	*getClientByFd(int fd) const;
+		Location*	getLocation(std::string const &path); //return the "/" loc if no match
 		bool	checkServerName(std::string const &name) const; // check if the name refers to a server_name
 
-		void	removeClient(int fd); //remove the Client associated with fd
-		void	addClient(int fd, Client *newClient);
+		void	removeClient(Client*); //remove the Client associated with fd
+		void	addClient(Client *newClient);
 
 };
 

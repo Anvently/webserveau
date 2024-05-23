@@ -6,6 +6,15 @@ std::map<std::string, std::list<std::ofstream*>::iterator>	ILogger::_fileTable;
 ILogger::LogStream			ILogger::_logStream;
 std::time_t					ILogger::_startTime = time(NULL);
 bool						ILogger::isInit = false;
+const char*					ILogger::colors[LOG_LVL_MAX + 1] = {
+								TERM_CL_WHITE, //0 - Ignore level
+								TERM_CL_RED, //Error
+								TERM_CL_YELLOW, //Warning
+								TERM_CL_GREEN, //Info
+								TERM_CL_MAGENTA, //Debug
+								TERM_CL_WHITE //Verbose
+};
+
 
 ILogger::ILogger(void) {}
 
@@ -96,7 +105,10 @@ void	ILogger::LogStream::colorize(const char* code, int lvl) const
 
 inline void	ILogger::print(std::string* param, int lvl, int len)
 {
-	ILogger::_logStream.print((param ? *param : "(NULL)"), lvl, len);
+	if (len >= 0)
+		ILogger::_logStream.print((param ? (*param).substr(0, len) : "(NULL)"), lvl);
+	else
+		ILogger::_logStream.print((param ? *param : "(NULL)"), lvl);
 }
 
 int	ILogger::LogStream::getNbr(void) const
@@ -154,10 +166,12 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 					if (*(format + 2) == 's')
 						print<std::string*>(args, lvl);
 					else if (*(format + 2) == 'h')
-						print<std::string*>(args, lvl);
+						print<std::string*>(args, lvl, 10);
+					else if (*(format + 2) == 'l')
+						print<std::string*>(args, lvl, 20);
 					else
 					{
-						print<char*>(args, lvl, 10);
+						print<char*>(args, lvl);
 						break;
 					}
 					++format;

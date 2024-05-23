@@ -105,7 +105,7 @@ class ILogger
 			const LogStream&						operator<<(const T& param) const;
 
 			template<typename T>
-			void									print(const T& param, int lvl, int len = -1) const;
+			void									print(const T& param, int lvl) const;
 
 			void									colorize(const char* code, int lvl) const;
 
@@ -153,6 +153,8 @@ class ILogger
 
 		static void					initDefault(void);
 
+		static const char*			colors[LOG_LVL_MAX + 1];
+
 	public:
 
 		static void	log(int lvl, const char *format, ...);
@@ -186,15 +188,6 @@ class ILogger
 #define LOGD(format, ...) ILogger::log(LOG_DEBUG, format"\n" __VA_OPT__(,) __VA_ARGS__)
 #define LOGV(format, ...) ILogger::log(LOG_VERBOSE, format"\n" __VA_OPT__(,) __VA_ARGS__)
 
-static const char*	colors[LOG_LVL_MAX + 1] = {
-						TERM_CL_WHITE, //0 - Ignore level
-						TERM_CL_RED, //Error
-						TERM_CL_YELLOW, //Warning
-						TERM_CL_GREEN, //Info
-						TERM_CL_MAGENTA, //Debug
-						TERM_CL_WHITE //Verbose
-};
-
 template<typename T>
 const ILogger::LogStream&	ILogger::LogStream::operator<<(const T& param) const
 {
@@ -206,14 +199,12 @@ const ILogger::LogStream&	ILogger::LogStream::operator<<(const T& param) const
 }
 
 template<typename T>
-void	ILogger::LogStream::print(const T& param, int lvl, int len) const
+void	ILogger::LogStream::print(const T& param, int lvl) const
 {
 	for (std::list<ILogger::LogStream::LogStreamEntry>::const_iterator it = _streams.begin(); it !=  _streams.end(); it++)
 	{
 		if ((lvl == -1 && it->file) || lvl == 0 || (lvl > 0 && it->levels[lvl - 1]))
 		{
-			if (len >= 0)
-				it->os << std::setw(len);
 			it->os << param;
 		}
 	}
@@ -229,7 +220,8 @@ inline void	ILogger::print(va_list* args, int lvl, int len)
 template <typename T>
 inline void	ILogger::print(T param, int lvl, int len)
 {
-	ILogger::_logStream.print(param, lvl, len);
+	(void)len;
+	ILogger::_logStream.print(param, lvl);
 }
 
 #endif

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <deque>
+#include <stdint.h>
 
 //Parse config file into host vector
 
@@ -19,37 +20,41 @@ class IParseConfig
 
 		static std::ifstream	_fileStream;
 		static int				_lineNbr;
-		static int				_lineNbrFile;
+		static int				_lineNbrEndOfBlock;
 		static std::string		_lineBuffer;
 
 		static bool				checkFilePath(const char* path);
 		static int				openFile(const char* path);
 		
-
-		// static std::string		getNextServerBlock(void);
-
-		static int				parseWord(std::istream& istream, std::string& word);
-		static void				parseValues(std::istream& istream, std::deque<std::string>& words, int maxNbr = INT32_MAX);
-		static void				parseQuote(std::istream& istream, std::string& dest);
-		static void				parseComment(std::istream& istream);
-		// static void				parseEscape(std::istream& istream);
+		static int					getNextWord(std::istream& istream, std::string& word);
+		static std::stringstream&	getNextBlock(std::istream& istream, std::stringstream& ostream);
+		static inline void			skipSpace(std::istream& istream);
+		static void					skipComment(std::istream& istream);
+		static void					parseQuote(std::istream& istream, std::string& dest);
+		static inline bool			checkSemiColon(std::istream& istream);
 
 		static void				parseHostName(std::istream& istream, Host& host);
-		static std::stringstream&	getNextBlock(std::istream& istream, std::stringstream& ostream);
+		static void				parseValues(std::istream& istream, std::deque<std::string>& words, int maxNbr);
 
-		static void				parseHostBlock(std::istream& hostBlock, Host& host);
-		static void				parseLocationBlock(std::istream& locationBlock, t_location& location);
+		// static void				parseEscape(std::istream& istream);
 
-		static void				handleToken(std::istream& istream, const std::string& token, Host& host);
-		static void				parseLocation(std::istream& istream, Host& host);
+		static void				parseHostBlock(std::stringstream& hostBlock, Host& host);
+		static void				parseLocationBlock(std::istream& locationBlock, Location& location);
+		static void				parseCGIConfigBlock(std::istream& cgiStream, CGIConfig& cgiConfig);
+
+		static void				handleToken(std::stringstream& istream, const std::string& token, Host& host);
+		static void				parseLocation(std::stringstream& istream, Host& host);
+		static void				parseCGIConfig(std::stringstream& istream, Host& host);
 		static void				parsePort(std::istream& istream, Host& host);
 		static void				parseHost(std::istream& istream, Host& host);
 		static void				parseServerName(std::istream& istream, Host& host);
 		static void				parseBodyMaxSize(std::istream& istream, Host& host);
+		
+		static void				handleLocationToken(std::istream& istream, const std::string& token, Location& location);
+		static void				parseAllowedMethods(std::istream& istream, bool (&dest)[METHODS_NBR]);
+		static void				parseRedirection(std::istream& istream, Location& location);
 
-		static void				handleLocationToken(std::istream& istream, const std::string& token, t_location& location);
-		static void				parseAllowedMethods(std::istream& istream, t_location& location);
-		static void				parseRedirection(std::istream& istream, t_location& location);
+		static void				handleCGIConfigToken(std::istream& istream,  const std::string& token, CGIConfig& location);
 
 		static void				parsePath(std::istream& istream, std::string& dest);
 		static void				parseBoolean(std::istream& istream, bool& dest);
@@ -59,59 +64,117 @@ class IParseConfig
 
 		static int				parseConfigFile(const char* path);
 
-		class FileException : public std::exception {
+		class IParseConfigException : public std::exception {
+			public:
+				virtual const char*	what(void) const throw() = 0;
+		};
+
+		class FileException : public IParseConfigException {
 			public:
 				virtual const char*	what(void) const throw() = 0;
 		};
 
 		class InvalidFileTypeException : public FileException {
 			public:
-				virtual const char*	what(void) const throw();
+				virtual const char*	what(void) const throw() {
+					return ("invalid config file type");
+				}
 		};
 
 		class FileOpenException : public FileException {
 			public:
-				virtual const char*	what(void) const throw();
+				virtual const char*	what(void) const throw() {
+					return ("could not open config file");
+				}
 		};
 
-		class FileStreamException : public std::exception {
+		class StreamException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) const throw();
+				virtual const char*	what(void) const throw() {
+					return ("error with the stream");
+				}
 		};
 
-		class UnclosedQuoteException : public std::exception {
+		class UnclosedQuoteException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) const throw();
+				virtual const char*	what(void) const throw() {
+					return ("unclosed quotes");
+				}
 		};
 
-		class UnclosedBlockException : public std::exception {
+		class UnclosedBlockException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) const throw();
+				virtual const char*	what(void) const throw() {
+					return ("block has unclosed braces");
+				}
 		};
 
-		class UnexpectedBraceException : public std::exception {
+		class UnexpectedBraceException : public IParseConfigException {
 			public:
-				virtual const char* what(void) const throw();
+				virtual const char* what(void) const throw() {
+					return ("closing brace without prior opening brace");
+				}
 		};
 
-		class LastBlockException : public std::exception {
+		class LastBlockException : public IParseConfigException {
 			public:
-				virtual const char* what(void) const throw();
+				virtual const char* what(void) const throw() {
+					return ("last block reached");
+				}
 		};
 
-		class MissingSemicolonException : public std::exception {
+		class MissingSemicolonException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) const throw();
+				virtual const char*	what(void) const throw() {
+					return ("missing semicolon (`;')");
+				}
 		};
 
-		class UnexpectedTokenException : public std::exception {
+		class MissingOpeningBraceException : public IParseConfigException {
 			public:
-				virtual const char*	what(void) const throw();
+				virtual const char*	what(void) const throw() {
+					return ("missing opening brace `{'");
+				}
 		};
 
-		class UnknownTokenException : public std::exception {
+		class UnexpectedTokenException : public IParseConfigException {
+			private:
+				const std::string	message;
 			public:
-				virtual const char*	what(void) const throw();
+				UnexpectedTokenException(const std::string& param)
+					: message("unexpected token (`" + param + "')") {}
+				virtual ~UnexpectedTokenException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
+		};
+
+		class MissingTokenException : public IParseConfigException {
+			private:
+				const std::string	message;
+			public:
+				MissingTokenException(const std::string& param)
+					: message("missing token or field (`" + param + "')") {}
+				virtual ~MissingTokenException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
+		};
+
+		class UnknownTokenException : public IParseConfigException {
+			private:
+				const std::string	message;
+			public:
+				UnknownTokenException(const std::string& param)
+					: message("unknown token (`" + param + "')") {}
+				virtual ~UnknownTokenException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
+		};
+
+		class TooManyValuesException : public IParseConfigException {
+			private:
+				const std::string	message;
+			public:
+				TooManyValuesException(const std::string& param)
+					: message("too many values for given token (`" + param + "')") {}
+				virtual ~TooManyValuesException(void) throw() {}
+				virtual const char*	what(void) const throw() {return (message.c_str());}
 		};
 		
 };

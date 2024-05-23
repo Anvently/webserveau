@@ -8,7 +8,7 @@ username = form["first_name"].value
 emailaddress = form["last_name"].value
  
 print("Content-type:text/html\r\n\r\n")
- 
+
 print("<html>")
 print("<head>")
 print("<title> MY FIRST CGI FILE </title>")

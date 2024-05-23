@@ -17,7 +17,7 @@ enum {GET, POST, DELETE};
 enum {COMPLETE, ONGOING, NEW};
 
 
-class Header{
+class Header {
 	private:
 		int									_method; // -1 if the method is invalid/unknown
 		std::string							_uri;
@@ -37,8 +37,6 @@ class Header{
 		std::string							_current_value;
 
 		int	_fillError(int error, std::string const &verbose);
-
-
 
 	public:
 
