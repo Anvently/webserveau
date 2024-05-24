@@ -54,6 +54,13 @@ static void	initLogs(void)
 	ILogger::printLogConfig();
 }
 
+static int	cleanExit(int code) {
+
+	ListenServer::deleteServers();
+	ILogger::clearFiles();
+	return(code);
+}
+
 int	main(void)
 {
 	int	epollfd = 0, nbr_events;
@@ -63,11 +70,11 @@ int	main(void)
 	epollfd = epoll_create(1);
 	if (epollfd < 0) {
 		LOGE("Fatal error : could not create epoll");
-		return (1);
+		return (cleanExit(1));
 	}
 	IParseConfig::parseConfigFile("conf/template.conf");
 	if (ListenServer::getNbrServer() == 0)
-		return (0);
+		return (cleanExit(0));
 	ListenServer::startServers(epollfd);
 	while (1) {
 		nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
@@ -76,7 +83,5 @@ int	main(void)
 				break;
 		}
 	}
-	ListenServer::deleteServers();
-	ILogger::clearFiles();
-	return (0);
+	return (cleanExit(0));
 }
