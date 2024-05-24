@@ -58,12 +58,11 @@ class	Host {
 		// friend class	IParseConfig;
 
 		static std::list<Host>				_hostList;
-
 		static std::vector<Location>		_locations;
 		static std::vector<CGIConfig>		_cgis;
 
-		std::string							_name;
-		int									_port;
+		std::string							_addr;
+		std::string							_port;
 		int									_client_max_size;
 		std::string							_dir_errors;
 		std::vector<std::string>			_server_names;
@@ -85,16 +84,22 @@ class	Host {
 		~Host();
 
 		static void						addHost(Host& host);
+		static void						removeHost(Host& host);
 
-		int								getPort() const;
+		const std::string&				getPort() const;
 		int								getMaxSize() const;
-		std::string						getHost() const;
+		const std::string&				getAddr() const;
 		Client							*getClientByFd(int fd) const;
 		Location*						getLocation(std::string const &path); //return the "/" loc if no match
+		const std::vector<std::string>&	getServerNames(void) const;
+		std::list<Client*>::const_iterator	getClientListBegin(void) const;
+		std::list<Client*>::const_iterator	getClientListEnd(void) const;
 		bool							checkServerName(std::string const &name) const; // check if the name refers to a server_name
 
 		void							removeClient(Client*); //remove the Client associated with fd
 		void							addClient(Client *newClient);
+
+		void							shutdown(void);
 
 		void							printShort(std::ostream& os) const;
 		void							printFull(std::ostream& os) const;

@@ -1,7 +1,10 @@
 #include <iostream>
 #include <ILogger.hpp>
 #include <stdint.h>
+#include <sys/epoll.h>
 #include <IParseConfig.hpp>
+
+#define EPOLL_EVENT_MAX_SIZE 100
 
 // class Pigeon
 // {
@@ -51,31 +54,27 @@ static void	initLogs(void)
 
 int	main(void)
 {
+	int	epollfd = 0, nbr_events;
+	struct epoll_event	events[EPOLL_EVENT_MAX_SIZE];
+
 	initLogs();
-
-	// void*	pigeonPtr = new Pigeon();
-	// void*	zebrePtr = new Zebra();
-
-	// Zebra*	pigeonZebre = dynamic_cast<Zebra*>((Pigeon *)pigeonPtr);
-
-	// if (pigeonZebre == NULL)
-	// 	LOGE("FAILED");
-	// else
-	// 	LOGI("SUCCESS : %s", "");
-	// (void)zebrePtr;
-	// LOGI("size of uinptr = %d", sizeof(Zebra*));
-	// std::string buffer = "Hi this is! a test\n \nwdw\n\n";
-	// std::stringstream	stream(buffer);
-	// stream << '\0' << "defde ";
-	// while (stream.eof() == false)
-	// {
-		// std::string word;
-		// stream >> word;
-		// std::cout << word << '|';
-	// }
-	// Location*	loc = new CGIConfig();
-	// LOGD("%ss", loc->default_uri);
+	epollfd = epoll_create(1);
+	if (epollfd < 0) {
+		LOGE("Fatal error : could not create epoll");
+		return (1);
+	}
 	IParseConfig::parseConfigFile("conf/template.conf");
+	if (ListenServer::getNbrServer() == 0)
+		return (0);
+	ListenServer::startServers(epollfd);
+	while (1) {
+		nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
+		if (nbr_events) {
+			if (IControl::handleEpoll(events, nbr_events) < 0)
+				break;
+		}
+	}
+	ListenServer::closeServers();
 	ILogger::clearFiles();
 	return (0);
 }

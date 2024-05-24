@@ -37,7 +37,6 @@ std::stringstream&	IParseConfig::getNextBlock(std::istream& istream, std::string
 		_lineNbrEndOfBlock++;
 		start = _lineBuffer.begin();
 		end = _lineBuffer.end();
-		// LOGD("lineBuffer = %ss", &_lineBuffer);
 		for (it = start; it != end; it++)
 		{
 			if (isEscaped)
@@ -67,7 +66,6 @@ std::stringstream&	IParseConfig::getNextBlock(std::istream& istream, std::string
 				istream.seekg(istream.tellg() - std::distance(it, _lineBuffer.end()));
 			_lineNbrEndOfBlock--;
 		}
-		// if (it != _lineBuffer.end());
 		if (enclosedDepth != 0 || (enclosedDepth == 0 && (start != _lineBuffer.begin() || end != _lineBuffer.end())))
 		{
 			ostream << _lineBuffer.substr(std::distance(_lineBuffer.begin(), start), std::distance(start, end));
@@ -244,7 +242,7 @@ void	IParseConfig::parseHost(std::istream& istream)
 			tmp = hostStream.str().substr(hostStream.tellg());
 		else
 			tmp = "[End of block]";
-		LOGE("parsing host (%ss) configuration at line %d : %s\n -> ...%sl...", &host._name, _lineNbr, e.what(), &tmp);
+		LOGE("parsing host (%ss) configuration at line %d : %s\n -> ...%sl...", &host._addr, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
 	}
 }
@@ -272,7 +270,7 @@ void	IParseConfig::parseCGIConfig(std::stringstream& istream, Host& host)
 			tmp = CGIConfigStream.str().substr(CGIConfigStream.tellg());
 		else
 			tmp = "[End of block]";
-		LOGE("parsing host (%ss) cgi config at line %d : %s\n -> %sl", &host._name, _lineNbr, e.what(), &tmp);
+		LOGE("parsing host (%ss) cgi config at line %d : %s\n -> %sl", &host._addr, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
 	}
 }
@@ -301,7 +299,7 @@ void	IParseConfig::parseLocation(std::stringstream& istream, Host& host)
 			tmp = locationStream.str().substr(locationStream.tellg());
 		else
 			tmp = "[End of block]";
-		LOGE("parsing host (%ss) location at line %d : %s\n -> %sl", &host._name, _lineNbr, e.what(), &tmp);
+		LOGE("parsing host (%ss) location at line %d : %s\n -> %sl", &host._addr, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
 	}
 }
@@ -431,19 +429,21 @@ void	IParseConfig::handleLocationToken(std::stringstream& istream, const std::st
 
 void	IParseConfig::parsePort(std::istream& istream, Host& host)
 {
-	std::string word;
+	std::string	word;
+	int			port;
+
 	if (getNextWord(istream, word)) {
 		LOGE("Port missing");
 		return ;
 	}
-	if (getInt(word, 10, host._port))
+	if (getInt(word, 10, port))
 		LOGE("Invalid port");
 }
 
 void	IParseConfig::parseHostName(std::istream& istream, Host& host)
 {
 	std::string	word;
-	if (getNextWord(istream, host._name)) {
+	if (getNextWord(istream, host._addr)) {
 		LOGE("Host missing");
 		return;
 	}
