@@ -16,6 +16,7 @@ void	Request::trimSpace()
 
 std::string	Request::getHeader(std::string const &key)
 {
+	//needs to be modified !
 	return (this->_headers[key]);
 }
 

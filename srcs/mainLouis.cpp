@@ -15,14 +15,16 @@ int	main()
 				test += "Mozilla\n\r\n";
 				test +=	"11\r\n";
 				test += "Developer Network\r\n";
-				test += "0\r\n";
-				test += "\r\n";
-				test += "GET / HTTP1/1\r\n";
+	std::string	test2 = "2\r\n";
+				test2 += "ab\r\n";
+				test2 += "0\r\n";
+				test2 += "GET / HTTP1/1\r\n";
 
 req.parseHeaders(test);
 std::cout << test << std::endl;
 req.parseBody(test);
 std::cout << test << std::endl;
+req.parseBody(test2);
 
 std::cout << "-------------" << std::endl;
 req.printHeaders();
