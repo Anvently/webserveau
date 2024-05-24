@@ -29,6 +29,17 @@ void	Client::clearBuffers(void) {
 	}
 }
 
+std::list<Client>::iterator	Client::findClient(Client* client)
+{
+	std::list<Client>::iterator pos;
+	for (pos = _clientList.begin(); pos != _clientList.end(); pos++)
+	{
+		if (client == &*pos)
+			return (pos);
+	}
+	return (pos);
+}
+
 /// @brief Initialize a new client based on given socket.
 /// Given socket must refer to a valid socket that was previously
 /// returned via a call to ```accept()```.
@@ -54,10 +65,14 @@ Client*	Client::newClient(const ClientSocket& socket, ListenServer& listenServer
 /// or the listenServer for orphan client and simultaneously with deleting
 /// every reference to the client.
 /// @param  
-void	Client::deleteClient(Client& client)
+void	Client::deleteClient(Client* client)
 {
-	client.shutdownConnection();
-	_clientList.remove(client);
+	if (client == NULL)
+		return;
+	client->shutdownConnection();
+	std::list<Client>::iterator pos = findClient(client);
+	if (pos != _clientList.end())
+		_clientList.erase(pos);
 }
 
 int	Client::getfd(void) const {

@@ -1,8 +1,11 @@
 #include <ListenServer.hpp>
-
+#include <Host.hpp>
+#include <Client.hpp>
+#include <Request.hpp>
+#include <ILogger.hpp>
 
 //TODO : Not so sure how to handle socket creation and listening errors ?
-
+std::list<ListenServer>	ListenServer::_serverList;
 
 ListenServer::ListenServer()
 {
@@ -18,7 +21,6 @@ ListenServer::ListenServer(std::string const &hostAddr, std::string const &hostP
 
 ListenServer::~ListenServer()
 {
-	close(this->_sockFd); // Not sure it is needed?
 }
 
 /// @brief Add host server_names as keys in server's ```_hostMap``` if they are
@@ -89,10 +91,9 @@ ListenServer*	ListenServer::addServer(const std::string& hostAddr, const std::st
 		close(new_socket);
 		return (NULL);
 	}
-	// ListenServer	serverTmp(hostAddr, hostPort);
-	// serverTmp._sockFd = new_socket;
-	// _serverList.push_back(new_server);
-	ListenServer&	newServer = *_serverList.insert(_serverList.end(), {hostAddr, hostPort});
+	ListenServer	serverTmp(hostAddr, hostPort);
+	serverTmp._sockFd = new_socket;
+	ListenServer&	newServer = *_serverList.insert(_serverList.end(), serverTmp);
 	newServer._sockFd = new_socket;
 	return (&newServer);
 }
@@ -100,7 +101,7 @@ ListenServer*	ListenServer::addServer(const std::string& hostAddr, const std::st
 void	ListenServer::removeServer(const std::string& hostAddr, const std::string& hostPort)
 {
 	std::list<ListenServer>::iterator	it = findServer(hostAddr, hostPort);
-	if (it != _serverList.end());
+	if (it != _serverList.end())
 		removeServer(it);
 }
 
@@ -135,7 +136,7 @@ void	ListenServer::removeHost(Host* host) {
 /// Remove server if the host is the last one the server was refering to.
 /// @param host 
 void	ListenServer::unassignHost(Host* host) {
-	std::map<std::string, Host*>::const_iterator	mapIt;
+	std::map<std::string, Host*>::iterator	mapIt;
 	mapIt = _hostMap.find(host->getServerNames().at(0)); 
 	if (mapIt == _hostMap.end())
 		return;
@@ -149,7 +150,7 @@ void	ListenServer::unassignHost(Host* host) {
 		if (mapIt != _hostMap.end())
 			_hostMap.erase(mapIt);
 	}
-	Host::removeHost(*host);
+	Host::removeHost(host);
 	if (_hostMap.size() == 0)
 		removeServer(_ip, _port);
 }
@@ -242,7 +243,7 @@ Client*	ListenServer::acceptConnection(void) {
 		LOGE("Server %ss:%ss failed to accept a new client.", &_ip, &_port);
 		return (NULL);
 	}
-	Client*	newClient = Client::newClient(socket);
+	Client*	newClient = Client::newClient(socket, *this);
 	if (newClient == NULL) {
 		LOGE("Unexpected error when creating new client");
 		close(socket.fd);
@@ -267,7 +268,7 @@ Host*	ListenServer::bindClient(Client& client, const std::string& hostName)
 
 	it = _hostMap.find(hostName);
 	if (it == _hostMap.end())
-		it == _hostMap.begin();
+		it = _hostMap.begin();
 	it->second->addClient(&client);
 	_orphanClients.remove(&client);
 	return (it->second);

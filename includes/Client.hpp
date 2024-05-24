@@ -8,6 +8,7 @@
 #include <ListenServer.hpp>
 #include <ctime>
 #include <queue>
+#include <sys/socket.h>
 #include <stdint.h>
 
 
@@ -39,8 +40,6 @@ class	Client : public IObject
 		Client();
 		Client(const ClientSocket& socket, ListenServer& listenServer);
 		// Client(int fd, Host *host, Request *req, Response *resp);
-		virtual ~Client();
-		Client(const Client &Copy);
 
 		ClientSocket		_socket;
 
@@ -61,12 +60,18 @@ class	Client : public IObject
 
 		void	clearBuffers(void);
 
+		static std::list<Client>::iterator	findClient(Client* client);
+		
 		friend Client* ListenServer::acceptConnection(void);
+		
 
 	public:
 
+		Client(const Client &Copy);
+		virtual ~Client();
+
 		static Client*		newClient(const ClientSocket& socket, ListenServer& listenServer);
-		static void			deleteClient(Client& client);
+		static void			deleteClient(Client* client);
 
 		int					getfd() const;
 		Host*				getHost() const;

@@ -5,10 +5,6 @@
 #include <iterator>
 #include <algorithm>
 #include <iostream>
-#include <Host.hpp>
-#include <Client.hpp>
-#include <Request.hpp>
-#include <ILogger.hpp>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -21,12 +17,13 @@
 #include <unistd.h>
 #include <string>
 #include <string.h>
+#include <map>
 #include <IObject.hpp>
-
-#define MAX_CLIENT_NBR INT32_MAX
 
 class Client;
 class Host;
+
+#define MAX_CLIENT_NBR INT32_MAX
 
 class ListenServer : public IObject
 {

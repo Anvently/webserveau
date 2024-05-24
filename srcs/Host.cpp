@@ -19,15 +19,30 @@ Host::Host(const Host& copy) {
 	(void) copy;
 }
 
+std::list<Host>::iterator	Host::findHost(Host* host)
+{
+	std::list<Host>::iterator pos;
+	for (pos = _hostList.begin(); pos != _hostList.end(); pos++)
+	{
+		if (host == &*pos)
+			return (pos);
+	}
+	return (pos);
+}
+
 /// @brief Append a h
 /// @param host 
 void	Host::addHost(Host& host) {
 	_hostList.push_back(host);
 }
 
-void	Host::removeHost(Host& host) {
-	host.shutdown();
-	_hostList.remove(host);
+void	Host::removeHost(Host* host) {
+	if (host == NULL)
+		return;
+	host->shutdown();
+	std::list<Host>::iterator pos = findHost(host);
+	if (pos != _hostList.end())
+		_hostList.erase(pos);
 }
 
 const std::string&	Host::getPort(void) const {
@@ -39,9 +54,7 @@ int	Host::getMaxSize(void) const {
 }
 
 const std::string&	Host::getAddr(void) const {
-	std::stringstream	stream;
-	stream << this->_addr << ':' << this->_port;
-	return (stream.str());
+	return (this->_addr);
 }
 
 Client*	Host::getClientByFd(int fd) const {

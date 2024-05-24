@@ -484,7 +484,7 @@ void	IParseConfig::parseAllowedMethods(std::istream& istream, bool (&dest)[METHO
 	}
 	for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
 	{
-		int index = Header::getMethodIndex(*it);
+		int index = getMethodIndex(*it);
 		if (index < 0){
 			LOGE("Invalid method");
 			return;

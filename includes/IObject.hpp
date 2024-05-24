@@ -6,8 +6,8 @@ class IObject{
 
 	public:
 
-		IObject();
-		virtual ~IObject();
+		IObject() {}
+		virtual ~IObject() {}
 
 
 };

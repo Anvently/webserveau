@@ -25,12 +25,11 @@ static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
 std::string	generate_name(std::string &hostname);
 bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
+int	getMethodIndex(const std::string& method);
 
 class	Request
 {
 	private:
-
-
 
 		std::map<std::string, std::string>	_headers;
 		std::string							_formated_headers;
@@ -64,6 +63,7 @@ class	Request
 	public:
 
 		Request();
+		Request(const Request& copy);
 		~Request();
 
 		void		addHeader(std::string const &name, std::string const &value);
