@@ -1,5 +1,7 @@
 #include <IParseConfig.hpp>
 #include <sys/stat.h>
+#include <algorithm>
+#include <Header.hpp>
 
 std::ifstream	IParseConfig::_fileStream;
 std::string		IParseConfig::_lineBuffer;
@@ -202,51 +204,44 @@ int	IParseConfig::	getNextWord(std::istream& istream, std::string& word)
 	return (next);
 }
 
-/// @brief Parse ```maxNbr``` words in ```istream```
-/// @param istream 
-/// @param words 
-/// @param maxNbr 
-void	IParseConfig::parseValues(std::istream& istream, std::deque<std::string>& words, int maxNbr = INT32_MAX)
-{
-	std::string	word;
-	int			i = 0, ret = 0;
-
-	do
-	{
-		word.clear();
-		ret = getNextWord(istream, word);
-		if (ret == 0)
-			words.push_front(word);
-		i++;
-	} while (ret == 0 && i < maxNbr);
-}
-
-void	IParseConfig::parseHostBlock(std::stringstream& hostBlock, Host& host)
+void	IParseConfig::parseBlock(std::stringstream& blockStream, void* obj, handleTokenFunc handler)
 {
 	std::string				token;
 	int						ret;
-	
+
+	do
+	{
+		token.clear();
+		ret = getNextWord(blockStream, token);
+		if (ret == 0)
+			(*handler)(blockStream, token, obj);
+		else if (ret == EOF)
+			break;
+		else
+			throw (UnexpectedTokenException(token));
+		if (checkSemiColon(blockStream) == false)
+			throw (MissingSemicolonException());
+	} while (ret == 0);
+}
+
+void	IParseConfig::parseHost(std::istream& istream)
+{
+	Host				host;
+	std::stringstream	hostStream;
+
+	_lineNbrEndOfBlock = _lineNbr;
+	getNextBlock(istream, hostStream);
 	try
 	{
-		do
-		{
-			token.clear();
-			ret = getNextWord(hostBlock, token);
-			if (ret == 0)
-				handleToken(hostBlock, token, host);
-			else if (ret == EOF)
-				break;
-			else
-				throw (UnexpectedTokenException(token));
-			if (checkSemiColon(hostBlock) == false)
-				throw (MissingSemicolonException());
-		} while (ret == 0);
+		parseBlock(hostStream, &host, handleHostToken);
+		Host::addHost(host);
+		LOGI("New host !\n %H", &host);
 	}
 	catch (IParseConfigException& e)
 	{
 		std::string	tmp;
-		if (hostBlock.good())
-			tmp = hostBlock.str().substr(hostBlock.tellg());
+		if (hostStream.good())
+			tmp = hostStream.str().substr(hostStream.tellg());
 		else
 			tmp = "[End of block]";
 		LOGE("parsing host (%ss) configuration at line %d : %s\n -> ...%sl...", &host._name, _lineNbr, e.what(), &tmp);
@@ -256,16 +251,16 @@ void	IParseConfig::parseHostBlock(std::stringstream& hostBlock, Host& host)
 
 void	IParseConfig::parseCGIConfig(std::stringstream& istream, Host& host)
 {
-	std::deque<std::string>	locationsName;
+	std::deque<std::string>	cgiConfigNames;
 	CGIConfig				cgiConfig;
 
-	parseValues(istream, locationsName); //May need to check what happens gere
+	parseValues(istream, cgiConfigNames); //May need to check what happens gere
 	std::stringstream	CGIConfigStream;
 	_lineNbrEndOfBlock = _lineNbr;
 	getNextBlock(istream, CGIConfigStream);
-	std::string tmp = CGIConfigStream.str();
 	try {
-		parseCGIConfigBlock(CGIConfigStream, cgiConfig);
+		parseBlock(CGIConfigStream, &cgiConfig, handleCGIConfigToken);
+		host.addCGIConfig(cgiConfigNames, cgiConfig);
 	}
 	catch (const LastBlockException& e) {
 		throw (MissingOpeningBraceException());
@@ -293,7 +288,8 @@ void	IParseConfig::parseLocation(std::stringstream& istream, Host& host)
 	getNextBlock(istream, locationStream);
 	std::string tmp = locationStream.str();
 	try {
-		parseLocationBlock(locationStream, location);
+		parseBlock(locationStream, &location, handleLocationToken);
+		host.addLocation(locationsName, location);
 	}
 	catch (const LastBlockException& e) {
 		throw (MissingOpeningBraceException());
@@ -308,46 +304,6 @@ void	IParseConfig::parseLocation(std::stringstream& istream, Host& host)
 		LOGE("parsing host (%ss) location at line %d : %s\n -> %sl", &host._name, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
 	}
-}
-
-void	IParseConfig::parseLocationBlock(std::istream& locationBlock, Location& location)
-{
-	std::string				token;
-	int						ret;
-	
-	do
-	{
-		token.clear();
-		ret = getNextWord(locationBlock, token);
-		if (ret == 0)
-			handleLocationToken(locationBlock, token, location);
-		else if (ret == EOF)
-			break;
-		else
-			throw (UnexpectedTokenException(token));
-		if (checkSemiColon(locationBlock) == false)
-			throw (MissingSemicolonException());
-	} while (ret == 0);
-}
-
-void	IParseConfig::parseCGIConfigBlock(std::istream& cgiStream, CGIConfig& cgiConfig)
-{
-	std::string				token;
-	int						ret;
-	
-	do
-	{
-		token.clear();
-		ret = getNextWord(cgiStream, token);
-		if (ret == 0)
-			handleCGIConfigToken(cgiStream, token, cgiConfig);
-		else if (ret == EOF)
-			break;
-		else
-			throw (UnexpectedTokenException(token));
-		if (checkSemiColon(cgiStream) == false)
-			throw (MissingSemicolonException());
-	} while (ret == 0);
 }
 
 int	IParseConfig::openFile(const char* path)
@@ -368,25 +324,6 @@ int	IParseConfig::openFile(const char* path)
 	return (0);
 }
 
-void	IParseConfig::parseHostName(std::istream& istream, Host& host)
-{
-	std::string	word;
-	int			ret = 0;
-
-	ret = getNextWord(istream, word);
-	if (ret == EOF)
-		throw (LastBlockException());
-	else if (ret)
-		throw (UnexpectedTokenException(word));
-	host._name = word;
-	word.clear();
-	ret = getNextWord(istream, word);
-	if (ret == EOF)
-		throw (MissingOpeningBraceException());
-	else if (ret != '{')
-		throw (UnexpectedTokenException(word + "instead of {"));
-}
-
 /// @brief Open given file and try to parse server block, creating server/host 
 /// objects on the go. Object are created but server is not start yet.
 /// Exception generated by syntax error are catched and error message are printed.
@@ -397,43 +334,53 @@ void	IParseConfig::parseHostName(std::istream& istream, Host& host)
 /// error occured.
 int	IParseConfig::parseConfigFile(const char* path)
 {
+	int	ret;
 	if (openFile(path))
 		return (1);
-	while (1)
+	try
 	{
-		try
+		do
 		{
-			Host	host;
-			parseHostName(_fileStream, host);	
-			_lineNbrEndOfBlock = _lineNbr;
-			std::stringstream hostBlock;
-			getNextBlock(_fileStream, hostBlock);
-			parseHostBlock(hostBlock, host);
-			if (_fileStream.eof())
+			std::string 	token;
+			ret = getNextWord(_fileStream, token);
+			if (ret == 0)
+				handleConfigToken(token);
+			else if (ret == EOF)
 				break;
-		}
-		catch (const LastBlockException& e)
-		{
-			break;
-		}
-		catch (IParseConfigException& e)
-		{
-			std::string	tmp;
-			_fileStream.clear();
-			std::getline(_fileStream, tmp);
-			LOGE("parsing host at line %d : %s\n -> %sl", std::max(_lineNbr, _lineNbrEndOfBlock), e.what(), &tmp);
-			return (1);
-		}
+			else
+				throw (UnexpectedTokenException(token));
+			if (checkSemiColon(_fileStream) == false)
+				throw (MissingSemicolonException());
+		} while (ret == 0);
+	}
+	catch (const LastBlockException& e) {}
+	catch (IParseConfigException& e)
+	{
+		std::string	tmp;
+		_fileStream.clear();
+		std::getline(_fileStream, tmp);
+		LOGE("parsing host at line %d : %s\n -> %sl", std::max(_lineNbr, _lineNbrEndOfBlock), e.what(), &tmp);
+		return (1);
 	}
 	return (0);
 }
 
-void	IParseConfig::handleToken(std::stringstream& istream, const std::string& token, Host& host)
+void	IParseConfig::handleConfigToken(const std::string& token)
 {
+	if (token == "server")
+		parseHost(_fileStream);
+	else
+		throw (UnknownTokenException(token));
+}
+
+void	IParseConfig::handleHostToken(std::stringstream& istream, const std::string& token, void* hostPtr)
+{
+	Host&	host = *(Host*)hostPtr;
+
 	if (token == "listen")
 		parsePort(istream, host);
 	else if (token == "host")
-		parseHost(istream, host);
+		parseHostName(istream, host);
 	else if (token == "server_name")
 		parseServerName(istream, host);
 	else if (token == "error_pages")
@@ -448,20 +395,22 @@ void	IParseConfig::handleToken(std::stringstream& istream, const std::string& to
 		throw (UnknownTokenException(token));
 }
 
-void	IParseConfig::handleCGIConfigToken(std::istream& istream,  const std::string& token, CGIConfig& location)
+void	IParseConfig::handleCGIConfigToken(std::stringstream& istream,  const std::string& token, void* CGIConfigPtr)
 {
+	CGIConfig&	cgi = *(CGIConfig*)CGIConfigPtr;
 	if (token == "root")
-		parsePath(istream, location.root);
+		parsePath(istream, cgi.root);
 	else if (token == "methods")
-		parseAllowedMethods(istream, location.methods);
+		parseAllowedMethods(istream, cgi.methods);
 	else if (token == "exec")
-		parsePath(istream, location.exec);
+		parsePath(istream, cgi.exec);
 	else
 		throw (UnknownTokenException(token));
 }
 
-void	IParseConfig::handleLocationToken(std::istream& istream, const std::string& token, Location& location)
+void	IParseConfig::handleLocationToken(std::stringstream& istream, const std::string& token, void* locationPtr)
 {
+	Location&	location = *(Location*)locationPtr;
 	if (token == "root")
 		parsePath(istream, location.root);
 	else if (token == "methods")
@@ -482,103 +431,120 @@ void	IParseConfig::handleLocationToken(std::istream& istream, const std::string&
 
 void	IParseConfig::parsePort(std::istream& istream, Host& host)
 {
-	(void)host;
 	std::string word;
-	if (getNextWord(istream, word))
+	if (getNextWord(istream, word)) {
 		LOGE("Port missing");
-	else
-		LOGI("Port : %ss", &word);
+		return ;
+	}
+	if (getInt(word, 10, host._port))
+		LOGE("Invalid port");
 }
 
-void	IParseConfig::parseHost(std::istream& istream, Host& host)
+void	IParseConfig::parseHostName(std::istream& istream, Host& host)
 {
-	(void)host;
 	std::string	word;
-	if (getNextWord(istream, word))
+	if (getNextWord(istream, host._name)) {
 		LOGE("Host missing");
-	else
-		LOGI("Host : %ss", &word);
+		return;
+	}
 }
 
 void	IParseConfig::parseServerName(std::istream& istream, Host& host)
 {
-	(void)host;
-	std::deque<std::string>	serverNames;
-	parseValues(istream, serverNames);
-	if (serverNames.size() == 0)
+	parseValues(istream, host._server_names);
+	if (host._server_names.size() == 0) {
 		LOGE("Server name missing");
-	else
-	{
-		LOGI("Server names :");
-		for (std::deque<std::string>::iterator it = serverNames.begin(); it != serverNames.end(); it++)
-			LOGI("	- %ss", &*it);
+		return;
 	}
+	// else
+	// {
+	// 	LOGI("Server names :");
+	// 	for (std::vector<std::string>::iterator it = host._server_names.begin(); it != host._server_names.end(); it++)
+	// 		LOGI("	- %ss", &*it);
+	// }
 }
 
 void	IParseConfig::parseBodyMaxSize(std::istream& istream, Host& host)
 {
-	(void)host;
 	std::string word;
-	if (getNextWord(istream, word))
-		LOGE("Max body size is missing");
-	else
-		LOGI("Max body size : %ss", &word);
+	if (getNextWord(istream, word)) {
+		LOGE("Max body size missing");
+		return ;
+	}
+	if (getInt(word, 10, host._client_max_size))
+		LOGE("Invalid max body size");
 }
 
-void	IParseConfig::parseAllowedMethods(std::istream& istream, bool (&dest)[METHODS_NBR])
+void	IParseConfig::parseAllowedMethods(std::istream& istream, bool (&dest)[METHOD_NBR])
 {
-	(void)dest;
 	std::deque<std::string>	methods;
 	parseValues(istream, methods);
-	if (methods.size() == 0)
+	if (methods.size() == 0) {
 		LOGE("Method missing");
-	else
-	{
-		LOGI("Allowed methods :");
-		for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
-			LOGI("	- %ss", &*it);
+		return;
 	}
+	for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
+	{
+		int index = Header::getMethodIndex(*it);
+		if (index < 0){
+			LOGE("Invalid method");
+			return;
+		}
+		dest[index] = true;
+	}
+	// LOGI("Allowed methods :");
+	// for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
+	// 	LOGI("	- %ss", &*it);
 }
 
 void	IParseConfig::parseRedirection(std::istream& istream, Location& location)
 {
-	(void)location;
+	int	errorCode;
 	std::deque<std::string>	values;
+
 	parseValues(istream, values);
 	if (values.size() == 0)
 		LOGE("Empty redirection");
 	else if (values.size() != 2)
-		LOGE("Too many values for redirection");
+		LOGE("Incorrect number of values for redirection");
+	else if (getInt(values.at(0), 10, errorCode))
+		LOGE("Invalid redirection code");
 	else
 	{
-		LOGI("Redirections :");
-		for (std::deque<std::string>::iterator it = values.begin(); it != values.end(); it++)
-			LOGI("	- %ss", &*it);
+		location.addr_redir[errorCode] = values.at(1);
+		// LOGI("Redirections :");
+		// for (std::deque<std::string>::iterator it = values.begin(); it != values.end(); it++)
+			// LOGI("	- %ss", &*it);
 	}
 }
 
-void	IParseConfig::parsePath(std::istream& istream, std::string& dest)
+void	IParseConfig::parsePath(std::istream& istream, std::string& dest, const char* id)
 {
-	if (getNextWord(istream, dest))
-		LOGE("Path is missing");
-	else
-		LOGI("Path : %ss", &dest);
+	if (getNextWord(istream, dest)) {
+		LOGE("%s is missing", id);
+		return;
+	}
 }
 
-void	IParseConfig::parseBoolean(std::istream& istream, bool& dest)
+void	IParseConfig::parseBoolean(std::istream& istream, bool& dest, const char* id)
 {
-	(void) dest;
 	std::string word;
-	if (getNextWord(istream, word))
-		LOGE("Boolean is missing");
+	if (getNextWord(istream, word)) {
+		LOGE("%s is missing", id);
+		return;
+	}
+	if (word == "on")
+		dest = true;
+	else if (word == "off")
+		dest = false;
 	else
-		LOGI("Boolean : %ss", &word);
+		LOGE("invalid value for %s", id);
 }
 
-void	IParseConfig::parseUri(std::istream& istream, std::string& dest)
+void	IParseConfig::parseUri(std::istream& istream, std::string& dest, const char* id)
 {
-	if (getNextWord(istream, dest))
-		LOGE("Uri is missing");
-	else
-		LOGI("Uri : %ss", &dest);
+	if (getNextWord(istream, dest)) {
+		LOGE("%s is missing", id);
+		return;
+	}
 }

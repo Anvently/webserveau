@@ -1,6 +1,5 @@
 #include <Header.hpp>
-
-static std::string methds[] = {"GET", "POST", "DELETE"};
+#include <algorithm>
 
 Header::Header(): _method(-1), _buffer_count(0), _error_num(0), _status(NEW)
 {
@@ -214,4 +213,14 @@ void	Header::printRequest() const
 std::string	Header::getHeader(std::string const &key)
 {
 	return (this->_headers[key]);
+}
+
+int	Header::getMethodIndex(const std::string& method)
+{
+	for (int i = 0 ; i < METHOD_NBR; i++)
+	{
+		if (METHOD_STR[i] == method)
+			return (i);
+	}
+	return (-1);
 }

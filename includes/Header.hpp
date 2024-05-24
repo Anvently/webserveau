@@ -16,6 +16,11 @@
 enum {GET, POST, DELETE};
 enum {COMPLETE, ONGOING, NEW};
 
+static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
+#define METHOD_NBR 3
+#define METHOD_IS_INVALID (&METHODS_STR[METHODS_NBR])
+// #define METHOD_IS_VALID(method) (std::find_if(METHODS_STR->begin(), METHODS_STR->end(), method == METHODS_STR->);)
+
 
 class Header {
 	private:
@@ -64,6 +69,7 @@ class Header {
 		void	printRequest() const;
 		int		getStatus() const;
 
+		static int	getMethodIndex(const std::string& method);
 
 };
 
