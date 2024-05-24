@@ -42,9 +42,9 @@ class	Request
 		std::string							_line;
 
 		std::string							_hostname;
-		size_t								_body_max_size;
+		int								_body_max_size;
 		int									_len;
-		size_t								_content_length;
+		int								_content_length;
 		bool								_chunked;
 		std::string							_tmp_filename;
 		std::fstream						_filestream;
@@ -78,6 +78,9 @@ class	Request
 		void	formatHeaders();
 		void	printHeaders();
 		void	setBodyMaxSize(size_t maxSize);
+
+		//DEBUG
+		void	printRequest() const;
 
 };
 

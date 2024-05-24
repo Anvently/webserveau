@@ -77,7 +77,7 @@ std::string	generate_name(std::string &hostname)
 
 	gettimeofday(&t, NULL);
 	time = t.tv_sec * 1000000 + t.tv_usec;
-	filename << "tmp/";
+	filename << "./tmp/";
 	filename << hostname;
 	filename << "_";
 	filename << time;

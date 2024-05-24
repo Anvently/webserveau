@@ -196,7 +196,7 @@ int	Request::_parseMesured(std::string &buffer)
 {
 	size_t	left_to_complete;
 	size_t	cut;
-	size_t	n_writen;
+	//size_t	n_writen;
 	std::string	extract;
 
 	left_to_complete = this->_content_length - this->_len;
@@ -205,9 +205,13 @@ int	Request::_parseMesured(std::string &buffer)
 	else
 		cut = left_to_complete;
 	extract = buffer.substr(0, cut);
+	this->_filestream << extract;
 	buffer = buffer.substr(cut, std::string::npos);
 	if (this->_len == this->_content_length)
+	{
 		this->_b_status = COMPLETE;
+		this->_filestream.close();
+	}
 	return (0);
 }
 
@@ -249,6 +253,7 @@ int	Request::getChunkedSize(std::string &buffer)
 	this->_line += buffer.substr(0, idx);
 	if (getInt(this->_line, 16, len) || len < 0)
 		return (this->_fillError(400, "Syntax error parsing chunked body"));
+	std::cout << "len expected: " << len << std::endl;
 	this->_len = len;
 	this->_line = "";
 	buffer = buffer.substr(idx + 2, std::string::npos);
@@ -268,12 +273,14 @@ int	Request::_parseChunked(std::string &buffer)
 		{
 			this->_b_status = COMPLETE;
 			this->_line = "";
+			this->_filestream.close();
 			return (0);
 		}
 		if (this->getLine(buffer))
 			return (0);
-		if (this->_line.size() != this->_len)
+		if (this->_line.size() != static_cast<unsigned long> (this->_len))
 			return(this->_fillError(400, "Size error in chunked body"));
+		std::cout << "trying to insert to body: " << this->_line << std::endl;
 		this->_filestream << this->_line;
 		this->_line = "";
 		this->_len = -1;
@@ -291,7 +298,7 @@ int	Request::parseBody(std::string &buffer)
 		if (this->getLenInfo() || this->_b_status == COMPLETE)
 			return (this->_error_num);
 		this->_tmp_filename = generate_name(this->_hostname);
-		this->_filestream.open(this->_tmp_filename, std::ios::out | std::ios::app | std::ios::binary);
+		this->_filestream.open(this->_tmp_filename.c_str(), std::ios::out | std::ios::app | std::ios::binary);
 		this->_b_status = ONGOING;
 	}
 	if (this->_chunked)
@@ -319,3 +326,22 @@ int	Request::parseBody(std::string &buffer)
 
 
 // }
+
+
+void	Request::printRequest() const
+{
+	std::cout << "method is: " << this->_method << std::endl;
+	std::cout << "uri is: " << this->_uri << std::endl;
+	std::cout << "status is: " << this->_status << std::endl;
+	std::cout << "bstatus is: " << this->_b_status << std::endl;
+	std::cout << "error is: " << this->_error_num << std::endl;
+}
+
+
+void	Request::printHeaders()
+{
+	for(std::map<std::string, std::string>::iterator it = this->_headers.begin(); it != this->_headers.end(); it++)
+	{
+		std::cout << it->first << ": " << it->second << "\r\n";
+	}
+}
