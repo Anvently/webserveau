@@ -2,6 +2,7 @@
 #include <ILogger.hpp>
 #include <stdint.h>
 #include <sys/epoll.h>
+#include <IControl.hpp>
 #include <IParseConfig.hpp>
 
 #define EPOLL_EVENT_MAX_SIZE 100
@@ -74,7 +75,7 @@ int	main(void)
 				break;
 		}
 	}
-	ListenServer::closeServers();
+	ListenServer::deleteServers();
 	ILogger::clearFiles();
 	return (0);
 }

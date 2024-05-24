@@ -1,7 +1,7 @@
 #include <IParseConfig.hpp>
 #include <sys/stat.h>
 #include <algorithm>
-#include <Header.hpp>
+#include <Request.hpp>
 
 std::ifstream	IParseConfig::_fileStream;
 std::string		IParseConfig::_lineBuffer;
@@ -429,14 +429,13 @@ void	IParseConfig::handleLocationToken(std::stringstream& istream, const std::st
 
 void	IParseConfig::parsePort(std::istream& istream, Host& host)
 {
-	std::string	word;
 	int			port;
 
-	if (getNextWord(istream, word)) {
+	if (getNextWord(istream, host._port)) {
 		LOGE("Port missing");
 		return ;
 	}
-	if (getInt(word, 10, port))
+	if (getInt(host._port, 10, port))
 		LOGE("Invalid port");
 }
 

@@ -1,6 +1,7 @@
 #include <Client.hpp>
 #include <netinet/ip.h>
 #include <netinet/in.h>
+#include <ctime>
 #include <arpa/inet.h>
 
 std::list<Client>	Client::_clientList;
@@ -10,7 +11,14 @@ Client::~Client(void) {}
 Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	: _socket(socket), _listenServer(listenServer)
 {
+	_port = 0;
+	_lastInteraction = time(NULL);
+}
 
+Client::Client(const Client& copy) : _socket(copy._socket), _listenServer(copy._listenServer)
+{
+	_port = copy._port;
+	_lastInteraction = copy._lastInteraction;
 }
 
 void	Client::clearBuffers(void) {
@@ -19,27 +27,6 @@ void	Client::clearBuffers(void) {
 		delete buffer;
 		_outBuffers.pop();
 	}
-}
-
-char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
-{
-	switch(sa->sa_family) {
-		case AF_INET:
-			inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
-					s, maxlen);
-			break;
-
-		case AF_INET6:
-			inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr),
-					s, maxlen);
-			break;
-
-		default:
-			strncpy(s, "Unknown AF", maxlen);
-			return NULL;
-	}
-	htons((((struct sockaddr_in *)clients[i].addr.sa_data)->sin_port)));
-	return s;
 }
 
 /// @brief Initialize a new client based on given socket.
@@ -52,11 +39,62 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 Client*	Client::newClient(const ClientSocket& socket, ListenServer& listenServer)
 {
 	char	strIp[64];
-	Client	client(socket, listenServer);
+	Client	clientTmp(socket, listenServer);
 
-	_clientList.push_back(client);
+	Client& client = *_clientList.insert(_clientList.end(), clientTmp);
 	inet_ntop(AF_INET, &(((struct sockaddr_in*)&client._socket.addr)->sin_addr),
 					strIp, 64);
 	client._port = htons((((struct sockaddr_in *)&client._socket.addr.sa_data)->sin_port));
 	return (&client);
+}
+
+/// @brief Permanently delete a client. 
+/// @warning Will invalidate every reference to this client.
+/// This operation should be done by the client's host 
+/// or the listenServer for orphan client and simultaneously with deleting
+/// every reference to the client.
+/// @param  
+void	Client::deleteClient(Client& client)
+{
+	client.shutdownConnection();
+	_clientList.remove(client);
+}
+
+int	Client::getfd(void) const {
+	return (this->_socket.fd);
+}
+
+Host*	Client::getHost(void) const {
+	return (this->_host);
+}
+
+const std::string&	Client::getStrAddr(void) const {
+	return (this->_addressStr);
+}
+
+int	Client::getAddrPort(void) const {
+	return (this->_port);
+}
+
+/// @brief Return the status of the request at the front of the queue.
+/// @return ```-1``` if no request in the queue.
+int	Client::getRequestStatus() const {
+	if (this->_requests.empty() == false)
+		return (_requests.front().getStatus());
+	return (-1);
+}
+
+int	Client::getResponseStatus() const {
+	// return (_response.getStatus());
+	return (0);
+}
+
+void	Client::setHost(Host* host) {
+	this->_host = host;
+}
+
+/// @brief 
+/// @param  
+void	Client::shutdownConnection(void) {
+	close(_socket.fd);
 }

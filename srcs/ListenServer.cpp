@@ -4,6 +4,23 @@
 //TODO : Not so sure how to handle socket creation and listening errors ?
 
 
+ListenServer::ListenServer()
+{
+	_sockFd = 0;
+	_maxClientNbr = MAX_CLIENT_NBR;
+}
+
+ListenServer::ListenServer(std::string const &hostAddr, std::string const &hostPort): _ip(hostAddr), _port(hostPort)
+{
+	_sockFd = 0;
+	_maxClientNbr = MAX_CLIENT_NBR;
+}
+
+ListenServer::~ListenServer()
+{
+	close(this->_sockFd); // Not sure it is needed?
+}
+
 /// @brief Add host server_names as keys in server's ```_hostMap``` if they are
 /// not already present.
 /// @param host 
@@ -34,24 +51,6 @@ int	ListenServer::addHost(Host *host)
 	return (0);
 }
 
-
-ListenServer::ListenServer(): _sockFd(0)
-{
-
-}
-
-ListenServer::ListenServer(std::string const &hostAddr, std::string const &hostPort): _ip(hostAddr), _port(hostPort)
-{
-
-}
-
-ListenServer::~ListenServer()
-{
-	close(this->_sockFd); // Not sure it is needed?
-}
-
-
-
 bool	ListenServer::isMatch(std::string const &hostAddr, std::string const &hostPort)
 {
 	return (this->_ip == hostAddr && this->_port == hostPort);
@@ -72,7 +71,6 @@ std::list<ListenServer>::iterator	ListenServer::findServer(const std::string& ho
 //Create a new ListenServer and a new socket listening to the given port, add the server to the static list
 ListenServer*	ListenServer::addServer(const std::string& hostAddr, const std::string& hostPort)
 {
-	ListenServer	new_server(hostAddr, hostPort);
 	int				new_socket = 0, val = 1;
 	struct	addrinfo *res, hints;
 	memset(&hints, 0, sizeof(hints));
@@ -91,14 +89,23 @@ ListenServer*	ListenServer::addServer(const std::string& hostAddr, const std::st
 		close(new_socket);
 		return (NULL);
 	}
-	new_server._sockFd = new_socket;
-	_serverList.push_back(new_server);
-	return (&new_server);
+	// ListenServer	serverTmp(hostAddr, hostPort);
+	// serverTmp._sockFd = new_socket;
+	// _serverList.push_back(new_server);
+	ListenServer&	newServer = *_serverList.insert(_serverList.end(), {hostAddr, hostPort});
+	newServer._sockFd = new_socket;
+	return (&newServer);
 }
 
 void	ListenServer::removeServer(const std::string& hostAddr, const std::string& hostPort)
 {
 	std::list<ListenServer>::iterator	it = findServer(hostAddr, hostPort);
+	if (it != _serverList.end());
+		removeServer(it);
+}
+
+void	ListenServer::removeServer(std::list<ListenServer>::iterator& it)
+{
 	if (it == _serverList.end())
 		return;
 	if (it->_sockFd)
@@ -206,10 +213,13 @@ void	ListenServer::closeServers()
 void	ListenServer::deleteServers()
 {
 	for (std::list<ListenServer>::iterator it = _serverList.begin(); it != _serverList.end(); it++){
-		removeServer();
+		removeServer(it);
 	}
 }
 
+int	ListenServer::getNbrServer(void) {
+	return (_serverList.size());
+}
 
 /// @brief Accept an incoming connection, create a client and add it to the
 /// server's orphan list. MUST follows an epoll event insuring that the call

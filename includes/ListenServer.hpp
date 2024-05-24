@@ -7,7 +7,7 @@
 #include <iostream>
 #include <Host.hpp>
 #include <Client.hpp>
-#include <Header.hpp>
+#include <Request.hpp>
 #include <ILogger.hpp>
 #include <sys/epoll.h>
 #include <sys/types.h>
@@ -24,6 +24,9 @@
 #include <IObject.hpp>
 
 #define MAX_CLIENT_NBR INT32_MAX
+
+class Client;
+class Host;
 
 class ListenServer : public IObject
 {
@@ -48,6 +51,7 @@ class ListenServer : public IObject
 
 		static ListenServer	*addServer(const std::string& hostAddr, const std::string& hostPort);
 		static void			removeServer(const std::string& hostAddr, const std::string& hostPort);
+		static void			removeServer(std::list<ListenServer>::iterator& it);
 
 	public:
 
@@ -62,6 +66,8 @@ class ListenServer : public IObject
 		static void	closeServers(void);
 		static void	deleteServers(void);
 
+		static int	getNbrServer(void);
+
 		void		assignHost(Host* host);
 		void		unassignHost(Host* host);
 
@@ -73,10 +79,7 @@ class ListenServer : public IObject
 		bool		isMatch(std::string const &hostAddr, std::string const &hostPort);
 
 		Client*		acceptConnection(void);
-		/// @brief Check for
-		/// @param header
-		/// @return
-		Host*			bindClient(Client& client, const std::string& hostName);
+		Host*		bindClient(Client& client, const std::string& hostName);
 
 };
 

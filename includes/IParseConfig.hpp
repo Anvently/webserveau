@@ -12,7 +12,6 @@
 
 //Parse config file into host vector
 
-int	getInt(std::string &str, int base, int &res);
 
 class IParseConfig
 {

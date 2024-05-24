@@ -312,6 +312,10 @@ int	Request::parseBody(std::string &buffer)
 
 }
 
+int	Request::getStatus(void) const {
+	return (this->_status);
+}
+
 //Client should call the different parsing methods itself and set the body max size value ?
 // int	Request::parseInput(std::string &buffer)
 // {
