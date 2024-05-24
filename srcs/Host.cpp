@@ -25,7 +25,12 @@ void	Host::addHost(Host& host) {
 	_hostList.push_back(host);
 }
 
-int	Host::getPort(void) const {
+void	Host::removeHost(Host& host) {
+	host.shutdown();
+	_hostList.remove(host);
+}
+
+const std::string&	Host::getPort(void) const {
 	return (this->_port);
 }
 
@@ -33,9 +38,9 @@ int	Host::getMaxSize(void) const {
 	return (this->_client_max_size);
 }
 
-std::string	Host::getHost(void) const {
+const std::string&	Host::getAddr(void) const {
 	std::stringstream	stream;
-	stream << this->_name << ':' << this->_port;
+	stream << this->_addr << ':' << this->_port;
 	return (stream.str());
 }
 
@@ -50,6 +55,19 @@ Location*	Host::getLocation(const std::string& path) {
 		return (NULL);
 	return (pos->second);
 }
+
+const std::vector<std::string>&	Host::getServerNames(void) const {
+	return (this->_server_names);
+}
+
+std::list<Client*>::const_iterator	Host::getClientListBegin(void) const {
+	return (_clients.begin());
+}
+
+std::list<Client*>::const_iterator	Host::getClientListEnd(void) const {
+	return (_clients.end());
+}
+
 
 bool	Host::checkServerName(const std::string& name) const {
 	std::vector<std::string>::const_iterator pos;
@@ -67,6 +85,13 @@ void	Host::removeClient(Client* client) {
 void	Host::addClient(Client* newClient) {
 	if (newClient)
 		this->_clients.push_back(newClient);
+}
+
+/// @brief Terminate and close connection with every clients belonging to the host.
+/// @param  
+void	Host::shutdown(void) {
+	for (std::list<Client*>::iterator it = _clients.begin(); it != _clients.end(); it++)
+		Client::deleteClient(*it);
 }
 
 bool	CGIConfig::operator==(const CGIConfig& rhs) const {

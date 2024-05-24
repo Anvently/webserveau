@@ -23,6 +23,7 @@
 #include <string.h>
 #include <IObject.hpp>
 
+#define MAX_CLIENT_NBR INT32_MAX
 
 class ListenServer : public IObject
 {
@@ -31,39 +32,51 @@ class ListenServer : public IObject
 		ListenServer(void);
 		ListenServer(std::string const &hostAddr, std::string const &hostPort);
 
+		static	std::list<ListenServer>	_serverList;
 
-		static	std::list<ListenServer>	serverList;
+		std::list<Client*>				_orphanClients;
+		/// @warning This list exist only for monitoring purpose and SHOULD NOT be used
+		/// for interaction with the clients.
+		std::list<Client*>				_connectedClients;
 
-		int					_sockFd;
-		std::list<Host*>	_hostList;
-		std::string			_ip;
-		std::string			_port;
+		int								_sockFd;
+		std::map<std::string, Host*>	_hostMap;
+		std::string						_ip;
+		std::string						_port;
+		int								_maxClientNbr; //optionnal
 		// ....
 
 		static ListenServer	*addServer(const std::string& hostAddr, const std::string& hostPort);
+		static void			removeServer(const std::string& hostAddr, const std::string& hostPort);
 
 	public:
 
 		virtual ~ListenServer();
 
+		static std::list<ListenServer>::iterator	findServer(const std::string& hostAddr, const std::string& hostPort);
+
 		static int	addHost(Host* host);
+		static void	removeHost(Host* host);
 
 		static int	startServers(int epollfd);
-		static int	closeServers(void);
+		static void	closeServers(void);
+		static void	deleteServers(void);
 
-		void		pushHost(Host* host);
+		void		assignHost(Host* host);
+		void		unassignHost(Host* host);
 
-		int			start(int epollfd); //open socket
-		int			terminate(void);
+		int			registerToEpoll(int epollfd); //open socket
+		void		shutdown(void);
+
+		int			getNbrConnectedClients(void) const;
 
 		bool		isMatch(std::string const &hostAddr, std::string const &hostPort);
 
+		Client*		acceptConnection(void);
 		/// @brief Check for
 		/// @param header
 		/// @return
-		Host*	bindClient(Header& header);
-
-
+		Host*			bindClient(Client& client, const std::string& hostName);
 
 };
 
