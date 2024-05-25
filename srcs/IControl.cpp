@@ -19,6 +19,7 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 
 	}
 	// a round of parsing has been done, could try to assign clients to hosts
+	//also need to check to timeout some connections
 	return (0);
 }
 

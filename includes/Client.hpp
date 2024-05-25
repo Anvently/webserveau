@@ -4,10 +4,11 @@
 #include <IObject.hpp>
 #include <Response.hpp>
 #include <Host.hpp>
-#include <Header.hpp>
+#include <Request.hpp>
 #include <ListenServer.hpp>
 #include <ctime>
 #include <queue>
+#include <sys/socket.h>
 #include <stdint.h>
 
 
@@ -39,8 +40,6 @@ class	Client : public IObject
 		Client();
 		Client(const ClientSocket& socket, ListenServer& listenServer);
 		// Client(int fd, Host *host, Request *req, Response *resp);
-		virtual ~Client();
-		Client(Client &Copy);
 
 		ClientSocket		_socket;
 
@@ -49,7 +48,7 @@ class	Client : public IObject
 
 		Host*				_host;
 		ListenServer&		_listenServer;
-		std::list<Request>	_request;
+		std::queue<Request>	_requests;
 		Response			_response;
 
 		time_t				_lastInteraction;
@@ -61,21 +60,26 @@ class	Client : public IObject
 
 		void	clearBuffers(void);
 
+		static std::list<Client>::iterator	findClient(Client* client);
+		
 		friend Client* ListenServer::acceptConnection(void);
+		
 
 	public:
 
+		Client(const Client &Copy);
+		virtual ~Client();
+
 		static Client*		newClient(const ClientSocket& socket, ListenServer& listenServer);
-		static void			deleteClient(Client*);
-		
-		Client				&operator=(const Client &Rhs);
+		static void			deleteClient(Client* client);
 
 		int					getfd() const;
 		Host*				getHost() const;
 		const std::string&	getStrAddr(void) const;
+		int					getAddrPort(void) const;
 
-		bool				isReq() const; //returns 1 if request has been fully received
-		bool				isResp() const; // returns 1 if response is ready to send
+		int					getRequestStatus() const; //returns 1 if request has been fully received
+		int					getResponseStatus() const; // returns 1 if response is ready to send
 
 		void				setHost(Host* host);
 
