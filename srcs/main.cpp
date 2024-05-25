@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <sys/epoll.h>
 #include <IParseConfig.hpp>
+#include <IControl.hpp>
 
 #define EPOLL_EVENT_MAX_SIZE 100
 
