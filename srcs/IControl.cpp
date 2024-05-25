@@ -37,5 +37,5 @@ int	IControl::handleListenEvent(epoll_event* event)
 
 int	IControl::handleClientEvent(epoll_event *event)
 {
-	
+
 }

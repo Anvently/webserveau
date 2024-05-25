@@ -18,15 +18,18 @@ enum {none, chuncked, mesured};
 enum {GET, POST, DELETE};
 enum {COMPLETE, ONGOING, NEW};
 
+static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
+#define METHOD_NBR 3
+#define METHOD_IS_INVALID (&METHODS_STR[METHODS_NBR])
+
 std::string	generate_name(std::string &hostname);
 bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
+int	getMethodIndex(const std::string& method);
 
 class	Request
 {
 	private:
-
-
 
 		std::map<std::string, std::string>	_headers;
 		std::string							_formated_headers;
@@ -60,6 +63,7 @@ class	Request
 	public:
 
 		Request();
+		Request(const Request& copy);
 		~Request();
 
 		void		addHeader(std::string const &name, std::string const &value);
@@ -72,6 +76,7 @@ class	Request
 		int			parseHeaders(std::string &buffer);
 		int			parseBody(std::string &buffer);
 		int			getLenInfo();
+		int			getStatus(void) const;
 
 		std::string	getHeader(std::string const &key);
 

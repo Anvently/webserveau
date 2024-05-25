@@ -1,8 +1,19 @@
 #include <Request.hpp>
 
 
-Request::Request(): _method(-1), _error_num(0), _status(NEW), _buffer_count(0), _len(0), _content_length(-1), _chunked(0), _b_status(NEW), _chunked_status(0)
+Request::Request() \
+	: _method(-1), _error_num(0), _status(NEW), _buffer_count(0), _len(0), \
+		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_status(0)
 {
+}
+
+Request::Request(const Request& copy) \
+	: _method(copy._method), _error_num(copy._error_num), _status(copy._status), \
+		 _buffer_count(copy._buffer_count), _len(copy._len),  _content_length(copy._content_length), \
+		 _chunked(copy._chunked), _filestream(), _b_status(copy._b_status), \
+		 _chunked_status(copy._chunked_status)
+{
+
 }
 
 Request::~Request()
@@ -313,6 +324,10 @@ int	Request::parseBody(std::string &buffer)
 
 }
 
+int	Request::getStatus(void) const {
+	return (this->_status);
+}
+
 //Client should call the different parsing methods itself and set the body max size value ?
 // int	Request::parseInput(std::string &buffer)
 // {
@@ -345,4 +360,14 @@ void	Request::printHeaders()
 	{
 		std::cout << it->first << ": " << it->second << "\r\n";
 	}
+}
+
+int	getMethodIndex(const std::string& method)
+{
+	for (int i = 0 ; i < METHOD_NBR; i++)
+	{
+		if (METHOD_STR[i] == method)
+			return (i);
+	}
+	return (-1);
 }
