@@ -2,16 +2,17 @@
 
 
 Request::Request() \
-	: _method(-1), _error_num(0), _status(NEW), _buffer_count(0), _len(0), \
-		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0)
+	: _method(-1), _error_num(0), _status(NEW), _header_size(0), _len(0), \
+		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0), _trailer_size(0), _final_status(ONGOING)
 {
 }
 
 Request::Request(const Request& copy) \
 	: _method(copy._method), _error_num(copy._error_num), _status(copy._status), \
-		 _buffer_count(copy._buffer_count), _len(copy._len),  _content_length(copy._content_length), \
+		 _header_size(copy._header_size), _len(copy._len),  _content_length(copy._content_length), \
 		 _chunked(copy._chunked), _filestream(), _b_status(copy._b_status), \
-		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), _trailer_status(copy._trailer_status)
+		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), _trailer_status(copy._trailer_status), \
+		_trailer_size(copy._trailer_size), _final_status(copy._final_status)
 {
 
 }
@@ -160,15 +161,15 @@ int	Request::parseHeaders(std::string &buffer)
 	std::string	header_name;
 	std::string	header_value;
 
-	this->_buffer_count++;
 	if (this->_status == COMPLETE)
 		return (0);
+	this->_header_size += buffer.size();
 	if (this->_status == NEW)
 	{
 		while (!isalpha(buffer[0]))
 			buffer.erase(0,1);
 		if (this->getLine(buffer))
-			return (0);
+			return (this->_checkSizes());
 		if (this->_line.size() > HEADER_MAX_SIZE)
 			return (this->_fillError(414, "Request uri too long"));
 		if (this->parseRequestLine())
@@ -179,7 +180,7 @@ int	Request::parseHeaders(std::string &buffer)
 	while (!buffer.empty())
 	{
 		if (this->getLine(buffer))
-			return (0);
+			return (this->_checkSizes());
 		if (this->_line == "")
 		{
 			this->_status = COMPLETE;
@@ -199,9 +200,8 @@ int	Request::parseHeaders(std::string &buffer)
 		this->_headers[header_name] += header_value;
 		this->_line = "";
 	}
-	if (this->_buffer_count == HEADER_MAX_BUFFER && this->_status != COMPLETE)
-		return (this->_fillError(400, "Request header too long"));
-	return (0);
+	this->_header_size -= buffer.size();
+	return (this->_checkSizes());
 }
 
 int	Request::_parseMesured(std::string &buffer)
@@ -262,12 +262,15 @@ int	Request::getChunkedSize(std::string &buffer)
 	{
 		this->_line	+= buffer;
 		buffer = "";
-		return (0);
+		if (this->_line.size() > HEADER_MAX_SIZE)
+			return (this->_fillError(400, "Chunked body length line too long"));
+		else
+			return (0);
 	}
 	this->_line += buffer.substr(0, idx);
 	if (getInt(this->_line, 16, len) || len < 0)
 		return (this->_fillError(400, "Syntax error parsing chunked body"));
-	std::cout << "len expected: " << len << std::endl;
+	this->_chunked_body_size -= this->_line.size();
 	this->_len = len;
 	this->_line = "";
 	buffer = buffer.substr(idx + 2, std::string::npos);
@@ -292,10 +295,9 @@ int	Request::_parseChunked(std::string &buffer)
 			return (0);
 		}
 		if (this->getLine(buffer))
-			return (0);
+			return (this->_checkSizes());
 		if (this->_line.size() != static_cast<unsigned long> (this->_len))
 			return(this->_fillError(400, "Size error in chunked body"));
-		std::cout << "trying to insert to body: " << this->_line << std::endl;
 		this->_filestream << this->_line;
 		this->_line = "";
 		this->_len = -1;
@@ -325,24 +327,8 @@ int	Request::parseBody(std::string &buffer)
 }
 
 int	Request::getStatus(void) const {
-	return (this->_status);
+	return (this->_final_status);
 }
-
-//Client should call the different parsing methods itself and set the body max size value ?
-// int	Request::parseInput(std::string &buffer)
-// {
-// 	if (this->_status != COMPLETE)
-// 		this->parseHeaders(buffer);
-// 	if (this->_error_num)
-// 		return (this->_error_num);
-// 	if (this->_status == COMPLETE && buffer != "")
-// 		this->parseBody(buffer);
-
-// 	//need to check for trailing headers.
-
-
-// }
-
 
 void	Request::printRequest() const
 {
@@ -381,15 +367,18 @@ int	Request::parseTrailerHeaders(std::string &buffer)
 	if (this->_chunked == 0 || this->getHeader("Trailer") == "")
 	{
 		this->_trailer_status = COMPLETE;
+		this->_final_status = COMPLETE;
 		return (0);
 	}
+	this->_trailer_size += buffer.size();
 	while(!buffer.empty())
 	{
 		if (this->getLine(buffer))
-			return (0);
+			return (this->_checkSizes());
 		if (this->_line.empty())
 		{
 			this->_trailer_status = COMPLETE;
+			this->_final_status = COMPLETE;
 			this->_line = "";
 			return (0);
 		}
@@ -405,5 +394,41 @@ int	Request::parseTrailerHeaders(std::string &buffer)
 		this->_headers[header_name] += header_value;
 		this->_line = "";
 	}
+	return (this->_checkSizes());
+}
+
+
+int	Request::_checkSizes()
+{
+	if (this->_status == ONGOING)
+	{
+		if (this->_header_size > HEADER_MAX_BUFFER * HEADER_MAX_SIZE || this->_line.size() > HEADER_MAX_SIZE)
+			return (this->_fillError(431, "Request header too large"));
+		else
+			return (0);
+	}
+	if (this->_status == COMPLETE && this->_b_status == ONGOING)
+	{
+		if (this->_chunked && this->_chunked_body_size > this->_body_max_size)
+			return (this->_fillError(413, "Request entity too large"));
+		return (0);
+	}
+	if (this->_trailer_status == ONGOING)
+	{
+		if (this->_trailer_size > HEADER_MAX_SIZE)
+			return (this->_fillError(400, "Trailer header too large"));
+		return (0);
+	}
 	return (0);
+}
+
+
+int	Request::getError() const
+{
+	return (this->_error_num);
+}
+
+void	Request::setBodyMaxSize(int size)
+{
+	this->_body_max_size = size;
 }

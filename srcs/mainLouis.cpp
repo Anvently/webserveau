@@ -20,10 +20,13 @@ int	main()
 				test2 += "0\r\n";
 				test2 += "GET / HTTP1/1\r\n";
 
+
+req.setBodyMaxSize(200);
 req.parseHeaders(test);
 std::cout << test << std::endl;
 req.parseBody(test);
 std::cout << test << std::endl;
+std::cout << "error is: " << req.getError() << std::endl;
 req.parseBody(test2);
 
 std::cout << "-------------" << std::endl;

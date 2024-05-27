@@ -39,7 +39,7 @@ class	Request
 		std::string							_error_verbose;
 		int									_status;
 
-		int	_buffer_count;
+		int	_header_size;
 
 
 		std::string							_line;
@@ -55,10 +55,14 @@ class	Request
 		int									_chunked_body_size;
 		bool								_chunked_status;
 		int									_trailer_status;
+		int									_trailer_size;
+
+		int									_final_status;
 
 
 
 		int	_fillError(int error, std::string const &verbose);
+		int	_checkSizes();
 		int	_parseChunked(std::string &buffer);
 		int	_parseMesured(std::string &buffer);
 
@@ -80,12 +84,13 @@ class	Request
 		int			parseBody(std::string &buffer);
 		int			getLenInfo();
 		int			getStatus(void) const;
+		int			getError() const;
 
 		std::string	getHeader(std::string const &key);
 
 		void	formatHeaders();
 		void	printHeaders();
-		void	setBodyMaxSize(size_t maxSize);
+		void	setBodyMaxSize(int size);
 
 		//DEBUG
 		void	printRequest() const;
