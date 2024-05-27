@@ -9,13 +9,19 @@ std::list<ListenServer>	ListenServer::_serverList;
 
 ListenServer::ListenServer()
 {
+	_nbrHost = 0;
 	_sockFd = 0;
 	_maxClientNbr = MAX_CLIENT_NBR;
 }
 
+ListenServer::ListenServer(const ListenServer& copy) : _orphanClients(copy._orphanClients), \
+	_connectedClients(copy._connectedClients), _sockFd(copy._sockFd), _hostMap(copy._hostMap), \
+	_ip(copy._ip), _port(copy._port), _maxClientNbr(copy._maxClientNbr), _nbrHost(copy._nbrHost) {}
+
 ListenServer::ListenServer(std::string const &hostAddr, std::string const &hostPort): _ip(hostAddr), _port(hostPort)
 {
 	_sockFd = 0;
+	_nbrHost = 0;
 	_maxClientNbr = MAX_CLIENT_NBR;
 }
 
@@ -31,8 +37,9 @@ void	ListenServer::assignHost(Host *host)
 	for (std::vector<std::string>::const_iterator it = host->getServerNames().begin();\
 			it != host->getServerNames().end(); it++)
 	{
-		if (_hostMap.find(*it) != _hostMap.end())
+		if (_hostMap.find(*it) == _hostMap.end())
 			_hostMap[*it] = host;
+
 	}
 }
 
@@ -40,14 +47,17 @@ void	ListenServer::assignHost(Host *host)
 int	ListenServer::addHost(Host *host)
 {
 	std::list<ListenServer>::iterator	it = findServer(host->getAddr(), host->getPort());
-	if (it != _serverList.end())
+	if (it != _serverList.end()) {
 		it->assignHost(host);
+		it->_nbrHost++;
+	}
 	else
 	{
 		ListenServer	*new_server = addServer(host->getAddr(), host->getPort());
-		if (new_server == 0)
+		if (new_server == NULL)
 			return (1);
 		new_server->assignHost(host);
+		new_server->_nbrHost++;
 	}
 	return (0);
 }
@@ -61,7 +71,7 @@ std::list<ListenServer>::iterator	ListenServer::findServer(const std::string& ho
 {
 	std::list<ListenServer>::iterator	it;
 
-	for (std::list<ListenServer>::iterator it = _serverList.begin(); it != _serverList.end(); it++)
+	for (it = _serverList.begin(); it != _serverList.end(); it++)
 	{
 		if ((it->_ip == hostAddr) && (it->_port == hostPort))
 			break;
@@ -129,6 +139,7 @@ void	ListenServer::removeHost(Host* host) {
 	if (it == _serverList.end())
 		return;
 	it->unassignHost(host);
+	it->_nbrHost--;
 }
 
 /// @brief Unregister the host names from ```_hostMap```, delete the host.
@@ -195,12 +206,13 @@ int	ListenServer::startServers(int epollfd)
 			_serverList.erase(it);
 			LOGE("Could not listen on host:%s port:%s\n", it->_ip.c_str(), it->_port.c_str());
 		}
-		else
+		else {
 			LOGI("Listening on host:%s port:%s\n", it->_ip.c_str(), it->_port.c_str());
+			LOGI("%Ls", &*it);
+		}
 	}
 	return (0);
 }
-
 
 //Not sure it is needed since the destructor should close the socketfd anyway
 void	ListenServer::closeServers()
@@ -219,6 +231,10 @@ void	ListenServer::deleteServers()
 
 int	ListenServer::getNbrServer(void) {
 	return (_serverList.size());
+}
+
+int ListenServer::getNbrHost(void) const {
+	return (this->_nbrHost);
 }
 
 /// @brief Accept an incoming connection, create a client and add it to the
@@ -271,4 +287,31 @@ Host*	ListenServer::bindClient(Client& client, const std::string& hostName)
 	it->second->addClient(&client);
 	_orphanClients.remove(&client);
 	return (it->second);
+}
+
+std::ostream&	ListenServer::printShort(std::ostream& os) const {
+	os << "	->  ip/port: " << this->_ip << '/' << this->_port << std::endl;
+	os << "	sock_fd: " << this->_sockFd << std::endl;
+	os << "	number of connected clients (orphan): " << this->_connectedClients.size() \
+		<< " (" << this->_orphanClients.size() << ")\n";
+	os << "	host list (" << this->getNbrHost() << "):\n";
+	for (UniqueValuesMapIterator<std::string, Host*> it = this->_hostMap.begin(); it != this->_hostMap.end(); it++)
+		(*it)->printShort(os);
+	return (os);
+}
+
+std::ostream&	ListenServer::printFull(std::ostream& os) const {
+	os << "	->  ip/port: " << this->_ip << '/' << this->_port << std::endl;
+	os << "	sock_fd: " << this->_sockFd << std::endl;
+	os << "	number of connected clients (orphan): " << this->_connectedClients.size() \
+		<< " (" << this->_orphanClients.size() << ")\n";
+	os << "	host list (" << this->getNbrHost() << "):\n";
+	for (UniqueValuesMapIterator<std::string, Host*> it = this->_hostMap.begin(); it != this->_hostMap.end(); it++)
+		(*it)->printFull(os);
+	return (os);
+}
+
+std::ostream&	operator<<(std::ostream& os, const ListenServer& ls) {
+	ls.printShort(os);
+	return (os);
 }

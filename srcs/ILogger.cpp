@@ -128,6 +128,7 @@ int	ILogger::LogStream::getNbr(void) const
 /// ```0``` to print to all stream. ```-1``` to print to file streams.
 /// @param format 
 /// @param 
+/// @note ```%``` 
 void	ILogger::log(int lvl, const char* format, ...)
 {
 	va_list	args;
@@ -209,7 +210,13 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 					break;
 				
 				case 'L':
-					print<Location*>(args, lvl);
+					if (*(format + 2) == 'o')
+						print<Location*>(args, lvl);
+					else if (*(format + 2) == 's')
+						print<ListenServer*>(args, lvl);
+					else
+						break;
+					++format;
 					break;
 
 				case 'C':

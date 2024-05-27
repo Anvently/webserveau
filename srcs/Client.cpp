@@ -15,10 +15,10 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	_lastInteraction = time(NULL);
 }
 
-Client::Client(const Client& copy) : _socket(copy._socket), _listenServer(copy._listenServer)
+Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._addressStr), \
+	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
+	_requests(copy._requests), _response(copy._response), _lastInteraction(copy._lastInteraction)
 {
-	_port = copy._port;
-	_lastInteraction = copy._lastInteraction;
 }
 
 void	Client::clearBuffers(void) {
