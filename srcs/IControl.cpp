@@ -41,7 +41,7 @@ int	IControl::handleClientEvent(epoll_event *event)
 {
 	if (event->events && EPOLLIN)
 		IControl::handleClientIn(event);
-
+	return (0);
 }
 
 int	IControl::handleClientIn(epoll_event *event)
@@ -53,7 +53,7 @@ int	IControl::handleClientIn(epoll_event *event)
 	client = static_cast<Client *>(event->data.ptr);
 	n_read = read(client->getfd(), buffer, BUFFER_SIZE);
 	buffer[n_read] = 0;
-	if (client->getRequestStatus() < 1)
-
+	// if (client->getRequestStatus() < 1)
+	return (0);
 
 }

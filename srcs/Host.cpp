@@ -18,8 +18,34 @@ Host&	Host::operator=(Host& rhs) {
 Host::Host(const Host& copy) : _addr(copy._addr), _port(copy._port), \
 	_client_max_size(copy._client_max_size), _dir_errors(copy._dir_errors), \
 	_server_names(copy._server_names), _locationMap(copy._locationMap), \
-	_cgiMap(copy._cgiMap), _clients(copy._clients)
+	_cgiMap(copy._cgiMap), _clients(copy._clients) {}
+
+Location::Location(void) : dir_listing(false), upload(false) {
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = false;
+	}
+}
+
+Location::Location(const Location& copy) : root(copy.root), dir_listing(copy.dir_listing), \
+	default_uri(copy.default_uri), upload(copy.upload), upload_root(copy.upload_root), \
+	addr_redir(copy.addr_redir)
 {
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = copy.methods[i];
+	}
+}
+
+CGIConfig::CGIConfig(void) {
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = false;
+	}
+}
+
+CGIConfig::CGIConfig(const CGIConfig& copy) : exec(copy.exec), root(copy.root)
+{
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = copy.methods[i];
+	}
 }
 
 std::list<Host>::iterator	Host::findHost(Host* host)

@@ -69,21 +69,6 @@ int	main(void)
 
 	initLogs();
 
-	Host	host1;
-	Host	host2;
-	Host	host3;
-	std::map<std::string, Host*>	map;
-	map["host1"] = &host1;
-	map["other_host1"] = &host1;
-	map["host2"] = &host2;
-	map["host3"] = &host3;
-	map["haha"] = &host3;
-	UniqueValuesMapIterator<std::string, Host*>	it(map.begin());
-	while (it != map.end()) {
-		std::cout << *it << std::endl;
-		++it; 
-	}
-
 	epollfd = epoll_create(1);
 	if (epollfd < 0) {
 		LOGE("Fatal error : could not create epoll");
@@ -94,6 +79,8 @@ int	main(void)
 		return (cleanExit(0));
 	ListenServer::startServers(epollfd);
 	LOGI("Servers have started");
+	cleanExit(0);
+	return (0);
 	while (1) {
 		nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
 		if (nbr_events) {

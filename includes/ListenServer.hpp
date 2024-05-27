@@ -26,75 +26,6 @@ class Host;
 
 #define MAX_CLIENT_NBR INT32_MAX
 
-template <typename Key, typename Value>
-class UniqueValuesMapIterator
-{
-	private:
-
-		typename std::map<Key, Value>::const_iterator	_baseIt;
-		std::set<Value>						_uniqueValues;
-
-	public:
-
-		UniqueValuesMapIterator(typename std::map<Key, Value>::const_iterator it) : _baseIt(it) {}
-		UniqueValuesMapIterator(const UniqueValuesMapIterator& copy) : \
-			_baseIt(copy._baseIt), _uniqueValues(copy._uniqueValues) {}
-		UniqueValuesMapIterator&	operator=(const UniqueValuesMapIterator& copy) {
-			_baseIt = copy._baseIt;
-			_uniqueValues = copy._uniqueValues;
-		}
-		UniqueValuesMapIterator&	operator=(const typename std::map<Key, Value>::const_iterator& copy) {
-			_baseIt = copy;
-			_uniqueValues = std::set<Value>();
-		}
-		const Value&	operator*(void) const {
-			return (_baseIt->second);
-		}
-		const Value*	operator->(void) {
-			return (_baseIt.operator->());
-		}
-		bool	operator==(const UniqueValuesMapIterator& rhi) const {
-			return (_baseIt == rhi._baseIt);
-		}
-		bool	operator!=(const UniqueValuesMapIterator& rhi) const {
-			return (_baseIt != rhi._baseIt);
-		}
-		bool	operator==(const typename std::map<Key, Value>::const_iterator& rhi) const {
-			return (_baseIt == rhi);
-		}
-		bool	operator!=(const typename std::map<Key, Value>::const_iterator& rhi) const {
-			return (_baseIt != rhi);
-		}
-		UniqueValuesMapIterator&	operator++(void) {
-			++_baseIt;
-			std::cout << "pouet\n";
-			if (_uniqueValues.find(_baseIt->second) != _uniqueValues.end())
-				this->operator++();
-			else
-				_uniqueValues.insert(_baseIt->second);
-			// while (_uniqueValues.find((++_baseIt)->second) != _uniqueValues.end());
-			// _uniqueValues.insert(_baseIt->second);
-			// return (*this);
-			return (*this);
-		};
-		UniqueValuesMapIterator&	operator--(void) {
-			while (_uniqueValues.find((--_baseIt)->second) != _uniqueValues.end());
-			_uniqueValues.insert(_baseIt->second);
-			return (*this);
-		};
-		UniqueValuesMapIterator	operator++(int) {
-			UniqueValuesMapIterator	tmp = *this;
-			++(*this);
-			return (tmp);
-		};
-		UniqueValuesMapIterator	operator--(int) {
-			UniqueValuesMapIterator	tmp = *this;
-			--(*this);
-			return (tmp);
-		};
-};
-
-
 class ListenServer : public IObject
 {
 	private:
@@ -118,7 +49,7 @@ class ListenServer : public IObject
 
 		static ListenServer	*addServer(const std::string& hostAddr, const std::string& hostPort);
 		static void			removeServer(const std::string& hostAddr, const std::string& hostPort);
-		static void			removeServer(std::list<ListenServer>::iterator& it);
+		static void			removeServer(std::list<ListenServer>::iterator it);
 
 		friend std::ostream&	operator<<(std::ostream& os, const ListenServer& ls);
 
@@ -146,8 +77,6 @@ class ListenServer : public IObject
 
 		int			getNbrConnectedClients(void) const;
 		int			getNbrHost(void) const;
-
-		bool		isMatch(std::string const &hostAddr, std::string const &hostPort);
 
 		Client*		acceptConnection(void);
 		Host*		bindClient(Client& client, const std::string& hostName);
