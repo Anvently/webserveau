@@ -5,6 +5,7 @@
 #include <ListenServer.hpp>
 #include <IControl.hpp>
 #include <IParseConfig.hpp>
+#include <IControl.hpp>
 
 #define EPOLL_EVENT_MAX_SIZE 100
 

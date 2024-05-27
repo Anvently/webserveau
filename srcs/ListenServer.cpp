@@ -25,7 +25,7 @@ ListenServer::~ListenServer()
 
 /// @brief Add host server_names as keys in server's ```_hostMap``` if they are
 /// not already present.
-/// @param host 
+/// @param host
 void	ListenServer::assignHost(Host *host)
 {
 	for (std::vector<std::string>::const_iterator it = host->getServerNames().begin();\
@@ -123,7 +123,7 @@ void	ListenServer::removeServer(std::list<ListenServer>::iterator& it)
 /// @brief Remove the host from the listen server it belongs to if any.
 /// After the deletion, if the listen server doesn't refer to any host anymore,
 /// it is terminated and deleted.
-/// @param host 
+/// @param host
 void	ListenServer::removeHost(Host* host) {
 	std::list<ListenServer>::iterator it = findServer(host->getAddr(), host->getPort());
 	if (it == _serverList.end())
@@ -133,10 +133,10 @@ void	ListenServer::removeHost(Host* host) {
 
 /// @brief Unregister the host names from ```_hostMap```, delete the host.
 /// Remove server if the host is the last one the server was refering to.
-/// @param host 
+/// @param host
 void	ListenServer::unassignHost(Host* host) {
 	std::map<std::string, Host*>::iterator	mapIt;
-	mapIt = _hostMap.find(host->getServerNames().at(0)); 
+	mapIt = _hostMap.find(host->getServerNames().at(0));
 	if (mapIt == _hostMap.end())
 		return;
 	for (std::list<Client*>::const_iterator clientIt = mapIt->second->getClientListBegin();\
@@ -225,7 +225,7 @@ int	ListenServer::getNbrServer(void) {
 /// server's orphan list. MUST follows an epoll event insuring that the call
 /// to ```accept()``` will not block. Client will then have to be assign externally
 /// to its correct host when header parsing is done.
-/// @param  
+/// @param
 /// @return ```NULL``` if no client could be initiated or if connection
 /// socket could not be created.
 Client*	ListenServer::acceptConnection(void) {
@@ -259,7 +259,7 @@ Client*	ListenServer::acceptConnection(void) {
 /// to the first ```server_name``` of the list. hostName should not be empty as
 /// the empty ```host``` header situation should be handled by ```IControl```.
 /// Client host is not set.
-/// @param hostName 
+/// @param hostName
 /// @return ```NULL``` if given hostName was not found in the host list of the listen server.
 Host*	ListenServer::bindClient(Client& client, const std::string& hostName)
 {

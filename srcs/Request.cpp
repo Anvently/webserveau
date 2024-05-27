@@ -3,7 +3,7 @@
 
 Request::Request() \
 	: _method(-1), _error_num(0), _status(NEW), _buffer_count(0), _len(0), \
-		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_status(0)
+		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0)
 {
 }
 
@@ -11,7 +11,7 @@ Request::Request(const Request& copy) \
 	: _method(copy._method), _error_num(copy._error_num), _status(copy._status), \
 		 _buffer_count(copy._buffer_count), _len(copy._len),  _content_length(copy._content_length), \
 		 _chunked(copy._chunked), _filestream(), _b_status(copy._b_status), \
-		 _chunked_status(copy._chunked_status)
+		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), _trailer_status(copy._trailer_status)
 {
 
 }
@@ -27,6 +27,7 @@ void	Request::trimSpace()
 
 std::string	Request::getHeader(std::string const &key)
 {
+	//needs to be modified !
 	return (this->_headers[key]);
 }
 
@@ -239,6 +240,8 @@ int	Request::getLenInfo()
 	{
 		if (getInt(this->getHeader("Content-Length"), 10, res))
 			return (this->_fillError(400, "Incorrect content-length provided"));
+		if (res > this->_body_max_size)
+			return (this->_fillError(413, "Request entity too large"));
 		this->_content_length = res;
 	}
 	else
@@ -276,6 +279,7 @@ int	Request::_parseChunked(std::string &buffer)
 {
 	if (this->_b_status == COMPLETE)
 		return (0);
+	this->_chunked_body_size += buffer.size();
 	while (buffer != "")
 	{
 		if (this->getChunkedSize(buffer))
@@ -297,6 +301,8 @@ int	Request::_parseChunked(std::string &buffer)
 		this->_len = -1;
 		this->_chunked_status = 0;
 	}
+	if (this->_chunked_body_size > this->_body_max_size)
+		return (this->_fillError(413, "Request entity too large"));
 	return (0);
 }
 
@@ -313,14 +319,9 @@ int	Request::parseBody(std::string &buffer)
 		this->_b_status = ONGOING;
 	}
 	if (this->_chunked)
-	{
-		while (!isalnum(buffer[0]))
-			buffer.erase(0,1);
 		return (this->_parseChunked(buffer));
-	}
 	else
 		return (this->_parseMesured(buffer));
-
 }
 
 int	Request::getStatus(void) const {
@@ -369,4 +370,40 @@ int	getMethodIndex(const std::string& method)
 			return (i);
 	}
 	return (-1);
+}
+
+
+int	Request::parseTrailerHeaders(std::string &buffer)
+{
+	std::string	header_name;
+	std::string	header_value;
+
+	if (this->_chunked == 0 || this->getHeader("Trailer") == "")
+	{
+		this->_trailer_status = COMPLETE;
+		return (0);
+	}
+	while(!buffer.empty())
+	{
+		if (this->getLine(buffer))
+			return (0);
+		if (this->_line.empty())
+		{
+			this->_trailer_status = COMPLETE;
+			this->_line = "";
+			return (0);
+		}
+		this->trimSpace();
+		if (getHeaderName(this->_line, header_name) || header_name == "Trailer" || header_name == "Content-Length" || header_name == "Transfer-Encoding")
+			return (this->_fillError(400, "Invalid trailer header line"));
+		if (this->_line.size() > HEADER_MAX_SIZE)
+			return (this->_fillError(431, "The " + header_name + " header was too large"));
+		this->trimSpace();
+		header_value = this->_line;
+		if (this->_headers[header_name] != "")
+			this->_headers[header_name] += ", ";
+		this->_headers[header_name] += header_value;
+		this->_line = "";
+	}
+	return (0);
 }

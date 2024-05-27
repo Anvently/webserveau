@@ -45,14 +45,16 @@ class	Request
 		std::string							_line;
 
 		std::string							_hostname;
-		int								_body_max_size;
+		int									_body_max_size;
 		int									_len;
-		int								_content_length;
+		int									_content_length;
 		bool								_chunked;
 		std::string							_tmp_filename;
 		std::fstream						_filestream;
 		int									_b_status;
+		int									_chunked_body_size;
 		bool								_chunked_status;
+		int									_trailer_status;
 
 
 
@@ -74,6 +76,7 @@ class	Request
 		int			parseInput(std::string &buffer);
 		int			parseRequestLine();
 		int			parseHeaders(std::string &buffer);
+		int			parseTrailerHeaders(std::string &buffer);
 		int			parseBody(std::string &buffer);
 		int			getLenInfo();
 		int			getStatus(void) const;
