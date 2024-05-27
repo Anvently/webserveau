@@ -37,7 +37,6 @@ void	ListenServer::assignHost(Host *host)
 }
 
 // either assign the host to an existing ListenServer or create a new server with a socket
-
 int	ListenServer::addHost(Host *host)
 {
 	std::list<ListenServer>::iterator	it = findServer(host->getAddr(), host->getPort());

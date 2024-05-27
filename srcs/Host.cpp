@@ -30,10 +30,12 @@ std::list<Host>::iterator	Host::findHost(Host* host)
 	return (pos);
 }
 
-/// @brief Append a h
+/// @brief Append a host to the list of host and call
+/// addHost on ListenServer
 /// @param host 
 void	Host::addHost(Host& host) {
-	_hostList.push_back(host);
+	Host& newHost = *_hostList.insert(_hostList.end(), host);
+	ListenServer::addHost(&newHost);
 }
 
 void	Host::removeHost(Host* host) {
