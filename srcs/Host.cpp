@@ -31,7 +31,7 @@ std::list<Host>::iterator	Host::findHost(Host* host)
 }
 
 /// @brief Append a h
-/// @param host 
+/// @param host
 void	Host::addHost(Host& host) {
 	_hostList.push_back(host);
 }
@@ -50,7 +50,7 @@ const std::string&	Host::getPort(void) const {
 }
 
 int	Host::getMaxSize(void) const {
-	return (this->_client_max_size);
+	return (this->_body_max_size);
 }
 
 const std::string&	Host::getAddr(void) const {
@@ -101,7 +101,7 @@ void	Host::addClient(Client* newClient) {
 }
 
 /// @brief Terminate and close connection with every clients belonging to the host.
-/// @param  
+/// @param
 void	Host::shutdown(void) {
 	for (std::list<Client*>::iterator it = _clients.begin(); it != _clients.end(); it++)
 		Client::deleteClient(*it);
@@ -155,9 +155,9 @@ void	Host::printProperties(std::ostream& os) const
 		it != _server_names.end(); it++)
 		os << " " << *it;
 	os << std::endl;
-	os << "	Max body size : " << _client_max_size << std::endl;
+	os << "	Max body size : " << _body_max_size << std::endl;
 	os << "	Error dir : " << _dir_errors << std::endl;
-	
+
 }
 
 void	Host::printShort(std::ostream& os) const

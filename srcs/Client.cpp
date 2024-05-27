@@ -9,13 +9,13 @@ std::list<Client>	Client::_clientList;
 Client::~Client(void) {}
 
 Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
-	: _socket(socket), _listenServer(listenServer)
+	: _socket(socket), _listenServer(listenServer), _status(READ)
 {
 	_port = 0;
 	_lastInteraction = time(NULL);
 }
 
-Client::Client(const Client& copy) : _socket(copy._socket), _listenServer(copy._listenServer)
+Client::Client(const Client& copy) : _socket(copy._socket), _listenServer(copy._listenServer), _status(copy._status)
 {
 	_port = copy._port;
 	_lastInteraction = copy._lastInteraction;
@@ -43,7 +43,7 @@ std::list<Client>::iterator	Client::findClient(Client* client)
 /// @brief Initialize a new client based on given socket.
 /// Given socket must refer to a valid socket that was previously
 /// returned via a call to ```accept()```.
-/// @param socket 
+/// @param socket
 /// @return Pointer toward the client object that was created.
 /// ```NULL``` should means an unexpected (and perhaps fatal) error
 /// occured.
@@ -59,12 +59,12 @@ Client*	Client::newClient(const ClientSocket& socket, ListenServer& listenServer
 	return (&client);
 }
 
-/// @brief Permanently delete a client. 
+/// @brief Permanently delete a client.
 /// @warning Will invalidate every reference to this client.
-/// This operation should be done by the client's host 
+/// This operation should be done by the client's host
 /// or the listenServer for orphan client and simultaneously with deleting
 /// every reference to the client.
-/// @param  
+/// @param
 void	Client::deleteClient(Client* client)
 {
 	if (client == NULL)
@@ -104,12 +104,42 @@ int	Client::getResponseStatus() const {
 	return (0);
 }
 
-void	Client::setHost(Host* host) {
-	this->_host = host;
+void	Client::setHost(std::string hostname) {
+
+	this->_host = this->_listenServer.bindClient(*this, hostname);
 }
 
-/// @brief 
-/// @param  
+/// @brief
+/// @param
 void	Client::shutdownConnection(void) {
 	close(_socket.fd);
 }
+
+
+Request	*Client::getRequest()
+{
+	if (this->_requests.empty() || this->_requests.back().getStatus() == COMPLETE)
+	{
+		Request	newRequest;
+		this->_requests.push(newRequest);
+	}
+	return (&this->_requests.back());
+}
+
+Request	*Client::getFrontRequest()
+{
+	if (this->_requests.empty())
+		return (NULL);
+	return (&this->_requests.front());
+}
+
+int	Client::getStatus()
+{
+	return (this->_status);
+}
+
+void	Client::setStatus(int st)
+{
+	this->_status = st;
+}
+

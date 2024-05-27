@@ -7,6 +7,8 @@
 #include <iostream>
 #include <unistd.h>
 #include <fstream>
+#include <ListenServer.hpp>
+
 
 #define HEADER_MAX_SIZE 4096
 #define	HEADER_MAX_BUFFER 4
@@ -26,6 +28,7 @@ std::string	generate_name(std::string &hostname);
 bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
 int	getMethodIndex(const std::string& method);
+
 
 class	Request
 {
@@ -61,7 +64,7 @@ class	Request
 
 
 
-		int	_fillError(int error, std::string const &verbose);
+
 		int	_checkSizes();
 		int	_parseChunked(std::string &buffer);
 		int	_parseMesured(std::string &buffer);
@@ -77,6 +80,8 @@ class	Request
 		int			getChunkedSize(std::string &buffer);
 		void		trimSpace();
 
+		int	_fillError(int error, std::string const &verbose);
+
 		int			parseInput(std::string &buffer);
 		int			parseRequestLine();
 		int			parseHeaders(std::string &buffer);
@@ -84,9 +89,11 @@ class	Request
 		int			parseBody(std::string &buffer);
 		int			getLenInfo();
 		int			getStatus(void) const;
+		void		setStatus(int status);
 		int			getError() const;
 
 		std::string	getHeader(std::string const &key);
+		int			getHostName(std::string &hostname);
 
 		void	formatHeaders();
 		void	printHeaders();

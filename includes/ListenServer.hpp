@@ -77,6 +77,7 @@ class ListenServer : public IObject
 
 		Client*		acceptConnection(void);
 		Host*		bindClient(Client& client, const std::string& hostName);
+		int			getHostMaxSize(std::string &hostname);
 
 };
 

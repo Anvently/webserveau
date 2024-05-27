@@ -53,7 +53,7 @@ class	Host {
 		friend std::ostream&	operator<<(std::ostream& os, const Host& host);
 
 		Host	&operator=(Host &rhs);
-		
+
 		// friend class IParseConfig		Host(const std::string& block); //Throw an exception if block is invalid
 
 		// friend class	IParseConfig;
@@ -64,7 +64,7 @@ class	Host {
 
 		std::string							_addr;
 		std::string							_port;
-		int									_client_max_size;
+		int									_body_max_size;
 		std::string							_dir_errors;
 		std::vector<std::string>			_server_names;
 		std::map<std::string, Location*>	_locationMap;

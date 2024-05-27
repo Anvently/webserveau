@@ -273,3 +273,15 @@ Host*	ListenServer::bindClient(Client& client, const std::string& hostName)
 	_orphanClients.remove(&client);
 	return (it->second);
 }
+
+int	ListenServer::getHostMaxSize(std::string &hostname)
+{
+	std::map<std::string, Host*>::iterator	it;
+	if (hostname == "")
+		it = _hostMap.end();
+	else
+		it = _hostMap.find(hostname);
+	if (it == _hostMap.end())
+		it = _hostMap.begin();
+
+}

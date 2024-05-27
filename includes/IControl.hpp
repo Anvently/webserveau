@@ -7,6 +7,7 @@
 #include <Host.hpp>
 #include <Request.hpp>
 #include <ListenServer.hpp>
+#include <Client.hpp>
 
 #define BUFFER_SIZE 4096
 
