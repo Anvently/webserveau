@@ -8,12 +8,14 @@
 #include <Request.hpp>
 #include <ListenServer.hpp>
 
+#define BUFFER_SIZE 4096
+
 class IControl
 {
 	private :
 
 		virtual ~IControl(void) = 0;
-	
+
 		static int	handleListenEvent(epoll_event* event);
 		static int	handleClientEvent(epoll_event* event);
 		static int	handleCGIEvent(epoll_event* event);
@@ -25,7 +27,7 @@ class IControl
 	public :
 
 		static int	handleEpoll(epoll_event* events, int nbrEvents);
-		
+
 
 };
 

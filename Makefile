@@ -16,7 +16,7 @@ OBJS_TFOLDER	= .objs_test/
 SRCS_FILES	=	main.cpp ILogger.cpp IParseConfig.cpp Host.cpp ListenServer.cpp \
 				format.cpp Request.cpp Client.cpp IControl.cpp
 
-SRCS_FTEST	= 	mainLouis.cpp Header.cpp
+SRCS_FTEST	= 	mainLouis.cpp Request.cpp format.cpp
 
 SRCS	=	$(addprefix $(SRCS_FOLDER), $(SRCS_FILES))
 OBJS	=	$(addprefix $(OBJS_FOLDER), $(SRCS_FILES:.cpp=.o))
