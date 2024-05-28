@@ -2,14 +2,14 @@
 
 
 Request::Request() \
-	: _method(-1), _error_num(0), _status(NEW), _body_max_size(0), _header_size(0), _len(0), \
+	: _method(-1), _error_num(0), _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
 		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0), _trailer_size(0), _final_status(ONGOING)
 {
 }
 
 Request::Request(const Request& copy) \
-	: _method(copy._method), _error_num(copy._error_num), _status(copy._status), _body_max_size(copy._body_max_size), \
-		 _header_size(copy._header_size), _len(copy._len),  _content_length(copy._content_length), \
+	: _method(copy._method), _error_num(copy._error_num), _status(copy._status), \
+		 _header_size(copy._header_size), _body_max_size(copy._body_max_size), _len(copy._len),  _content_length(copy._content_length), \
 		 _chunked(copy._chunked), _filestream(), _b_status(copy._b_status), \
 		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), _trailer_status(copy._trailer_status), \
 		_trailer_size(copy._trailer_size), _final_status(copy._final_status)

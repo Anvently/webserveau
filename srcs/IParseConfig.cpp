@@ -469,7 +469,7 @@ void	IParseConfig::parseBodyMaxSize(std::istream& istream, Host& host)
 		LOGE("Max body size missing");
 		return ;
 	}
-	if (getInt(word, 10, host._client_max_size))
+	if (getInt(word, 10, host._body_max_size))
 		LOGE("Invalid max body size");
 }
 

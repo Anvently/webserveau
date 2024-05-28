@@ -83,8 +83,10 @@ int	IControl::handleListenEvent(epoll_event* event)
 
 int	IControl::handleClientEvent(epoll_event *event)
 {
-	if (event->events && EPOLLIN)
+	if (event->events && EPOLLIN) {
 		IControl::handleClientIn(event);
+		return (0);
+	}
 	else
 		return (0);
 }
@@ -111,8 +113,8 @@ int	IControl::handleClientIn(epoll_event *event)
 
 	client = static_cast<Client *>(event->data.ptr);
 	if (client->getStatus() != READ)
-		return ;
-	if (n_read = read(client->getfd(), buffer_c, BUFFER_SIZE) < 0)
+		return (0);
+	if ((n_read = read(client->getfd(), buffer_c, BUFFER_SIZE) < 0))
 	{
 		return (-1);
 		//NEED TO REMOVE THIS CLIENT FATAL ERROR

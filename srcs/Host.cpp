@@ -16,7 +16,7 @@ Host&	Host::operator=(Host& rhs) {
 }
 
 Host::Host(const Host& copy) : _addr(copy._addr), _port(copy._port), \
-	_client_max_size(copy._client_max_size), _dir_errors(copy._dir_errors), \
+	_body_max_size(copy._body_max_size), _dir_errors(copy._dir_errors), \
 	_server_names(copy._server_names), _locationMap(copy._locationMap), \
 	_cgiMap(copy._cgiMap), _clients(copy._clients) {}
 
@@ -188,7 +188,7 @@ void	Host::printProperties(std::ostream& os) const
 		it != _server_names.end(); it++)
 		os << " " << *it;
 	os << std::endl;
-	os << "	Max body size : " << _client_max_size << std::endl;
+	os << "	Max body size : " << _body_max_size << std::endl;
 	os << "	Error dir : " << _dir_errors << std::endl;
 
 }

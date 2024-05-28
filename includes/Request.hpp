@@ -42,7 +42,7 @@ class	Request
 		std::string							_error_verbose;
 		int									_status;
 
-		int	_header_size;
+		int									_header_size;
 
 
 		std::string							_line;
