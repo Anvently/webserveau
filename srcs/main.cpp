@@ -75,7 +75,8 @@ int	main(void)
 		return (cleanExit(1));
 	}
 	IParseConfig::parseConfigFile("conf/template.conf");
-	if (IControl::registerCommandPrompt(epollfd))
+	IControl::_epollfd = epollfd;
+	if (IControl::registerCommandPrompt())
 		return (cleanExit(1));
 	ListenServer::startServers(epollfd);
 	LOGI("Servers have started");
