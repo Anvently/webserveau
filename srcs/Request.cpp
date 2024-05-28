@@ -219,6 +219,7 @@ int	Request::_parseMesured(std::string &buffer)
 		cut = left_to_complete;
 	extract = buffer.substr(0, cut);
 	this->_filestream << extract;
+	this->_len += extract.size();
 	buffer = buffer.substr(cut, std::string::npos);
 	if (this->_len == this->_content_length)
 	{
@@ -244,9 +245,13 @@ int	Request::getLenInfo()
 		if (res > this->_body_max_size)
 			return (this->_fillError(413, "Request entity too large"));
 		this->_content_length = res;
+		return (0);
 	}
-	else
+	else{
+
 		this->_b_status = COMPLETE;
+		this->_final_status = COMPLETE;
+	}
 	return (0);
 }
 
@@ -311,12 +316,12 @@ int	Request::_parseChunked(std::string &buffer)
 
 int	Request::parseBody(std::string &buffer)
 {
-	if (this->_b_status == COMPLETE)
+	if (this->_b_status == COMPLETE || buffer.empty())
 		return (0);
 	if (this->_b_status == NEW)
 	{
-		if (this->getLenInfo() || this->_b_status == COMPLETE)
-			return (this->_error_num);
+		// if (this->getLenInfo() || this->_b_status == COMPLETE)
+		// 	return (this->_error_num);
 		this->_tmp_filename = generate_name(this->_hostname);
 		this->_filestream.open(this->_tmp_filename.c_str(), std::ios::out | std::ios::app | std::ios::binary);
 		this->_b_status = ONGOING;
@@ -437,15 +442,15 @@ void	Request::setBodyMaxSize(int size)
 
 int	Request::parseInput(std::string &buffer)
 {
-	if (this->_final_status == COMPLETE)
+	if (this->_final_status == COMPLETE || buffer.empty())
 		return (0);
-	if (this->parseHeaders(buffer) || buffer.empty())
+	if (this->parseHeaders(buffer))
 		return (this->_error_num);
 	if (this->_status == COMPLETE && this->_body_max_size == 0)
 		return (-1);
-	if (this->parseBody(buffer) || buffer.empty())
+	if (this->parseBody(buffer))
 		return (this->_error_num);
-	if (this->parseTrailerHeaders(buffer) || buffer.empty())
+	if (this->parseTrailerHeaders(buffer))
 		return (this->_error_num);
 	return (0);
 }
