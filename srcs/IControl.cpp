@@ -18,7 +18,7 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 		}
 		else if ((ptr_listenS = dynamic_cast<ListenServer *> ((IObject *)events[i].data.ptr)) != NULL)
 			handleListenEvent(&events[i]);
-		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL && handleClientEvent(&events[i]))
+		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL)
 			handleClientEvent(&events[i]);
 		//handle CGI event
 		//.....
