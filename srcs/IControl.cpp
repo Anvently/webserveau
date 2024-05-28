@@ -144,13 +144,11 @@ int	IControl::handleClientIn(epoll_event *event)
 	buffer += buffer_c;
 	LOGI("buffer: %ss", &buffer);
 	req_ptr = client->getRequest();
-	while (!buffer.empty() && req_ptr->getStatus() != COMPLETE)
+	while (!buffer.empty() && req_ptr->getStatus() == ONGOING)
 	{
 		res = req_ptr->parseInput(buffer);
-		LOGE("res: %d", res);
-		if (res < 0 && req_ptr->getLenInfo() && AssignHost(client))
+		if (res < 0 && (AssignHost(client) || req_ptr->getLenInfo()))
 		{
-			LOGE("pouet");
 			req_ptr->_fillError(400, "Host header missing or invalid");
 			req_ptr->setStatus(COMPLETE);
 			client->setStatus(ERROR);
@@ -163,7 +161,7 @@ int	IControl::handleClientIn(epoll_event *event)
 			buffer.clear();
 			break ;
 		}
-		LOGE("buffer is: %d", buffer.empty());
+
 	}
 	if (client->getRequestStatus() == COMPLETE && client->getStatus() != ERROR)
 	{

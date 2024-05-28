@@ -1,6 +1,7 @@
 #include <Host.hpp>
 #include <sstream>
 #include <algorithm>
+#include <limits.h>
 
 std::list<Host>			Host::_hostList;
 std::vector<CGIConfig>	Host::_cgis;
@@ -8,7 +9,8 @@ std::vector<Location>	Host::_locations;
 
 Host::~Host(void) {}
 
-Host::Host(void) {}
+Host::Host(void): _body_max_size(INT_MAX)
+{}
 
 Host&	Host::operator=(Host& rhs) {
 	(void) rhs;
