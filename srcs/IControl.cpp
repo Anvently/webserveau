@@ -8,7 +8,7 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 
 	if (nbr_event < 1)
 		return (0);
-	for (int i{0}; i < nbr_event; i++)
+	for (int i = 0; i < nbr_event; i++)
 	{
 		if ((ptr_listenS = dynamic_cast<ListenServer *> ((IObject *)events[i].data.ptr)) != NULL)
 			handleListenEvent(&events[i]);
@@ -33,6 +33,7 @@ int	IControl::handleListenEvent(epoll_event* event)
 	Client			*newClient = NULL;
 	if ((newClient = pt->acceptConnection()) == NULL)
 		return (1);
+	return (0);
 }
 
 

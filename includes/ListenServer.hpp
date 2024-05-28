@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <set>
 #include <unistd.h>
 #include <string>
 #include <string.h>
@@ -44,14 +45,17 @@ class ListenServer : public IObject
 		std::string						_ip;
 		std::string						_port;
 		int								_maxClientNbr; //optionnal
-		// ....
+		int								_nbrHost;
 
 		static ListenServer	*addServer(const std::string& hostAddr, const std::string& hostPort);
 		static void			removeServer(const std::string& hostAddr, const std::string& hostPort);
-		static void			removeServer(std::list<ListenServer>::iterator& it);
+		static void			removeServer(std::list<ListenServer>::iterator it);
+
+		friend std::ostream&	operator<<(std::ostream& os, const ListenServer& ls);
 
 	public:
 
+		ListenServer(const ListenServer&);
 		virtual ~ListenServer();
 
 		static std::list<ListenServer>::iterator	findServer(const std::string& hostAddr, const std::string& hostPort);
@@ -72,14 +76,18 @@ class ListenServer : public IObject
 		void		shutdown(void);
 
 		int			getNbrConnectedClients(void) const;
-
-		bool		isMatch(std::string const &hostAddr, std::string const &hostPort);
+		int			getNbrHost(void) const;
 
 		Client*		acceptConnection(void);
 		Host*		bindClient(Client& client, const std::string& hostName);
 		int			getHostMaxSize(std::string &hostname);
 
+		std::ostream&		printShort(std::ostream&) const;
+		std::ostream&		printFull(std::ostream&) const;
+
 };
+
+std::ostream&	operator<<(std::ostream& os, const ListenServer& ls);
 
 
 #endif

@@ -18,6 +18,9 @@ class Client;
 
 struct Location
 {
+	Location(void);
+	Location(const Location&);
+
 	std::string					root;
 	bool						methods[3]; //GET-POST-DELETE
 	bool						dir_listing; //ignore is default_uri != 0
@@ -36,6 +39,9 @@ std::ostream&	operator<<(std::ostream& os, const Location& location);
 
 struct CGIConfig
 {
+	CGIConfig(void);
+	CGIConfig(const CGIConfig&);
+
 	std::string					exec; //example '/bin/bash'
 	std::string					root;
 	bool						methods[METHOD_NBR]; //GET-POST-DELETE

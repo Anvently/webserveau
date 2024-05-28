@@ -9,7 +9,9 @@
 #include <ListenServer.hpp>
 #include <Client.hpp>
 
-#define BUFFER_SIZE 4096
+#ifndef BUFFER_SIZE
+# define BUFFER_SIZE 4096
+#endif
 
 class IControl
 {

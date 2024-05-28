@@ -15,8 +15,37 @@ Host&	Host::operator=(Host& rhs) {
 	return (*this);
 }
 
-Host::Host(const Host& copy) {
-	(void) copy;
+Host::Host(const Host& copy) : _addr(copy._addr), _port(copy._port), \
+	_client_max_size(copy._client_max_size), _dir_errors(copy._dir_errors), \
+	_server_names(copy._server_names), _locationMap(copy._locationMap), \
+	_cgiMap(copy._cgiMap), _clients(copy._clients) {}
+
+Location::Location(void) : dir_listing(false), upload(false) {
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = false;
+	}
+}
+
+Location::Location(const Location& copy) : root(copy.root), dir_listing(copy.dir_listing), \
+	default_uri(copy.default_uri), upload(copy.upload), upload_root(copy.upload_root), \
+	addr_redir(copy.addr_redir)
+{
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = copy.methods[i];
+	}
+}
+
+CGIConfig::CGIConfig(void) {
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = false;
+	}
+}
+
+CGIConfig::CGIConfig(const CGIConfig& copy) : exec(copy.exec), root(copy.root)
+{
+	for (int i = 0; i < METHOD_NBR; i++) {
+		methods[i] = copy.methods[i];
+	}
 }
 
 std::list<Host>::iterator	Host::findHost(Host* host)
@@ -32,8 +61,12 @@ std::list<Host>::iterator	Host::findHost(Host* host)
 
 /// @brief Append a h
 /// @param host
+/// @brief Append a host to the list of host and call
+/// addHost on ListenServer
+/// @param host
 void	Host::addHost(Host& host) {
-	_hostList.push_back(host);
+	Host& newHost = *_hostList.insert(_hostList.end(), host);
+	ListenServer::addHost(&newHost);
 }
 
 void	Host::removeHost(Host* host) {
@@ -150,12 +183,12 @@ void	Host::addLocation(const std::deque<std::string>& names, Location& location)
 
 void	Host::printProperties(std::ostream& os) const
 {
-	os << "	Names :";
+	os << "		->  Names :";
 	for (std::vector<std::string>::const_iterator it = _server_names.begin(); \
 		it != _server_names.end(); it++)
 		os << " " << *it;
 	os << std::endl;
-	os << "	Max body size : " << _body_max_size << std::endl;
+	os << "	Max body size : " << _client_max_size << std::endl;
 	os << "	Error dir : " << _dir_errors << std::endl;
 
 }
@@ -163,17 +196,17 @@ void	Host::printProperties(std::ostream& os) const
 void	Host::printShort(std::ostream& os) const
 {
 	printProperties(os);
-	os << "	Locations :";
+	os << "		Locations :";
 	for (std::map<std::string, Location*>::const_iterator it = _locationMap.begin();\
 			it != _locationMap.end(); it++)
 		os << " " << it->first;
 	os << std::endl;
-	os << "	CGIs :";
+	os << "		CGIs :";
 	for (std::map<std::string, CGIConfig*>::const_iterator it = _cgiMap.begin();\
 			it != _cgiMap.end(); it++)
 		os << " " << it->first;
 	os << std::endl;
-	os << "	Clients (" << _clients.size() << ") :";
+	os << "		Clients (" << _clients.size() << ") :";
 	// for (std::list<Client*>::const_iterator it = _clients.begin(); it != _clients.end(); it++)
 		// os << " " << (*it ? (**it).getfd() : -2);
 	os << std::endl;
@@ -182,15 +215,15 @@ void	Host::printShort(std::ostream& os) const
 void	Host::printFull(std::ostream& os) const
 {
 	printProperties(os);
-	os << "	Locations :" << std::endl;
+	os << "		Locations :" << std::endl;
 	for (std::map<std::string, Location*>::const_iterator it = _locationMap.begin();\
 			it != _locationMap.end(); it++)
 		os << "	  ->" << it->first << std::endl << it->second;
-	os << "	CGIs :";
+	os << "		CGIs :";
 	for (std::map<std::string, CGIConfig*>::const_iterator it = _cgiMap.begin();\
 			it != _cgiMap.end(); it++)
-		os << "	  ->" << it->first << std::endl << it->second;
-	os << "	Clients (" << _clients.size() << ") :" << std::endl;
+		os << "		  ->" << it->first << std::endl << it->second;
+	os << "		Clients (" << _clients.size() << ") :" << std::endl;
 	// for (std::list<Client*>::const_iterator it = _clients.begin(); it != _clients.end(); it++)
 	// {
 		// if (*it)
@@ -203,28 +236,28 @@ void	Host::printFull(std::ostream& os) const
 
 std::ostream&	operator<<(std::ostream& os, const Location& location)
 {
-	os << "		root: " << location.root << std::endl;
-	os << "		default_uri: " << location.default_uri << std::endl;
-	os << "		dir_listing: " << location.dir_listing << std::endl;
-	os << "		upload: " << location.upload << std::endl;
+	os << "			->  root: " << location.root << std::endl;
+	os << "			default_uri: " << location.default_uri << std::endl;
+	os << "			dir_listing: " << location.dir_listing << std::endl;
+	os << "			upload: " << location.upload << std::endl;
 	if (location.upload)
-		os << "		upload_root: " << location.upload_root << std::endl;
-	os << "		allowed methods: ";
+		os << "			upload_root: " << location.upload_root << std::endl;
+	os << "			allowed methods: ";
 	for (int i = 0; i < METHOD_NBR; i++)
 		os << (location.methods[i] ? METHOD_STR[i] : "");
 	os << std::endl;
-	os << "		redirections: \n";
+	os << "			redirections: \n";
 	for (std::map<int, std::string>::const_iterator it = location.addr_redir.begin();\
 			it != location.addr_redir.end(); it++)
-		os << "		  - " << it->first << " => " << it->second << std::endl;
+		os << "			  - " << it->first << " => " << it->second << std::endl;
 	return (os);
 }
 
 std::ostream&	operator<<(std::ostream& os, const CGIConfig& CGIConfig)
 {
-	os << "		root: " << CGIConfig.root << std::endl;
-	os << "		exec_path: " << CGIConfig.exec << std::endl;
-	os << "		allowed methods: ";
+	os << "			->  root: " << CGIConfig.root << std::endl;
+	os << "			exec_path: " << CGIConfig.exec << std::endl;
+	os << "			allowed methods: ";
 	for (int i = 0; i < METHOD_NBR; i++)
 		os << (CGIConfig.methods[i] ? METHOD_STR[i] : "");
 	os << std::endl;

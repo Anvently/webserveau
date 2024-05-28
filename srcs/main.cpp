@@ -68,6 +68,7 @@ int	main(void)
 	struct epoll_event	events[EPOLL_EVENT_MAX_SIZE];
 
 	initLogs();
+
 	epollfd = epoll_create(1);
 	if (epollfd < 0) {
 		LOGE("Fatal error : could not create epoll");
@@ -77,6 +78,9 @@ int	main(void)
 	if (ListenServer::getNbrServer() == 0)
 		return (cleanExit(0));
 	ListenServer::startServers(epollfd);
+	LOGI("Servers have started");
+	cleanExit(0);
+	return (0);
 	while (1) {
 		nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
 		if (nbr_events) {

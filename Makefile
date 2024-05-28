@@ -4,7 +4,7 @@ TEST		= 	test
 
 INCLUDES	=	includes/
 
-CPP_FLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 -I$(INCLUDES)
+CPP_FLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 -MMD -I$(INCLUDES)
 CPP			=	c++
 
 SRCS_FOLDER	=	srcs/
@@ -20,6 +20,9 @@ SRCS_FTEST	= 	mainLouis.cpp Request.cpp format.cpp
 
 SRCS	=	$(addprefix $(SRCS_FOLDER), $(SRCS_FILES))
 OBJS	=	$(addprefix $(OBJS_FOLDER), $(SRCS_FILES:.cpp=.o))
+DEPS	=	$(addprefix $(OBJS_FOLDER), $(SRCS_FILES:.cpp=.d))
+
+-include	$(wildcard *.d)
 
 SRCS_TEST	=	$(addprefix $(SRCS_FOLDER), $(SRCS_FTEST))
 OBJS_TEST	=	$(addprefix $(OBJS_TFOLDER), $(SRCS_FTEST:.cpp=.o))

@@ -233,7 +233,6 @@ void	IParseConfig::parseHost(std::istream& istream)
 	{
 		parseBlock(hostStream, &host, handleHostToken);
 		Host::addHost(host);
-		LOGI("New host !\n %H", &host);
 	}
 	catch (IParseConfigException& e)
 	{
