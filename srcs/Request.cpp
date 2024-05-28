@@ -245,8 +245,11 @@ int	Request::getLenInfo()
 			return (this->_fillError(413, "Request entity too large"));
 		this->_content_length = res;
 	}
-	else
+	else{
+
 		this->_b_status = COMPLETE;
+		this->_final_status = COMPLETE;
+	}
 	return (0);
 }
 
@@ -439,7 +442,7 @@ int	Request::parseInput(std::string &buffer)
 {
 	if (this->_final_status == COMPLETE)
 		return (0);
-	if (this->parseHeaders(buffer) || buffer.empty())
+	if (this->parseHeaders(buffer))
 		return (this->_error_num);
 	if (this->_status == COMPLETE && this->_body_max_size == 0)
 		return (-1);
