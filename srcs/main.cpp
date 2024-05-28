@@ -57,7 +57,7 @@ static void	initLogs(void)
 
 static int	cleanExit(int code) {
 
-	ListenServer::deleteServers();
+	ListenServer::removeServers();
 	ILogger::clearFiles();
 	return(code);
 }
@@ -75,13 +75,13 @@ int	main(void)
 		return (cleanExit(1));
 	}
 	IParseConfig::parseConfigFile("conf/template.conf");
-	if (ListenServer::getNbrServer() == 0)
-		return (cleanExit(0));
+	if (IControl::registerCommandPrompt(epollfd))
+		return (cleanExit(1));
 	ListenServer::startServers(epollfd);
 	LOGI("Servers have started");
-	cleanExit(0);
-	return (0);
-	while (1) {
+	// ListenServer::removeServer("127.0.0.1","8080");
+	// LOGI("server removed");
+	while (ListenServer::getNbrServer()) {
 		nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
 		if (nbr_events) {
 			if (IControl::handleEpoll(events, nbr_events) < 0)

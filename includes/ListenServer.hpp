@@ -48,7 +48,6 @@ class ListenServer : public IObject
 		int								_nbrHost;
 
 		static ListenServer	*addServer(const std::string& hostAddr, const std::string& hostPort);
-		static void			removeServer(const std::string& hostAddr, const std::string& hostPort);
 		static void			removeServer(std::list<ListenServer>::iterator it);
 
 		friend std::ostream&	operator<<(std::ostream& os, const ListenServer& ls);
@@ -65,7 +64,8 @@ class ListenServer : public IObject
 
 		static int	startServers(int epollfd);
 		static void	closeServers(void);
-		static void	deleteServers(void);
+		static void	removeServer(const std::string& hostAddr, const std::string& hostPort);
+		static void	removeServers(void);
 
 		static int	getNbrServer(void);
 

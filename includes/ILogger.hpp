@@ -120,7 +120,6 @@ class ILogger
 		private:
 
 			std::list<LogStreamEntry>					_streams;
-			std::list<std::ofstream>					_fileStreams;
 
 			std::list<LogStreamEntry>::iterator		findOs(std::ostream& os);
 	
@@ -133,7 +132,7 @@ class ILogger
 		virtual ~ILogger(void) = 0;
 
 		static LogStream													_logStream;
-		static std::list<std::ofstream*>										_files;
+		static std::list<std::ofstream*>									_files;
 		static std::map<std::string, std::list<std::ofstream*>::iterator>	_fileTable;
 
 		static std::time_t			_startTime;

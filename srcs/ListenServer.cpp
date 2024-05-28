@@ -225,7 +225,7 @@ void	ListenServer::closeServers()
 	}
 }
 
-void	ListenServer::deleteServers()
+void	ListenServer::removeServers()
 {
 	for (std::list<ListenServer>::iterator it = _serverList.begin(); it != _serverList.end();)
 	{

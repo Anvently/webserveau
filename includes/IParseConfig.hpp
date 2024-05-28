@@ -9,9 +9,10 @@
 #include <string>
 #include <deque>
 #include <stdint.h>
+#include <IControl.hpp>
 
-//Parse config file into host vector
-
+// Parse config file into host vector
+class IControl;
 
 class IParseConfig
 {
@@ -61,6 +62,8 @@ class IParseConfig
 		static void				parsePath(std::istream& istream, std::string& dest, const char* id = NULL);
 		static void				parseBoolean(std::istream& istream, bool& dest, const char* id = NULL);
 		static void				parseUri(std::istream& istream, std::string& dest, const char* id = NULL);
+
+		friend int				IControl::handleCommandPrompt(epoll_event* event);
 
 	public:
 
