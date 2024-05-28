@@ -3,6 +3,8 @@
 #include <sstream>
 #include <IParseConfig.hpp>
 
+int	IControl::_epollfd = -1;
+
 int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 {
 	Client*	ptr_client;
@@ -12,13 +14,14 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 		return (0);
 	for (int i = 0; i < nbr_event; i++)
 	{
+		// LOGD("event => fd = %d | event = %d", events[i].data.fd, events[i].events);
 		if (events[i].data.fd == STDIN_FILENO) {
 			if (handleCommandPrompt(&events[i]))
 				return (1);
 		}
 		else if ((ptr_listenS = dynamic_cast<ListenServer *> ((IObject *)events[i].data.ptr)) != NULL)
 			handleListenEvent(&events[i]);
-		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL && handleClientEvent(&events[i]))
+		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL)
 			handleClientEvent(&events[i]);
 		//handle CGI event
 		//.....
@@ -29,18 +32,29 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 	return (0);
 }
 
-int	IControl::registerCommandPrompt(int epollfd) {
+int	IControl::registerCommandPrompt(void) {
 	struct epoll_event	event;
 
 	event.events = EPOLLIN | EPOLLHUP;
 	event.data.fd = STDIN_FILENO;
-	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, STDIN_FILENO, &event))
+	if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, STDIN_FILENO, &event))
+		return (-1);
+	return (0);
+}
+
+int	IControl::registerToEpoll(int fd, void* ptr, int flags) {
+	struct epoll_event	event;
+
+	event.events = flags;
+	event.data.ptr = ptr;
+	if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, fd, &event))
 		return (-1);
 	return (0);
 }
 
 int	IControl::handleCommandPrompt(epoll_event* event) {
-	if (event->events & EPOLLHUP) {
+	if (event->events & EPOLLHUP || std::cin.eof()) {
+		LOGI("Closing stdin");
 		ListenServer::removeServers();
 		return (1);
 	}
@@ -65,6 +79,10 @@ int	IControl::parseCommandPrompt(std::deque<std::string>& words) {
 			ListenServer::removeServer(words[1], words[2]);
 		}
 	}
+	else if (words[0] == "total")
+		LOGI("Nbr of clients = %d", Client::getTotalNbrClient());
+	else
+		LOGI("Invalid command");
 	return (0);
 }
 
@@ -77,13 +95,15 @@ int	IControl::handleListenEvent(epoll_event* event)
 	Client			*newClient = NULL;
 	if ((newClient = pt->acceptConnection()) == NULL)
 		return (1);
+	if (registerToEpoll(newClient->getfd(), newClient, EPOLLIN | EPOLLHUP))
+		return (1);
 	return (0);
 }
 
 
 int	IControl::handleClientEvent(epoll_event *event)
 {
-	if (event->events && EPOLLIN) {
+	if (event->events & EPOLLIN) {
 		IControl::handleClientIn(event);
 		return (0);
 	}
@@ -114,7 +134,7 @@ int	IControl::handleClientIn(epoll_event *event)
 	client = static_cast<Client *>(event->data.ptr);
 	if (client->getStatus() != READ)
 		return (0);
-	if ((n_read = read(client->getfd(), buffer_c, BUFFER_SIZE) < 0))
+	if ((n_read = read(client->getfd(), buffer_c, BUFFER_SIZE)) < 0)
 	{
 		return (-1);
 		//NEED TO REMOVE THIS CLIENT FATAL ERROR
@@ -143,7 +163,6 @@ int	IControl::handleClientIn(epoll_event *event)
 	}
 	if (client->getRequestStatus() == COMPLETE && client->getStatus() != ERROR)
 	{
-
 		client->stashBuffer(buffer);
 		client->setStatus(WRITE);
 		req_ptr = client->getFrontRequest();

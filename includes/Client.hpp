@@ -79,6 +79,8 @@ class	Client : public IObject
 		static Client*		newClient(const ClientSocket& socket, ListenServer& listenServer);
 		static void			deleteClient(Client* client);
 
+		static int			getTotalNbrClient(void);
+
 		int					getfd() const;
 		Host*				getHost() const;
 		const std::string&	getStrAddr(void) const;

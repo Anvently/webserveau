@@ -17,8 +17,13 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 
 Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._addressStr), \
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
-	_requests(copy._requests), _response(copy._response), _lastInteraction(copy._lastInteraction)
+	_requests(copy._requests), _response(copy._response), _lastInteraction(copy._lastInteraction), \
+	_status(copy._status), _buffer(copy._buffer)
 {
+}
+
+int	Client::getTotalNbrClient(void) {
+	return (_clientList.size());
 }
 
 void	Client::clearBuffers(void) {
@@ -56,6 +61,7 @@ Client*	Client::newClient(const ClientSocket& socket, ListenServer& listenServer
 	inet_ntop(AF_INET, &(((struct sockaddr_in*)&client._socket.addr)->sin_addr),
 					strIp, 64);
 	client._port = htons((((struct sockaddr_in *)&client._socket.addr.sa_data)->sin_port));
+	client._addressStr += strIp;
 	return (&client);
 }
 

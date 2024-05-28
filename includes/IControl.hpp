@@ -17,7 +17,8 @@ class IControl
 {
 	private :
 
-		virtual ~IControl(void) = 0;
+
+		virtual 	~IControl(void) = 0;
 
 		static int	handleListenEvent(epoll_event* event);
 		static int	handleClientEvent(epoll_event* event);
@@ -31,7 +32,10 @@ class IControl
 
 	public :
 
-		static int	registerCommandPrompt(int epollfd);
+		static int	_epollfd;
+
+		static int	registerCommandPrompt(void);
+		static int	registerToEpoll(int fd, void* data, int flags);
 
 		static int	handleEpoll(epoll_event* events, int nbrEvents);
 		static int	handleCommandPrompt(epoll_event* event);
