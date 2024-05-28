@@ -12,16 +12,19 @@
 #include <stdint.h>
 
 
-class Request;
-class Host;
-class ListenServer;
-class Response;
+// class Request;
+// class Host;
+// class ListenServer;
+// class Response;
 
 #define MAX_NBR_OUT_BUFFERS 10
 
 #ifndef BUFFER_SIZE
 # define BUFFER_SIZE 4092
 #endif
+
+
+enum {READ, WRITE, ERROR};
 
 struct ClientSocket
 {
@@ -53,6 +56,9 @@ class	Client : public IObject
 
 		time_t				_lastInteraction;
 
+		int					_status;
+		std::string			_buffer;
+
 		// May want something more versatile
 		// (If CGI, it would be linked to a pipe
 		// If static, it would be linked to an ifstream)
@@ -61,9 +67,9 @@ class	Client : public IObject
 		void	clearBuffers(void);
 
 		static std::list<Client>::iterator	findClient(Client* client);
-		
+
 		friend Client* ListenServer::acceptConnection(void);
-		
+
 
 	public:
 
@@ -80,8 +86,17 @@ class	Client : public IObject
 
 		int					getRequestStatus() const; //returns 1 if request has been fully received
 		int					getResponseStatus() const; // returns 1 if response is ready to send
+		Request				*getRequest(); // returns the current not complete request
+		Request				*getFrontRequest(); // return the oldest request
+		Response			*getResponse(); // returns the current not complete response
 
-		void				setHost(Host* host);
+		int					getStatus();
+		void				setStatus(int st);
+		void				stashBuffer(std::string &buffer);
+		void				retrieveBuffer(std::string &str);
+		void				clearBuffer();
+
+		void				setHost(std::string hostname);
 
 		void				shutdownConnection(void);
 

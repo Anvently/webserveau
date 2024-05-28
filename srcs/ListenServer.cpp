@@ -152,7 +152,7 @@ void	ListenServer::removeHost(Host* host) {
 /// @param host
 void	ListenServer::unassignHost(Host* host) {
 	std::map<std::string, Host*>::iterator	mapIt;
-	mapIt = _hostMap.find(host->getServerNames().at(0)); 
+	mapIt = _hostMap.find(host->getServerNames().at(0));
 	if (mapIt == _hostMap.end())
 		return;
 	for (std::list<Client*>::const_iterator clientIt = mapIt->second->getClientListBegin();\

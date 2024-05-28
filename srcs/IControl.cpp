@@ -85,19 +85,67 @@ int	IControl::handleClientEvent(epoll_event *event)
 {
 	if (event->events && EPOLLIN)
 		IControl::handleClientIn(event);
-	return (0);
+	else
+		return (0);
+}
+
+
+int	AssignHost(Client *client)
+{
+	std::string	hostname;
+	if (client->getFrontRequest()->getHostName(hostname))
+		return (1);
+	client->setHost(hostname);
+	client->getFrontRequest()->setBodyMaxSize(client->getHost()->getMaxSize());
+	return(0);
 }
 
 int	IControl::handleClientIn(epoll_event *event)
 {
 	Client	*client;
-	char	buffer[BUFFER_SIZE + 1];
+	char	buffer_c[BUFFER_SIZE + 1];
 	int		n_read;
+	int		res = 0;
+	Request	*req_ptr;
+	std::string	buffer;
 
 	client = static_cast<Client *>(event->data.ptr);
-	n_read = read(client->getfd(), buffer, BUFFER_SIZE);
-	buffer[n_read] = 0;
-	// if (client->getRequestStatus() < 1)
-	return (0);
+	if (client->getStatus() != READ)
+		return ;
+	if (n_read = read(client->getfd(), buffer_c, BUFFER_SIZE) < 0)
+	{
+		return (-1);
+		//NEED TO REMOVE THIS CLIENT FATAL ERROR
+	}
+	buffer_c[n_read] = 0;
+	client->retrieveBuffer(buffer);
+	buffer += buffer_c;
+	req_ptr = client->getRequest();
+	while (!buffer.empty() && req_ptr->getStatus() != COMPLETE)
+	{
+		res = req_ptr->parseInput(buffer);
+		if (res < 0 && AssignHost(client))
+		{
+			req_ptr->_fillError(400, "Host header missing or invalid");
+			req_ptr->setStatus(COMPLETE);
+			client->setStatus(ERROR);
+			buffer.clear();
+			break ;
+		}
+		if (res)
+		{
+			client->setStatus(ERROR);
+			buffer.clear();
+			break ;
+		}
+	}
+	if (client->getRequestStatus() == COMPLETE && client->getStatus() != ERROR)
+	{
 
+		client->stashBuffer(buffer);
+		client->setStatus(WRITE);
+		req_ptr = client->getFrontRequest();
+		req_ptr->printHeaders();
+	}
+	return (0);
 }
