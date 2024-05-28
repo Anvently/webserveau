@@ -143,3 +143,18 @@ void	Client::setStatus(int st)
 	this->_status = st;
 }
 
+void	Client::stashBuffer(std::string &str)
+{
+	this->_buffer += str;
+}
+
+void	Client::retrieveBuffer(std::string &str)
+{
+	str += this->_buffer;
+	this->_buffer.clear();
+}
+
+void	Client::clearBuffer()
+{
+	this->_buffer.clear();
+}

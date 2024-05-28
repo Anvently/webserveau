@@ -92,6 +92,9 @@ class	Client : public IObject
 
 		int					getStatus();
 		void				setStatus(int st);
+		void				stashBuffer(std::string &buffer);
+		void				retrieveBuffer(std::string &str);
+		void				clearBuffer();
 
 		void				setHost(std::string hostname);
 
