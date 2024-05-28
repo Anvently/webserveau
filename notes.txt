@@ -1,3 +1,43 @@
 CHrome behaviour:
 
-- 
+TODO
+
+	- Parsing headers
+		- Verifiy : 
+			- content-Encoding
+			- cookies ?
+
+	- IControl
+		- Body parsing handling from IControl
+		- parsing URL method
+		- checking host configuration/authorizations
+		- (dir listing??)
+			- stack on the go
+
+	- Mimetype static class
+	- errors static class
+
+	- response implemtatntation
+		- ERRORS
+		- CGIREsponsese
+		- STaticRespomnse
+
+Body parsing: function taking ostream* ?
+
+	- if error
+		=> close connection
+	- if GET/(DELETE?)
+		=> parse but ignored (compare with content-length)
+			- if chunck, until EOC
+	- CGI
+		=> POST
+			- /tmp/
+	- Static upload
+		=> check server rules
+		=> if text-plain
+			- check url for path
+		=> if multiform/part
+			- special parsing;
+				- tmp file that is parsed afterward
+
+

@@ -52,7 +52,7 @@ class	Client : public IObject
 		Host*				_host;
 		ListenServer&		_listenServer;
 		std::queue<Request>	_requests;
-		Response			_response;
+		Response*			_response;
 
 		time_t				_lastInteraction;
 

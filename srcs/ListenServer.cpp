@@ -223,7 +223,6 @@ void	ListenServer::shutdown()
 	this->_sockFd = 0;
 }
 
-
 // Start all the servers using the start function.
 int	ListenServer::startServers(int epollfd)
 {
