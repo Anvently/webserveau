@@ -68,7 +68,8 @@ class	Client : public IObject
 
 		static std::list<Client>::iterator	findClient(Client* client);
 
-		friend Client* ListenServer::acceptConnection(void);
+		friend Client* 			ListenServer::acceptConnection(void);
+		friend std::ostream&	operator<<(std::ostream& os, const Client&);
 
 
 	public:
@@ -104,5 +105,6 @@ class	Client : public IObject
 
 };
 
+std::ostream&	operator<<(std::ostream& os, const Client&);
 
 #endif

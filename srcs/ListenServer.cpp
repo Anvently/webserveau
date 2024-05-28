@@ -63,6 +63,13 @@ int	ListenServer::addHost(Host *host)
 	return (0);
 }
 
+bool	ListenServer::serverExist(const std::string& hostAddr, const std::string& hostPort)
+{
+	if (findServer(hostAddr, hostPort) != _serverList.end())
+		return (true);
+	return (false);
+}
+
 std::list<ListenServer>::iterator	ListenServer::findServer(const std::string& hostAddr, const std::string& hostPort)
 {
 	std::list<ListenServer>::iterator	it;
@@ -120,17 +127,34 @@ void	ListenServer::removeServer(std::list<ListenServer>::iterator it)
 		return;
 	if (it->_sockFd)
 		it->shutdown();
-	for (std::list<Client*>::iterator clientIt = it->_orphanClients.begin(); clientIt != it->_orphanClients.end(); clientIt++)
+	for (std::list<Client*>::iterator clientIt = it->_orphanClients.begin(); clientIt != it->_orphanClients.end();)
 	{
 		Client::deleteClient(*clientIt);
-		it->_orphanClients.remove(*clientIt);
+		it->_orphanClients.remove(*clientIt++);
 	}
 	for (UniqueValuesMapIterator<std::string, Host*> hostIt = it->_hostMap.begin(); hostIt != it->_hostMap.end();)
 	{
-		LOGD("Host (%ss) was unassigned from %ss:%ss", &hostIt->second->getServerNames().at(0), &it->_ip, &it->_port);
 		it->unassignHost((hostIt++)->second);
 	}
 	_serverList.erase(it);
+}
+
+/// @brief Remove an host with given name in the server.
+/// @param serverName 
+/// @return ```0``` if the host was deleted, ```1``` if it wasn't found.
+int	ListenServer::removeHost(const std::string& serverName) {
+	std::map<std::string, Host*>::iterator	it = _hostMap.find(serverName);
+	if (_hostMap.end() == it)
+		return (1);
+	removeHost(it->second);
+	return (0);
+}
+
+Host*	ListenServer::findHost(const std::string& serverName) {
+	std::map<std::string, Host*>::iterator	it = _hostMap.find(serverName);
+	if (_hostMap.end() == it)
+		return (NULL);
+	return (it->second);
 }
 
 /// @brief Remove the host from the listen server it belongs to if any.
@@ -165,6 +189,7 @@ void	ListenServer::unassignHost(Host* host) {
 		if (mapIt != _hostMap.end())
 			_hostMap.erase(mapIt);
 	}
+	LOGI("Host (%ss) was unassigned from %ss:%ss", &host->getServerNames().at(0), &this->_ip, &this->_port);
 	Host::removeHost(host);
 }
 
@@ -227,6 +252,7 @@ void	ListenServer::closeServers()
 
 void	ListenServer::removeServers()
 {
+	LOGI("Stopping servers...");
 	for (std::list<ListenServer>::iterator it = _serverList.begin(); it != _serverList.end();)
 	{
 		removeServer(it++);
@@ -239,6 +265,14 @@ int	ListenServer::getNbrServer(void) {
 
 int ListenServer::getNbrHost(void) const {
 	return (this->_nbrHost);
+}
+
+std::list<ListenServer>::const_iterator	ListenServer::getServerListBegin(void) {
+	return (_serverList.begin());
+}
+
+std::list<ListenServer>::const_iterator	ListenServer::getServerListEnd(void) {
+	return (_serverList.end());
 }
 
 /// @brief Accept an incoming connection, create a client and add it to the

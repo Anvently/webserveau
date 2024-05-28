@@ -220,7 +220,13 @@ void	ILogger::parseFormat(const char* format, va_list* args, int lvl)
 					break;
 
 				case 'C':
-					print<CGIConfig*>(args, lvl);
+					if (*(format + 2) == 'g')
+						print<CGIConfig*>(args, lvl);
+					else if (*(format + 2) == 'l')
+						print<Client*>(args, lvl);
+					else
+						break;
+					++format;
 					break;
 
 				default:

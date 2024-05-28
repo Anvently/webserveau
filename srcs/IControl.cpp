@@ -69,20 +69,67 @@ int	IControl::handleCommandPrompt(epoll_event* event) {
 	return (parseCommandPrompt(words));
 }
 
-int	IControl::parseCommandPrompt(std::deque<std::string>& words) {
-	if (words[0] == "stop" && words.size() > 1) {
-		if (words[1] == "all") {
-			LOGI("Stopping servers...");
-			ListenServer::removeServers();
-		}
-		else if (words.size() > 2) {
+void	IControl::handleKillCommand(std::deque<std::string>& words)
+{
+	if (words.size() < 2)
+		LOGV("Invalid number of argument.");
+	else if (words[1] == "all")
+		ListenServer::removeServers();
+	else if (words.size() == 3) {
+			LOGV("Trying to remove server %ss:%ss", &words[1], &words[2]);
 			ListenServer::removeServer(words[1], words[2]);
-		}
 	}
-	else if (words[0] == "total")
-		LOGI("Nbr of clients = %d", Client::getTotalNbrClient());
+	else if (words.size() == 4) {
+		if (ListenServer::serverExist(words[1], words[2]))
+		{
+			std::list<ListenServer>::iterator it = ListenServer::findServer(words[1], words[2]);
+			if (it->removeHost(words[3]))
+				LOGV("Host (%ss) was not found in server %ss:%ss", &words[3], &words[1], &words[2]);
+		}
+		else
+			LOGV("Invalid server");
+	}
 	else
-		LOGI("Invalid command");
+			LOGV("Invalid number of argument.");
+}
+
+void	IControl::handlePrintCommand(std::deque<std::string>& words)
+{
+	if (words.size() < 2) {
+		for (std::list<ListenServer>::const_iterator it = ListenServer::getServerListBegin();
+			it != ListenServer::getServerListEnd(); it++)
+				LOGV("%Ls", &*it);
+	}
+	else if (words.size() > 2) {
+		if (ListenServer::serverExist(words[1], words[2]))
+		{
+			std::list<ListenServer>::iterator it = ListenServer::findServer(words[1], words[2]);
+			if (words.size() == 3)
+				LOGV("%Ls", &*it);
+			else if (words.size() >= 4) {
+				Host*	host = it->findHost(words[3]);
+				if (host)
+					LOGV("%H", host);
+				else
+					LOGV("Invalid host");
+			}
+		}
+		else
+			LOGV("Invalid server");
+	}
+}
+
+int	IControl::parseCommandPrompt(std::deque<std::string>& words) {
+	if (words.size() == 0)
+		return (0);
+	else if (words[0] == "kill")
+		handleKillCommand(words);
+	else if (words[0] == "print")
+		handlePrintCommand(words);
+	else if (words[0] == "client_nbr")
+		LOGV("Nbr of clients = %d", Client::getTotalNbrClient());
+	else
+		LOGV("Invalid command");
 	return (0);
 }
 
@@ -143,6 +190,7 @@ int	IControl::handleClientIn(epoll_event *event)
 	client->retrieveBuffer(buffer);
 	buffer += buffer_c;
 	req_ptr = client->getRequest();
+	LOGD("client = %Cl", client);
 	while (!buffer.empty() && req_ptr->getStatus() != COMPLETE)
 	{
 		res = req_ptr->parseInput(buffer);

@@ -58,6 +58,7 @@ class ListenServer : public IObject
 		virtual ~ListenServer();
 
 		static std::list<ListenServer>::iterator	findServer(const std::string& hostAddr, const std::string& hostPort);
+		static bool	serverExist(const std::string& hostAddr, const std::string& hostPort);
 
 		static int	addHost(Host* host);
 		static void	removeHost(Host* host);
@@ -67,7 +68,12 @@ class ListenServer : public IObject
 		static void	removeServer(const std::string& hostAddr, const std::string& hostPort);
 		static void	removeServers(void);
 
+		static std::list<ListenServer>::const_iterator	getServerListBegin(void);
+		static std::list<ListenServer>::const_iterator	getServerListEnd(void);
 		static int	getNbrServer(void);
+
+		int			removeHost(const std::string& serverName);
+		Host*		findHost(const std::string& serverName);
 
 		void		assignHost(Host* host);
 		void		unassignHost(Host* host);

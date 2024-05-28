@@ -28,6 +28,9 @@ class IControl
 		static int	handleClientOut(epoll_event* event);
 		static int	handleClientHup(epoll_event* event);
 
+		static void	handleKillCommand(std::deque<std::string>& words);
+		static void	handlePrintCommand(std::deque<std::string>& words);
+
 		static int	parseCommandPrompt(std::deque<std::string>& words);
 
 	public :

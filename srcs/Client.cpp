@@ -9,7 +9,7 @@ std::list<Client>	Client::_clientList;
 Client::~Client(void) {}
 
 Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
-	: _socket(socket), _listenServer(listenServer), _status(READ)
+	: _socket(socket), _host(NULL), _listenServer(listenServer), _status(READ)
 {
 	_port = 0;
 	_lastInteraction = time(NULL);
@@ -163,4 +163,21 @@ void	Client::retrieveBuffer(std::string &str)
 void	Client::clearBuffer()
 {
 	this->_buffer.clear();
+}
+
+std::ostream&	operator<<(std::ostream& os, const Client& client) {
+	os << "		->  fd: " << client._socket.fd << std::endl;
+	os << "		ip/port: " << client._addressStr << ':' << client._port << std::endl;
+	os << "		host: " << client._host;
+	if (client._host)
+		os << " (" << client._host->getServerNames().at(0) << ')';
+	os << std::endl;
+	os << "		current requests: " << client._requests.size();
+	if (client._requests.size())
+		os << " | status = " << client._requests.front().getStatus() << " | error = " \
+			<< client._requests.front().getError();
+	os << std::endl;
+	os << "		last interaction: " << time(NULL) - client._lastInteraction << std::endl;
+	os << "		nbr of out buffers: " << client._outBuffers.size() << std::endl;
+	return (os);
 }

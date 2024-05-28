@@ -47,7 +47,7 @@
 
 static void	initLogs(void)
 {
-	ILogger::addStream(std::cout, LOG_CONFIG_DEBUG | LOG_COLORIZE_MSK);
+	ILogger::addStream(std::cout, LOG_CONFIG_VERBOSE | LOG_COLORIZE_MSK);
 	ILogger::addLogFile("logs/sessions.log", LOG_CONFIG_DEBUG);
 	ILogger::addLogFile("logs/error.log", LOG_ERROR_MSK);
 	ILogger::logDate(-1);
@@ -56,8 +56,8 @@ static void	initLogs(void)
 }
 
 static int	cleanExit(int code) {
-
-	ListenServer::removeServers();
+	if (ListenServer::getNbrServer())
+		ListenServer::removeServers();
 	ILogger::clearFiles();
 	return(code);
 }
