@@ -5,33 +5,6 @@
 
 int	IControl::_epollfd = -1;
 
-int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
-{
-	Client*	ptr_client;
-	ListenServer*	ptr_listenS;
-
-	if (nbr_event < 1)
-		return (0);
-	for (int i = 0; i < nbr_event; i++)
-	{
-		// LOGD("event => fd = %d | event = %d", events[i].data.fd, events[i].events);
-		if (events[i].data.fd == STDIN_FILENO) {
-			if (handleCommandPrompt(&events[i]))
-				return (1);
-		}
-		else if ((ptr_listenS = dynamic_cast<ListenServer *> ((IObject *)events[i].data.ptr)) != NULL)
-			handleListenEvent(&events[i]);
-		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL)
-			handleClientEvent(&events[i]);
-		//handle CGI event
-		//.....
-
-	}
-	// a round of parsing has been done, could try to assign clients to hosts
-	//also need to check to timeout some connections
-	return (0);
-}
-
 int	IControl::registerCommandPrompt(void) {
 	struct epoll_event	event;
 
@@ -133,6 +106,34 @@ int	IControl::parseCommandPrompt(std::deque<std::string>& words) {
 	return (0);
 }
 
+
+int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
+{
+	Client*	ptr_client;
+	ListenServer*	ptr_listenS;
+
+	if (nbr_event < 1)
+		return (0);
+	for (int i = 0; i < nbr_event; i++)
+	{
+		// LOGD("event => fd = %d | event = %d", events[i].data.fd, events[i].events);
+		if (events[i].data.fd == STDIN_FILENO) {
+			if (handleCommandPrompt(&events[i]))
+				return (1);
+		}
+		else if ((ptr_listenS = dynamic_cast<ListenServer *> ((IObject *)events[i].data.ptr)) != NULL)
+			handleListenEvent(&events[i]);
+		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL)
+			handleClientEvent(&events[i], *ptr_client);
+		//handle CGI event
+		//.....
+
+	}
+	// a round of parsing has been done, could try to assign clients to hosts
+	//also need to check to timeout some connections
+	return (0);
+}
+
 /// @brief invoked when the event is a brand new connection to a server, should create a new client.
 /// @param event the event containing a pointer to the listenServer concerned
 /// @return 0 on success 1 on some fatal error
@@ -148,10 +149,10 @@ int	IControl::handleListenEvent(epoll_event* event)
 }
 
 
-int	IControl::handleClientEvent(epoll_event *event)
+int	IControl::handleClientEvent(epoll_event *event, Client& client)
 {
 	if (event->events & EPOLLIN) {
-		IControl::handleClientIn(event);
+		IControl::handleClientIn(client);
 		return (0);
 	}
 	else
@@ -169,22 +170,48 @@ int	AssignHost(Client *client)
 	return(0);
 }
 
-int	IControl::handleClientIn(epoll_event *event)
-{
-	Client	*client;
-	char	buffer_c[BUFFER_SIZE + 1];
-	int		n_read;
+#define HEADER_STATUS_ONGOING 0
+#define HEADER_STATUS_READY 1
+#define HEADER_STATUS_DONE 2
 
-	client = static_cast<Client *>(event->data.ptr);
-	if (client->getStatus() != READ)
+#define BODY_STATUS_NONE 0
+#define BODY_STATUS_ONGOING 1
+#define BODY_STATUS_DONE 2
+
+int	IControl::handleClientIn(Client& client)
+{
+	char	buffer_c[BUFFER_SIZE + 1];
+	int		n_read, ret = 0, response = 0;
+
+	if (client.getStatus() != READ)
 		return (0);
-	if ((n_read = read(client->getfd(), buffer_c, BUFFER_SIZE)) < 0)
+	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL ERROR
 	buffer_c[n_read] = 0;
-	if (client->parseRequest(buffer_c))
-		//generate respones error
-	
-
-	
+	ret = client.parseRequest(buffer_c);
+	if (ret > 0) //Error occured
+		generateResponse(client, ret);
+	else if (ret < 0) { //Status changed
+		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
+			if ((ret = handleClientRequest(client)))
+				generateResponse(client, ret);
+		}
+		if (client.getBodyStatus() == BODY_STATUS_DONE && ret == 0) {
+			generateResponse(client);
+		}
+	}
+	else //Nothing changed
+		return (0);
+	client.setMode(WRITE);
 	return (0);
+}
+
+void	IControl::generateResponse(Client& client, int ret)
+{
+	if (response) {
+		if (client.getResponse()) //Not sure
+			delete (client.getResponse()); //Not sure
+		client.setResponse(new Response(ret));
+		
+	}
 }

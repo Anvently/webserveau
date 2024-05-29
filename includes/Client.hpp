@@ -52,7 +52,7 @@ class	Client : public IObject
 		Host*				_host;
 		ListenServer&		_listenServer;
 		std::queue<Request>	_requests;
-		Response*			_response;
+		AResponse*			_response;
 
 		time_t				_lastInteraction;
 
@@ -91,7 +91,7 @@ class	Client : public IObject
 		int					getResponseStatus() const; // returns 1 if response is ready to send
 		Request&			getRequest(); // returns the current not complete request
 		Request				*getFrontRequest(); // return the oldest request
-		Response			*getResponse(); // returns the current not complete response
+		AResponse			*getResponse(); // returns the current not complete response
 
 		/// @brief 
 		/// @param buffer null terminated buffer
@@ -105,6 +105,7 @@ class	Client : public IObject
 		void				clearBuffer();
 
 		void				setHost(std::string hostname);
+		void				setResponse(Response*);
 
 		void				shutdownConnection(void);
 

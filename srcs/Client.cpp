@@ -175,14 +175,8 @@ int	Client::parseRequest(const char* bufferIn) {
 	while (!fullBuffer.empty() && request.getStatus() == ONGOING)
 	{
 		res = request.parseInput(fullBuffer);
-		// if (res < 0 && (AssignHost(client) || req_ptr->getLenInfo()))
-		// {
-		// 	req_ptr->_fillError(400, "Host header missing or invalid");
-		// 	req_ptr->setStatus(COMPLETE);
-		// 	client->setStatus(ERROR);
-		// 	fullBuffer.clear();
-		// 	break ;
-		// }
+		if (res < 0)
+			setStatus(HEADER_STATUS_READY);
 		if (res > 0)
 		{
 			_status = ERROR;

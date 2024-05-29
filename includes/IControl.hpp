@@ -21,12 +21,12 @@ class IControl
 		virtual 	~IControl(void) = 0;
 
 		static int	handleListenEvent(epoll_event* event);
-		static int	handleClientEvent(epoll_event* event);
+		static int	handleClientEvent(epoll_event* event, Client&);
 		static int	handleCGIEvent(epoll_event* event);
 
-		static int	handleClientIn(epoll_event* event);
-		static int	handleClientOut(epoll_event* event);
-		static int	handleClientHup(epoll_event* event);
+		static int	handleClientIn(Client&);
+		static int	handleClientOut(Client&);
+		static int	handleClientHup(Client&);
 
 		/**
 		@brief Should be called once the full header is parsed
@@ -70,12 +70,14 @@ class IControl
 		/**
 		@brief check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
 		**/
-		static int checkForbiddenHeaders(void);
+		static int	checkForbiddenHeaders(void);
 		/**
 		@brief check if host is given, empty or not, assign correct or first host found.
 		Check content-length
 		**/
-		static int checkHost(void);
+		static int	checkHost(void);
+
+		static void	generateResponse(Client& client, int status = 0);
 
 		static void	handleKillCommand(std::deque<std::string>& words);
 		static void	handlePrintCommand(std::deque<std::string>& words);
