@@ -34,8 +34,8 @@ Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._ad
 	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
 	_fileName(copy._fileName), _filestream(copy._filestream)
 {
-	this->_request = new Request(*copy._request);
-	this->_response = new Response(*copy._response);
+	this->_request = NULL;
+	this->_response = NULL;
 }
 
 int	Client::getTotalNbrClient(void) {

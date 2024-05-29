@@ -103,7 +103,7 @@ class	Client : public IObject
 		int					getResponseStatus() const; // returns 1 if response is ready to send
 		Request*			getRequest(); // returns the current not complete request or allocate a new one
 		Request				*getFrontRequest(); // return the oldest request
-		AResponse			*getResponse(); // returns the current not complete response
+		AResponse*			getResponse(); // returns the current not complete response
 
 		/// @brief
 		/// @param buffer null terminated buffer
@@ -113,13 +113,14 @@ class	Client : public IObject
 		int					getHeaderStatus();
 		int					getBodyStatus();
 		int					getMode();
-		void				setStatus(int st);
+		void				setMode(int mode);
 		void				stashBuffer(std::string &buffer);
 		void				retrieveBuffer(std::string &str);
 		void				clearBuffer();
+		void				updateLastInteraction(void);
 
 		void				setHost(std::string hostname);
-		void				setResponse(Response*);
+		void				setResponse(AResponse*);
 
 		void				shutdownConnection(void);
 		void				deleteFile();

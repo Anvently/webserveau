@@ -15,13 +15,13 @@ class	AResponse
 {
 	protected:
 
-		virtual ~AResponse() = 0;
 
 		int									_status;
 		std::string							_description;
 
 	public:
 
+		virtual ~AResponse() = 0;
 		virtual int			writeResponse(std::queue<char*>& outQueue) = 0;
 
 };

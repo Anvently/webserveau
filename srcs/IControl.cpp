@@ -170,23 +170,16 @@ int	AssignHost(Client *client)
 	return(0);
 }
 
-#define HEADER_STATUS_ONGOING 0
-#define HEADER_STATUS_READY 1
-#define HEADER_STATUS_DONE 2
-
-#define BODY_STATUS_NONE 0
-#define BODY_STATUS_ONGOING 1
-#define BODY_STATUS_DONE 2
-
 int	IControl::handleClientIn(Client& client)
 {
 	char	buffer_c[BUFFER_SIZE + 1];
 	int		n_read, ret = 0, response = 0;
 
-	if (client.getStatus() != READ)
+	if (client.getMode() != READ)
 		return (0);
 	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL ERROR
+	
 	buffer_c[n_read] = 0;
 	ret = client.parseRequest(buffer_c);
 	if (ret > 0) //Error occured
