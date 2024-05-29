@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <ListenServer.hpp>
+#include <cstring>
 
 
 #define HEADER_MAX_SIZE 4096
@@ -31,11 +32,30 @@ int	getInt(std::string str, int base, int &res);
 int	getMethodIndex(const std::string& method);
 
 
+struct i_less {
+	static inline char	lowercase(char c) {
+		if (c >= 'A' || c <= 'Z')
+			return (c + ('a' - 'A'));
+		return (c);
+	};
+	static inline int	stricmp(const char* s1, const char* s2) {
+		while (*s1 && (lowercase(*s1) == lowercase(*s2)))
+		{
+			s1++;
+			s2++;
+		}
+		return ((unsigned char) *s1 - (unsigned char) *s2);
+	};
+	bool operator() (const std::string& lhs, const std::string& rhs) const {
+		return stricmp(lhs.c_str(), rhs.c_str()) < 0;
+	}
+};
+
 class	Request
 {
 	private:
 
-		std::map<std::string, std::string>	_headers;
+		std::map<std::string, std::string, i_less>	_headers;
 		std::string							_formated_headers;
 		std::string							_uri;
 		int									_method;
@@ -91,8 +111,9 @@ class	Request
 		void		setStatus(int status);
 		int			getError() const;
 
-		std::string	getHeader(std::string const &key);
-		int			getHostName(std::string &hostname);
+		const std::string&	getHeader(std::string const &key) const;
+		int					getHostName(std::string &hostname) const;
+		bool				checkHeader(const std::string& key) const;
 
 		void	formatHeaders();
 		void	printHeaders();

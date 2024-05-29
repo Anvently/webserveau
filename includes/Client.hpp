@@ -114,12 +114,15 @@ class	Client : public IObject
 		int					getBodyStatus();
 		int					getMode();
 		void				setMode(int mode);
+		void				setHeaderStatus(int);
+		void				setBodyStatus(int);
+		void				setBodyMaxSize(int);
 		void				stashBuffer(std::string &buffer);
 		void				retrieveBuffer(std::string &str);
 		void				clearBuffer();
 		void				updateLastInteraction(void);
 
-		void				setHost(std::string hostname);
+		void				setHost(const std::string& hostname);
 		void				setResponse(AResponse*);
 
 		void				shutdownConnection(void);

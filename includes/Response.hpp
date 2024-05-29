@@ -6,6 +6,19 @@
 #include <map>
 #include <fstream>
 
+// 1xx indicates an informational message only
+// 2xx indicates success of some kind
+// 3xx redirects the client to another URL
+// 4xx indicates an error on the client's part
+// 5xx indicates an error on the server's part
+#define RES_CONTINUE 100
+#define RES_OK 200
+#define RES_BAD_REQUEST 400
+#define RES_NOT_FOUND 404
+#define RES_REQUEST_ENTITY_TOO_LARGE 413
+#define RES_INTERNAL_ERROR 500
+#define RES_NOT_IMPLEMENTED 501
+
 /** @brief 
 
 Error response
@@ -26,7 +39,7 @@ class	AResponse
 
 };
 
-class	SingleLineResponse : AResponse
+class	SingleLineResponse : public AResponse
 {
 	private:
 
@@ -40,7 +53,7 @@ class	SingleLineResponse : AResponse
 		virtual int		writeResponse(std::queue<char*>& outQueue);
 };
 
-class	EmptyBodyResponse : AResponse
+class	EmptyBodyResponse : public AResponse
 {
 	private:
 
@@ -55,7 +68,7 @@ class	EmptyBodyResponse : AResponse
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	StaticPageResponse : AResponse
+class	StaticPageResponse : public AResponse
 {
 	private:
 
@@ -69,7 +82,7 @@ class	StaticPageResponse : AResponse
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	CGIResponse : AResponse
+class	CGIResponse : public AResponse
 {
 	private:
 
@@ -84,16 +97,22 @@ class	CGIResponse : AResponse
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	DirListingResponse : AResponse
+class	DynamicReponse : public AResponse
 {
+
 	private:
 
+		DynamicReponse(/* args */);
 		std::map<std::string, std::string>	_headers;
 		int									_pipeFd;
+		std::string							_body;
 
 	public:
-		DirListingResponse(/* args */);
-		~DirListingResponse();
+
+		typedef	void (*bodyGenerator_func)(DynamicReponse&, const std::string);
+		
+		DynamicReponse(bodyGenerator_func, const std::string&);
+		~DynamicReponse();
 
 	virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };

@@ -65,17 +65,11 @@ class IControl
 				- wait
 			- send response
 		**/
-		static int	handleClientRequest(Client& client);
+		static int	handleClientRequest(Client& client, const Request& request);
 
-		/**
-		@brief check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
-		**/
-		static int	checkForbiddenHeaders(void);
-		/**
-		@brief check if host is given, empty or not, assign correct or first host found.
-		Check content-length
-		**/
-		static int	checkHost(void);
+		static int	checkForbiddenHeaders(const Request& request);
+		static int	assignHost(Client& client, const Request& request);
+		static int	checkBodyLength(Client& client, const Request& request);
 
 		static void	generateResponse(Client& client, int status = 0);
 
