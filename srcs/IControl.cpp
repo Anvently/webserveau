@@ -174,49 +174,17 @@ int	IControl::handleClientIn(epoll_event *event)
 	Client	*client;
 	char	buffer_c[BUFFER_SIZE + 1];
 	int		n_read;
-	int		res = 0;
-	Request	*req_ptr;
-	std::string	buffer;
 
 	client = static_cast<Client *>(event->data.ptr);
 	if (client->getStatus() != READ)
 		return (0);
 	if ((n_read = read(client->getfd(), buffer_c, BUFFER_SIZE)) < 0)
-	{
-		return (-1);
-		//NEED TO REMOVE THIS CLIENT FATAL ERROR
-	}
+		return (-1); //NEED TO REMOVE THIS CLIENT FATAL ERROR
 	buffer_c[n_read] = 0;
-	client->retrieveBuffer(buffer);
-	buffer += buffer_c;
-	LOGI("buffer: %ss", &buffer);
-	req_ptr = client->getRequest();
-	while (!buffer.empty() && req_ptr->getStatus() == ONGOING)
-	{
-		res = req_ptr->parseInput(buffer);
-		if (res < 0 && (AssignHost(client) || req_ptr->getLenInfo()))
-		{
-			req_ptr->_fillError(400, "Host header missing or invalid");
-			req_ptr->setStatus(COMPLETE);
-			client->setStatus(ERROR);
-			buffer.clear();
-			break ;
-		}
-		if (res > 0)
-		{
-			client->setStatus(ERROR);
-			buffer.clear();
-			break ;
-		}
+	if (client->parseRequest(buffer_c))
+		//generate respones error
+	
 
-	}
-	if (client->getRequestStatus() == COMPLETE && client->getStatus() != ERROR)
-	{
-		client->stashBuffer(buffer);
-		client->setStatus(WRITE);
-		req_ptr = client->getFrontRequest();
-		req_ptr->printHeaders();
-		LOGE("Request status: %d | Client status: %d", client->getRequestStatus(), client->getStatus());
-	}
+	
 	return (0);
 }

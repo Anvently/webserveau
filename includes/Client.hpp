@@ -89,9 +89,14 @@ class	Client : public IObject
 
 		int					getRequestStatus() const; //returns 1 if request has been fully received
 		int					getResponseStatus() const; // returns 1 if response is ready to send
-		Request				*getRequest(); // returns the current not complete request
+		Request&			getRequest(); // returns the current not complete request
 		Request				*getFrontRequest(); // return the oldest request
 		Response			*getResponse(); // returns the current not complete response
+
+		/// @brief 
+		/// @param buffer null terminated buffer
+		/// @return ```< 0``` 
+		int					parseRequest(const char* buffer);
 
 		int					getStatus();
 		void				setStatus(int st);

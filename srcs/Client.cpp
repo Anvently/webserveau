@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <ctime>
 #include <arpa/inet.h>
+#include <ILogger.hpp>
 
 std::list<Client>	Client::_clientList;
 
@@ -122,14 +123,14 @@ void	Client::shutdownConnection(void) {
 }
 
 
-Request	*Client::getRequest()
+Request&	Client::getRequest()
 {
 	if (this->_requests.empty() || this->_requests.back().getStatus() == COMPLETE)
 	{
 		Request	newRequest;
 		this->_requests.push(newRequest);
 	}
-	return (&this->_requests.back());
+	return (this->_requests.back());
 }
 
 Request	*Client::getFrontRequest()
@@ -163,6 +164,39 @@ void	Client::retrieveBuffer(std::string &str)
 void	Client::clearBuffer()
 {
 	this->_buffer.clear();
+}
+
+int	Client::parseRequest(const char* bufferIn) {
+	std::string	fullBuffer = _buffer + bufferIn;
+	Request&	request = getRequest();
+	int			res = 0;
+
+	LOGI("fullBuffer: %ss", &fullBuffer);
+	while (!fullBuffer.empty() && request.getStatus() == ONGOING)
+	{
+		res = request.parseInput(fullBuffer);
+		// if (res < 0 && (AssignHost(client) || req_ptr->getLenInfo()))
+		// {
+		// 	req_ptr->_fillError(400, "Host header missing or invalid");
+		// 	req_ptr->setStatus(COMPLETE);
+		// 	client->setStatus(ERROR);
+		// 	fullBuffer.clear();
+		// 	break ;
+		// }
+		if (res > 0)
+		{
+			_status = ERROR;
+			fullBuffer.clear();
+			break ;
+		}
+	}
+	if (request.getStatus() == COMPLETE && _status != ERROR)
+	{
+		stashBuffer(fullBuffer);
+		req_ptr = client->getFrontRequest();
+		req_ptr->printHeaders();
+		LOGE("Request status: %d | Client status: %d", client->getRequestStatus(), client->getStatus());
+	}
 }
 
 std::ostream&	operator<<(std::ostream& os, const Client& client) {

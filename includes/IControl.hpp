@@ -28,6 +28,55 @@ class IControl
 		static int	handleClientOut(epoll_event* event);
 		static int	handleClientHup(epoll_event* event);
 
+		/**
+		@brief Should be called once the full header is parsed
+			- if header READY
+				- check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
+				- check host rules
+					- identify host
+					- check headers content-length
+				- parse uri, get location (and parameters) and check for body
+					- check redirects
+					- if dir && default_uri
+						- change uri
+					- check if cgi or static/dir_listing
+					- check allowed methods
+					- if not static POST
+						- check ressource existence
+					- else
+						- check upload settings
+					- if continue
+						- generate body parsing config (creating ostream and max_chunk_length)
+						- genereate CONTINUE RESPONSE
+					- else if body
+						- resume body parsing as CGI
+			- WHILE (CONTINUE RESPONSE NOT SENT) && !NOT ERROR
+				- return
+				- if body
+					- resume body parsing with given config
+						- switch to READ
+			- if BODY READY && !ERROR
+				- generate response
+					- CGI
+					- dir_listing
+					- STATIC page
+					- switch to WRITE
+			- while (response NOT READY)
+				- wait
+			- send response
+		**/
+		static int	handleClientRequest(Client& client);
+
+		/**
+		@brief check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
+		**/
+		static int checkForbiddenHeaders(void);
+		/**
+		@brief check if host is given, empty or not, assign correct or first host found.
+		Check content-length
+		**/
+		static int checkHost(void);
+
 		static void	handleKillCommand(std::deque<std::string>& words);
 		static void	handlePrintCommand(std::deque<std::string>& words);
 
@@ -46,3 +95,4 @@ class IControl
 };
 
 #endif
+ 

@@ -19,6 +19,7 @@
 enum {none, chuncked, mesured};
 enum {GET, POST, DELETE};
 enum {COMPLETE, ONGOING, NEW};
+enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
 
 static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
 #define METHOD_NBR 3
@@ -80,7 +81,7 @@ class	Request
 		int			getChunkedSize(std::string &buffer);
 		void		trimSpace();
 
-		int	_fillError(int error, std::string const &verbose);
+		int			_fillError(int error, std::string const &verbose);
 
 		int			parseInput(std::string &buffer);
 		int			parseRequestLine();

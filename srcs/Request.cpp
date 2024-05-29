@@ -185,6 +185,7 @@ int	Request::parseHeaders(std::string &buffer)
 		if (this->_line == "")
 		{
 			this->_status = COMPLETE;
+			this->_final_status = HOST;
 			this->_line = "";
 			return (0);
 		}
