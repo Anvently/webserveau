@@ -7,20 +7,35 @@
 
 std::list<Client>	Client::_clientList;
 
-Client::~Client(void) {}
+Client::~Client(void) {
+
+	if (_request)
+		delete(_request);
+	if (_response)
+		delete(_response);
+	if (_filestream)
+		_filestream->close();
+}
 
 Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
-	: _socket(socket), _host(NULL), _listenServer(listenServer), _status(READ)
+	: _socket(socket), _host(NULL), _listenServer(listenServer), _headerStatus(HEADER_STATUS_ONGOING), \
+	_bodyStatus(BODY_STATUS_NONE), _mode(READ)
 {
 	_port = 0;
 	_lastInteraction = time(NULL);
+	_request = NULL;
+	_response = NULL;
+	_filestream = NULL;
 }
 
 Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._addressStr), \
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
-	_requests(copy._requests), _response(copy._response), _lastInteraction(copy._lastInteraction), \
-	_status(copy._status), _buffer(copy._buffer)
+	 _lastInteraction(copy._lastInteraction), \
+	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
+	_fileName(copy._fileName), _filestream(copy._filestream)
 {
+	this->_request = new Request(*copy._request);
+	this->_response = new Response(*copy._response);
 }
 
 int	Client::getTotalNbrClient(void) {
@@ -101,8 +116,8 @@ int	Client::getAddrPort(void) const {
 /// @brief Return the status of the request at the front of the queue.
 /// @return ```-1``` if no request in the queue.
 int	Client::getRequestStatus() const {
-	if (this->_requests.empty() == false)
-		return (_requests.front().getStatus());
+	if (this->_request != NULL)
+		return (this->_request->getStatus());
 	return (-1);
 }
 
@@ -123,32 +138,14 @@ void	Client::shutdownConnection(void) {
 }
 
 
-Request&	Client::getRequest()
+Request*	Client::getRequest()
 {
-	if (this->_requests.empty() || this->_requests.back().getStatus() == COMPLETE)
-	{
-		Request	newRequest;
-		this->_requests.push(newRequest);
-	}
-	return (this->_requests.back());
+	if (_request == NULL)
+		_request = new Request();
+	return (_request);
 }
 
-Request	*Client::getFrontRequest()
-{
-	if (this->_requests.empty())
-		return (NULL);
-	return (&this->_requests.front());
-}
 
-int	Client::getStatus()
-{
-	return (this->_status);
-}
-
-void	Client::setStatus(int st)
-{
-	this->_status = st;
-}
 
 void	Client::stashBuffer(std::string &str)
 {
@@ -168,29 +165,55 @@ void	Client::clearBuffer()
 
 int	Client::parseRequest(const char* bufferIn) {
 	std::string	fullBuffer = _buffer + bufferIn;
-	Request&	request = getRequest();
+	Request*	request = getRequest();
 	int			res = 0;
 
 	LOGI("fullBuffer: %ss", &fullBuffer);
-	while (!fullBuffer.empty() && request.getStatus() == ONGOING)
+	if (_headerStatus < HEADER_STATUS_READY)
 	{
-		res = request.parseInput(fullBuffer);
+		res = request->parseHeaders(fullBuffer);
 		if (res < 0)
-			setStatus(HEADER_STATUS_READY);
-		if (res > 0)
-		{
-			_status = ERROR;
-			fullBuffer.clear();
-			break ;
-		}
+			_headerStatus = HEADER_STATUS_READY;
+		return (res);
 	}
-	if (request.getStatus() == COMPLETE && _status != ERROR)
+	else if (_headerStatus == HEADER_STATUS_DONE && _bodyStatus == ONGOING)
 	{
-		stashBuffer(fullBuffer);
-		req_ptr = client->getFrontRequest();
-		req_ptr->printHeaders();
-		LOGE("Request status: %d | Client status: %d", client->getRequestStatus(), client->getStatus());
+		res = request->parseInput(fullBuffer, _filestream);
+		if (res < 0)
+			_bodyStatus = BODY_STATUS_DONE;
+		return(res);
 	}
+	else
+		return (0);
+
+
+
+
+	// while (!fullBuffer.empty() && request->getStatus() < 4)
+	// {
+	// 	res = request->parseInput(fullBuffer);
+	// 	// if (res < 0 && (AssignHost(client) || req_ptr->getLenInfo()))
+	// 	// {
+	// 	// 	req_ptr->_fillError(400, "Host header missing or invalid");
+	// 	// 	req_ptr->setStatus(COMPLETE);
+	// 	// 	client->setStatus(ERROR);
+	// 	// 	fullBuffer.clear();
+	// 	// 	break ;
+	// 	// }
+	// 	if (res > 0)
+	// 	{
+
+	// 		fullBuffer.clear();
+	// 		break ;
+	// 	}
+	// }
+	// if (request->getStatus() == COMPLETE && _status != ERROR)
+	// {
+	// 	stashBuffer(fullBuffer);
+	// 	req_ptr = client->getRequest();
+	// 	req_ptr->printHeaders();
+	// 	LOGE("Request status: %d | Client status: %d", client->getRequestStatus(), client->getStatus());
+	// }
 }
 
 std::ostream&	operator<<(std::ostream& os, const Client& client) {
@@ -200,12 +223,34 @@ std::ostream&	operator<<(std::ostream& os, const Client& client) {
 	if (client._host)
 		os << " (" << client._host->getServerNames().at(0) << ')';
 	os << std::endl;
-	os << "		current requests: " << client._requests.size();
-	if (client._requests.size())
-		os << " | status = " << client._requests.front().getStatus() << " | error = " \
-			<< client._requests.front().getError();
+	if (client._request)
+		os << " | status = " << client._request->getStatus() << " | error = " \
+			<< client._request->getError();
 	os << std::endl;
 	os << "		last interaction: " << time(NULL) - client._lastInteraction << std::endl;
 	os << "		nbr of out buffers: " << client._outBuffers.size() << std::endl;
 	return (os);
+}
+
+
+int	Client::getHeaderStatus()
+{
+	return (this->_headerStatus);
+}
+
+int	Client::getBodyStatus()
+{
+	return (this->_bodyStatus);
+}
+
+int	Client::getMode()
+{
+	return (this->_mode);
+}
+
+void	Client::deleteFile()
+{
+	if (_filestream)
+		_filestream->close();
+	unlink(_fileName.c_str());
 }

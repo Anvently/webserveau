@@ -20,8 +20,16 @@
 #define MAX_NBR_OUT_BUFFERS 10
 
 #ifndef BUFFER_SIZE
-# define BUFFER_SIZE 4092
+# define BUFFER_SIZE 4096
 #endif
+
+#define HEADER_STATUS_ONGOING 0
+#define HEADER_STATUS_READY 1
+#define HEADER_STATUS_DONE 2
+
+#define BODY_STATUS_NONE 0
+#define BODY_STATUS_ONGOING 1
+#define BODY_STATUS_DONE 2
 
 
 enum {READ, WRITE, ERROR};
@@ -51,13 +59,17 @@ class	Client : public IObject
 
 		Host*				_host;
 		ListenServer&		_listenServer;
-		std::queue<Request>	_requests;
+		Request*			_request;
 		AResponse*			_response;
 
 		time_t				_lastInteraction;
 
-		int					_status;
+		int					_headerStatus;
+		int					_bodyStatus;
+		int					_mode;
 		std::string			_buffer;
+		std::string			_fileName;
+		std::fstream*		_filestream;
 
 		// May want something more versatile
 		// (If CGI, it would be linked to a pipe
@@ -89,16 +101,18 @@ class	Client : public IObject
 
 		int					getRequestStatus() const; //returns 1 if request has been fully received
 		int					getResponseStatus() const; // returns 1 if response is ready to send
-		Request&			getRequest(); // returns the current not complete request
+		Request*			getRequest(); // returns the current not complete request or allocate a new one
 		Request				*getFrontRequest(); // return the oldest request
 		AResponse			*getResponse(); // returns the current not complete response
 
-		/// @brief 
+		/// @brief
 		/// @param buffer null terminated buffer
-		/// @return ```< 0``` 
+		/// @return ```< 0```
 		int					parseRequest(const char* buffer);
 
-		int					getStatus();
+		int					getHeaderStatus();
+		int					getBodyStatus();
+		int					getMode();
 		void				setStatus(int st);
 		void				stashBuffer(std::string &buffer);
 		void				retrieveBuffer(std::string &str);
@@ -108,6 +122,7 @@ class	Client : public IObject
 		void				setResponse(Response*);
 
 		void				shutdownConnection(void);
+		void				deleteFile();
 
 };
 
