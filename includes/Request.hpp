@@ -53,8 +53,6 @@ class	Request
 		int									_len;
 		int									_content_length;
 		bool								_chunked;
-		std::string							_tmp_filename;
-		std::fstream						_filestream;
 		int									_b_status;
 		int									_chunked_body_size;
 		bool								_chunked_status;
@@ -67,8 +65,8 @@ class	Request
 
 
 		int	_checkSizes();
-		int	_parseChunked(std::string &buffer);
-		int	_parseMesured(std::string &buffer);
+		int	_parseChunked(std::string &buffer, std::fstream *filestream);
+		int	_parseMesured(std::string &buffer, std::fstream *filestream);
 
 	public:
 
@@ -83,11 +81,11 @@ class	Request
 
 		int			_fillError(int error, std::string const &verbose);
 
-		int			parseInput(std::string &buffer);
+		int			parseInput(std::string &buffer, std::fstream *filestream);
 		int			parseRequestLine();
 		int			parseHeaders(std::string &buffer);
 		int			parseTrailerHeaders(std::string &buffer);
-		int			parseBody(std::string &buffer);
+		int			parseBody(std::string &buffer, std::fstream *filestream);
 		int			getLenInfo();
 		int			getStatus(void) const;
 		void		setStatus(int status);

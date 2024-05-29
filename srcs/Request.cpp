@@ -5,12 +5,13 @@ Request::Request() \
 	: _method(-1), _error_num(0), _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
 		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0), _trailer_size(0), _final_status(ONGOING)
 {
+
 }
 
 Request::Request(const Request& copy) \
 	: _method(copy._method), _error_num(copy._error_num), _status(copy._status), \
 		 _header_size(copy._header_size), _body_max_size(copy._body_max_size), _len(copy._len),  _content_length(copy._content_length), \
-		 _chunked(copy._chunked), _filestream(), _b_status(copy._b_status), \
+		 _chunked(copy._chunked), _b_status(copy._b_status), \
 		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), _trailer_status(copy._trailer_status), \
 		_trailer_size(copy._trailer_size), _final_status(copy._final_status)
 {
@@ -37,7 +38,7 @@ int	Request::_fillError(int error, std::string const &verbose)
 	this->_error_num = error;
 	this->_error_verbose = verbose;
 	this->_line = "";
-	this->_final_status = COMPLETE;
+	this->_final_status = ERROR;
 	return (error);
 }
 
@@ -186,8 +187,8 @@ int	Request::parseHeaders(std::string &buffer)
 		{
 			this->_status = COMPLETE;
 			this->_final_status = HOST;
-			this->_line = "";
-			return (0);
+			this->_line.clear();
+			return (-1);
 		}
 		this->trimSpace();
 		if (getHeaderName(this->_line, header_name))
@@ -206,7 +207,7 @@ int	Request::parseHeaders(std::string &buffer)
 	return (this->_checkSizes());
 }
 
-int	Request::_parseMesured(std::string &buffer)
+int	Request::_parseMesured(std::string &buffer, std::fstream *filestream)
 {
 	size_t	left_to_complete;
 	size_t	cut;
@@ -219,13 +220,18 @@ int	Request::_parseMesured(std::string &buffer)
 	else
 		cut = left_to_complete;
 	extract = buffer.substr(0, cut);
-	this->_filestream << extract;
+	if (filestream)
+		filestream->write(extract.c_str(), extract.size());
 	this->_len += extract.size();
 	buffer = buffer.substr(cut, std::string::npos);
 	if (this->_len == this->_content_length)
 	{
 		this->_b_status = COMPLETE;
-		this->_filestream.close();
+		this->_final_status = COMPLETE;
+		if (filestream)
+			filestream->close();
+		filestream = NULL;
+		return (-1);
 	}
 	return (0);
 }
@@ -285,7 +291,7 @@ int	Request::getChunkedSize(std::string &buffer)
 	return (0);
 }
 
-int	Request::_parseChunked(std::string &buffer)
+int	Request::_parseChunked(std::string &buffer, std::fstream *filestream)
 {
 	if (this->_b_status == COMPLETE)
 		return (0);
@@ -297,15 +303,19 @@ int	Request::_parseChunked(std::string &buffer)
 		if (this->_chunked_status == 1 && this->_len == 0)
 		{
 			this->_b_status = COMPLETE;
-			this->_line = "";
-			this->_filestream.close();
-			return (0);
+			this->_final_status = TRAILER;
+			this->_line.clear();
+			if (filestream)
+				filestream->close();
+			filestream = NULL;
+			return (-1);
 		}
 		if (this->getLine(buffer))
 			return (this->_checkSizes());
 		if (this->_line.size() != static_cast<unsigned long> (this->_len))
 			return(this->_fillError(400, "Size error in chunked body"));
-		this->_filestream << this->_line;
+		if (filestream)
+			filestream->write(this->_line.c_str(), this->_line.size());
 		this->_line = "";
 		this->_len = -1;
 		this->_chunked_status = 0;
@@ -315,7 +325,7 @@ int	Request::_parseChunked(std::string &buffer)
 	return (0);
 }
 
-int	Request::parseBody(std::string &buffer)
+int	Request::parseBody(std::string &buffer, std::fstream *filestream)
 {
 	if (this->_b_status == COMPLETE || buffer.empty())
 		return (0);
@@ -323,14 +333,14 @@ int	Request::parseBody(std::string &buffer)
 	{
 		// if (this->getLenInfo() || this->_b_status == COMPLETE)
 		// 	return (this->_error_num);
-		this->_tmp_filename = generate_name(this->_hostname);
-		this->_filestream.open(this->_tmp_filename.c_str(), std::ios::out | std::ios::app | std::ios::binary);
+		// this->_tmp_filename = generate_name(this->_hostname);
+		// this->_filestream.open(this->_tmp_filename.c_str(), std::ios::out | std::ios::app | std::ios::binary);
 		this->_b_status = ONGOING;
 	}
 	if (this->_chunked)
-		return (this->_parseChunked(buffer));
+		return (this->_parseChunked(buffer, filestream));
 	else
-		return (this->_parseMesured(buffer));
+		return (this->_parseMesured(buffer, filestream));
 }
 
 int	Request::getStatus(void) const {
@@ -371,11 +381,13 @@ int	Request::parseTrailerHeaders(std::string &buffer)
 	std::string	header_name;
 	std::string	header_value;
 
+	if (this->_b_status != COMPLETE)
+		return (0);
 	if (this->_chunked == 0 || this->getHeader("Trailer") == "")
 	{
 		this->_trailer_status = COMPLETE;
 		this->_final_status = COMPLETE;
-		return (0);
+		return (-1);
 	}
 	this->_trailer_size += buffer.size();
 	while(!buffer.empty())
@@ -386,8 +398,8 @@ int	Request::parseTrailerHeaders(std::string &buffer)
 		{
 			this->_trailer_status = COMPLETE;
 			this->_final_status = COMPLETE;
-			this->_line = "";
-			return (0);
+			this->_line.clear();
+			return (-1);
 		}
 		this->trimSpace();
 		if (getHeaderName(this->_line, header_name) || header_name == "Trailer" || header_name == "Content-Length" || header_name == "Transfer-Encoding")
@@ -441,15 +453,11 @@ void	Request::setBodyMaxSize(int size)
 }
 
 
-int	Request::parseInput(std::string &buffer)
+int	Request::parseInput(std::string &buffer, std::fstream *filestream)
 {
-	if (this->_final_status == COMPLETE || buffer.empty())
+	if (this->_final_status > TRAILER || buffer.empty())
 		return (0);
-	if (this->parseHeaders(buffer))
-		return (this->_error_num);
-	if (this->_status == COMPLETE && this->_body_max_size == 0)
-		return (-1);
-	if (this->parseBody(buffer))
+	if (this->parseBody(buffer, filestream))
 		return (this->_error_num);
 	if (this->parseTrailerHeaders(buffer))
 		return (this->_error_num);
@@ -462,7 +470,7 @@ int	Request::getHostName(std::string &hostname)
 	it = this->_headers.find("Host");
 	if (it == this->_headers.end())
 	{
-		hostname = "";
+		hostname.clear();
 		return (1);
 	}
 	if (it->second.find(",", 0) != std::string::npos)
