@@ -30,6 +30,14 @@ bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
 int	getMethodIndex(const std::string& method);
 
+typedef struct URI
+{
+	std::string	path;
+	std::string	root;
+	std::string	extension;
+	std::map<std::string, std::string>	var;
+}	URI;
+
 
 class	Request
 {
@@ -97,6 +105,8 @@ class	Request
 		void	formatHeaders();
 		void	printHeaders();
 		void	setBodyMaxSize(int size);
+
+		int		parseURI();
 
 		//DEBUG
 		void	printRequest() const;

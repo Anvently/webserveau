@@ -41,6 +41,7 @@ struct ClientSocket
 	socklen_t		addrSize;
 };
 
+
 class	Client : public IObject
 {
 
@@ -70,6 +71,7 @@ class	Client : public IObject
 		std::string			_buffer;
 		std::string			_fileName;
 		std::fstream*		_filestream;
+		URI					_URI;
 
 		// May want something more versatile
 		// (If CGI, it would be linked to a pipe

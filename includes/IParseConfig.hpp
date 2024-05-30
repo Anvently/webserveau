@@ -30,7 +30,7 @@ class IParseConfig
 
 		static bool				checkFilePath(const char* path);
 		static int				openFile(const char* path);
-		
+
 		static int					getNextWord(std::istream& istream, std::string& word);
 		static std::stringstream&	getNextBlock(std::istream& istream, std::stringstream& ostream);
 		static inline void			skipSpace(std::istream& istream);
@@ -62,7 +62,7 @@ class IParseConfig
 		static void				parsePath(std::istream& istream, std::string& dest, const char* id = NULL);
 		static void				parseBoolean(std::istream& istream, bool& dest, const char* id = NULL);
 		static void				parseUri(std::istream& istream, std::string& dest, const char* id = NULL);
-
+		
 		friend int				IControl::handleCommandPrompt(epoll_event* event);
 
 	public:
@@ -181,14 +181,14 @@ class IParseConfig
 				virtual ~TooManyValuesException(void) throw() {}
 				virtual const char*	what(void) const throw() {return (message.c_str());}
 		};
-		
+
 };
 
-/// @brief Parse ```maxNbr``` words in ```istream``` and store them into a container 
+/// @brief Parse ```maxNbr``` words in ```istream``` and store them into a container
 /// ```words``` of ```std::string```
-/// @param istream 
-/// @param words 
-/// @param maxNbr 
+/// @param istream
+/// @param words
+/// @param maxNbr
 template <typename T>
 void	IParseConfig::parseValues(std::istream& istream, T& words, int maxNbr)
 {
