@@ -447,6 +447,10 @@ int	Request::getError() const
 	return (this->_error_num);
 }
 
+int	Request::getMethod() const {
+	return (this->_method);
+}
+
 void	Request::setBodyMaxSize(int size)
 {
 	_body_max_size = size;

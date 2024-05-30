@@ -213,6 +213,25 @@ int	IControl::checkBodyLength(Client& client, const Request& request)
 	return (0);
 }
 
+/// @brief Check if the location directory indicates a redirection.
+/// Redirection are handled without additionnal checking 
+/// @param client 
+/// @param request 
+/// @return 
+int	IControl::checkRedirection(Client& client, const Request& request)
+{
+	return (0);
+}
+
+/// Should be called if the ressource was a directory.
+/// Switch path to index file if given by host and return ```0```.
+/// Return error if dir_listing is not allowed, if method is not ```GET```
+/// or the dir doesn't exist.
+int	IControl::checkDirRessource(Client& client, const Request& request)
+{
+
+}
+
 /**
 	@brief Should be called once the full header is parsed
 		- if header READY
@@ -246,6 +265,15 @@ int	IControl::handleClientRequest(Client& client, const Request& request) {
 		return (res);
 	//Parse URI
 	if ((res = checkBodyLength(client, request)))
+		return (res);
+	if (res = checkRedirection(client, request))
+		return (res);
+	if ("dir" && (res = checkDirRessource(client, request)))
+		return (res);
+	if (res = checkLocation(client, request))
+		return (res);
+	if (request.getMethod() == POST && )
+	if ("CGI" && (res = checkCGIRessource(client, request)))
 		return (res);
 	client.setHeaderStatus(HEADER_STATUS_DONE);
 }

@@ -110,6 +110,7 @@ class	Request
 		int			getStatus(void) const;
 		void		setStatus(int status);
 		int			getError() const;
+		int			getMethod() const;
 
 		const std::string&	getHeader(std::string const &key) const;
 		int					getHostName(std::string &hostname) const;
