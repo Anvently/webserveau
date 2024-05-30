@@ -65,16 +65,13 @@ class IControl
 				- wait
 			- send response
 		**/
-		static int	handleClientRequest(Client& client, const Request& request);
+		static int	handleRequestHeaders(Client& client, Request& request);
+		static int	defineBodyParsing(Client& client, const Request& request);
+		static int	handleRequestBodyDone(Request& request);
 
 		static int	checkForbiddenHeaders(const Request& request);
 		static int	assignHost(Client& client, const Request& request);
 		static int	checkBodyLength(Client& client, const Request& request);
-		static int	checkRedirection(Client& client, const Request& request);
-		static int	checkDirRessource(Client& client, const Request& request);
-		static int	checkLocation(Client& client, const Request& request);
-		static int	checkCGIRessource(Client& client, const Request& request);
-		
 
 		static void	generateResponse(Client& client, int status = 0);
 

@@ -21,12 +21,13 @@ enum {none, chuncked, mesured};
 enum {GET, POST, DELETE};
 enum {COMPLETE, ONGOING, NEW};
 enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
+enum {REQ_TYPE_CGI = 1, REQ_TYPE_STATIC, REQ_TYPE_DIR};
 
 static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
 #define METHOD_NBR 3
 #define METHOD_IS_INVALID (&METHODS_STR[METHODS_NBR])
 
-std::string	generate_name(std::string &hostname);
+std::string	generate_name(const std::string &hostname);
 bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
 int	getMethodIndex(const std::string& method);
@@ -70,9 +71,8 @@ class	Request
 		int									_error_num;
 		std::string							_error_verbose;
 		int									_status;
-
+	
 		int									_header_size;
-
 
 		std::string							_line;
 
@@ -87,14 +87,15 @@ class	Request
 		int									_trailer_status;
 		int									_trailer_size;
 
+		URI									_parsedUri;
 		int									_final_status;
-
-
-
+		int									_type;
+		Location*							_hostLocation;
+		CGIConfig*							_cgiConfig;
 
 		int	_checkSizes();
-		int	_parseChunked(std::string &buffer, std::fstream *filestream);
-		int	_parseMesured(std::string &buffer, std::fstream *filestream);
+		int	_parseChunked(std::string &buffer, std::ofstream *filestream);
+		int	_parseMesured(std::string &buffer, std::ofstream *filestream);
 
 	public:
 
@@ -109,16 +110,24 @@ class	Request
 
 		int			_fillError(int error, std::string const &verbose);
 
-		int			parseInput(std::string &buffer, std::fstream *filestream);
-		int			parseRequestLine();
-		int			parseHeaders(std::string &buffer);
-		int			parseTrailerHeaders(std::string &buffer);
-		int			parseBody(std::string &buffer, std::fstream *filestream);
-		int			getLenInfo();
-		int			getStatus(void) const;
-		void		setStatus(int status);
-		int			getError() const;
-		int			getMethod() const;
+		int					parseInput(std::string &buffer, std::ofstream *filestream);
+		int					parseRequestLine();
+		int					parseHeaders(std::string &buffer);
+		int					parseTrailerHeaders(std::string &buffer);
+		int					parseBody(std::string &buffer, std::ofstream *filestream);
+		int					getLenInfo();
+		int					getStatus(void) const;
+		void				setStatus(int status);
+		int					getError() const;
+		int					getMethod() const;
+		const URI&			getUri() const;
+		URI&				getUri();
+		int					getType() const;
+		void				setType(int);
+		const Location*		getLocation() const;
+		const CGIConfig*	getCGIConfig() const;
+		void				setLocation(Location*);
+		void				setCGIConfig(CGIConfig*);
 
 		const std::string&	getHeader(std::string const &key) const;
 		int					getHostName(std::string &hostname) const;

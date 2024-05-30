@@ -13,9 +13,18 @@
 // 5xx indicates an error on the server's part
 #define RES_CONTINUE 100
 #define RES_OK 200
+#define RES_CREATED 201
+#define RES_NO_CONTENT 204
 #define RES_BAD_REQUEST 400
+#define RES_UNAUTHORIZED 401
+#define RES_403_FORBIDDEN 403
 #define RES_NOT_FOUND 404
+#define RES_METHOD_NOT_ALLOWED 405
+#define RES_TIMEOUT 408
+#define RES_LENGTH_REQUIRED 411
 #define RES_REQUEST_ENTITY_TOO_LARGE 413
+#define RES_REQUEST_URI_TOO_LONG 414
+#define RES_EXPECTATION_FAILED 417
 #define RES_INTERNAL_ERROR 500
 #define RES_NOT_IMPLEMENTED 501
 
@@ -74,6 +83,7 @@ class	StaticPageResponse : public AResponse
 
 		std::map<std::string, std::string>	_headers;
 		std::ifstream						_ifstream;
+		std::string							_path;
 
 	public:
 		StaticPageResponse(/* args */);

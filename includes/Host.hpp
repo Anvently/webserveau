@@ -78,10 +78,17 @@ class	Host {
 		std::list<Client*>					_clients; //<fd, Client> ?
 		// a log file per Host ?
 
-		void							addCGIConfig(const std::deque<std::string>& names, CGIConfig& cgiConfig);
-		void							addLocation(const std::deque<std::string>& names, Location& location);
+		void				addCGIConfig(const std::deque<std::string>& names, CGIConfig& cgiConfig);
+		void				addLocation(const std::deque<std::string>& names, Location& location);
 
-		void							printProperties(std::ostream& os) const;
+		void				printProperties(std::ostream& os) const;
+
+		int					checkRedirection(Location& location, const Request& request) const;
+		static inline int	assertRequestType(Location*, CGIConfig*, const Request&);
+		int					checkDirRessource(Location& location, Request& request) const;
+		int					checkLocationRules(Location& location, const Request& request) const;
+		int					checkCGIRules(CGIConfig& cgi, const Request& request) const;
+		static bool			checkRessourcePath(const std::string& path, int type = 0);
 
 	public:
 
@@ -98,7 +105,8 @@ class	Host {
 		int								getMaxSize() const;
 		const std::string&				getAddr() const;
 		Client							*getClientByFd(int fd) const;
-		Location*						getLocation(std::string const &path); //return the "/" loc if no match
+		Location*						getLocation(std::string const &path) const; //return the "/" loc if no match
+		CGIConfig*						getCGIConfig(std::string const &path) const;
 		const std::vector<std::string>&	getServerNames(void) const;
 		std::list<Client*>::const_iterator	getClientListBegin(void) const;
 		std::list<Client*>::const_iterator	getClientListEnd(void) const;
@@ -111,6 +119,8 @@ class	Host {
 
 		void							printShort(std::ostream& os) const;
 		void							printFull(std::ostream& os) const;
+
+		int								checkRequest(Request& request) const;
 
 };
 

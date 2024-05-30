@@ -97,9 +97,16 @@ Client*	Host::getClientByFd(int fd) const {
 	return (NULL);
 }
 
-Location*	Host::getLocation(const std::string& path) {
-	std::map<std::string, Location*>::iterator	pos = _locationMap.find(path);
+Location*	Host::getLocation(const std::string& path) const {
+	std::map<std::string, Location*>::const_iterator	pos = _locationMap.find(path);
 	if (pos == _locationMap.end())
+		return (NULL);
+	return (pos->second);
+}
+
+CGIConfig*	Host::getCGIConfig(const std::string& path) const {
+	std::map<std::string, CGIConfig*>::const_iterator	pos = _cgiMap.find(path);
+	if (pos == _cgiMap.end())
 		return (NULL);
 	return (pos->second);
 }
@@ -269,4 +276,114 @@ std::ostream&	operator<<(std::ostream& os, const Host& host)
 {
 	host.printShort(os);
 	return (os);
+}
+
+/// @brief Check if the location directory indicates a redirection.
+/// Redirection are handled without additionnal checking 
+/// @param client 
+/// @param request 
+/// @return 
+int	Host::checkRedirection(Location& location, const Request& request) const
+{
+	return (0);
+}
+
+inline int	Host::assertRequestType(Location* loc, CGIConfig* cgi, const Request& request)
+{
+	if (cgi)
+		return (REQ_TYPE_CGI);
+	else if (request.getUri().extension == "/")
+		return (REQ_TYPE_DIR);
+	else
+		return (REQ_TYPE_STATIC);
+}
+
+/// Should be called if the ressource was a directory.
+/// Switch path to index file if given by host and return ```0```.
+/// Return error if dir_listing is not allowed, if method is not ```GET```
+/// or the dir doesn't exist.
+int	Host::checkDirRessource(Location& location, Request& request) const
+{
+	URI& test = request.getUri();
+	return (0);
+}
+
+/// @brief Check allowed methods for given location, and if upload is
+/// allowed for static upload.
+/// @param location 
+/// @param request 
+/// @return 
+int	Host::checkLocationRules(Location& location, const Request& request) const
+{
+	if (request.getMethod() == POST && request.getUri().)
+	return (0);
+}
+
+/// @brief Check if method match allowed methods for CGI
+/// @param cgi 
+/// @param request 
+/// @return 
+int	Host::checkCGIRules(CGIConfig& cgi, const Request& request) const
+{
+	return (0);
+}
+
+/// @brief Check if the given path exist from the server perspective.
+/// Symbolic link or other type of files are ignored.
+/// @param path 
+/// @param type Can be provided to make additionnal check regarding file type
+/// ```REQ_TYPE_DIR``` vs ```REQ_TYPE_CGI||REQ_TYPE_STATIC```.
+/// @return 
+bool	Host::checkRessourcePath(const std::string& path, int type)
+{
+	struct stat	f_stat;
+
+	if (stat(path.c_str(), &f_stat))
+		return (false);
+	else if (type != REQ_TYPE_DIR && S_ISREG(f_stat.st_mode) == false)
+		return (false);
+	else if (type == REQ_TYPE_DIR && S_ISDIR(f_stat.st_mode) == false)
+		return (false);
+	return (true);
+}
+
+/** @brief Check request validity from an host perspective.
+ * @note get location/cgi match
+	- check redirects
+	- if dir && default_uri
+		- change uri
+		- check again for cgi
+	- check location rules
+	- check ressource path
+ **/
+int	Host::checkRequest(Request& request) const {
+	int	res = 0;
+	Location*	loc;
+	CGIConfig*	cgi;
+
+	loc = getLocation(request.getUri().root);
+	cgi = getCGIConfig(request.getUri().extension);
+
+	if (loc == NULL && cgi == NULL)
+		return (RES_NOT_FOUND);
+	if (loc && (res = checkRedirection(*loc, request)))
+		return (res);
+	request.setType(assertRequestType(loc, cgi, request));
+	if (request.getType() == REQ_TYPE_DIR) { //If folder
+		if ((res = checkDirRessource(*loc, request)))
+			return (res);
+		cgi = getCGIConfig(request.getUri().extension);
+		request.setType(assertRequestType(loc, cgi, request));
+		if (loc && (res = checkLocationRules(*loc, request)))
+			return (res);
+	}
+	else if (loc && (res = checkLocationRules(*loc, request)))
+		return (res);
+	if (request.getType() == REQ_TYPE_CGI) {
+		if (res = checkCGIRules(*cgi, request))
+			return (res);
+		if (res = checkRessourcePath(cgi->root + request.getUri().path, REQ_TYPE_CGI))
+			return (RES_NOT_FOUND);
+	} else if (request.getMethod() != POST && (res = checkRessourcePath(loc->root + request.getUri().path, request.getType())))
+		return (RES_NOT_FOUND);
 }

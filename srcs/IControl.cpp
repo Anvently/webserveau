@@ -152,12 +152,17 @@ int	IControl::handleListenEvent(epoll_event* event)
 
 int	IControl::handleClientEvent(epoll_event *event, Client& client)
 {
+	int	res = 0;
+
 	if (event->events & EPOLLIN) {
-		IControl::handleClientIn(client);
-		return (0);
+		if (res = IControl::handleClientIn(client)) {
+			generateResponse(client, res);
+			client.setMode(WRITE);
+		}
 	}
-	else
+	else if (event->events & EPOLLOUT)
 		return (0);
+	return (0);
 }
 
 
@@ -213,75 +218,69 @@ int	IControl::checkBodyLength(Client& client, const Request& request)
 	return (0);
 }
 
-/// @brief Check if the location directory indicates a redirection.
-/// Redirection are handled without additionnal checking 
-/// @param client 
-/// @param request 
-/// @return 
-int	IControl::checkRedirection(Client& client, const Request& request)
-{
-	return (0);
-}
-
-/// Should be called if the ressource was a directory.
-/// Switch path to index file if given by host and return ```0```.
-/// Return error if dir_listing is not allowed, if method is not ```GET```
-/// or the dir doesn't exist.
-int	IControl::checkDirRessource(Client& client, const Request& request)
-{
-
-}
-
 /**
 	@brief Should be called once the full header is parsed
 		- if header READY
 			- check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
-			- check host rules
-				- identify host
-				- check headers content-length
-			- parse uri, get location (and parameters) and check for body
-				- check redirects
-				- if dir && default_uri
-					- change uri
-				- check if cgi or static/dir_listing
-				- check allowed methods
-				- if not static POST
-					- check ressource existence
-				- else
-					- check upload settings
+			- check host and assign one to client
+			- check if there is a body provided
+			- parse uri
+			- check with host if the request must be rejected
 				- if continue
 					- generate body parsing config (creating ostream and max_chunk_length)
 					- genereate CONTINUE RESPONSE
 				- else if body
 					- resume body parsing as CGI
+	@return ```status``` of the response, or ```100``` for continue response
+
 **/
-int	IControl::handleClientRequest(Client& client, const Request& request) {
-	int	res = 0;
+int	IControl::handleRequestHeaders(Client& client, Request& request) {
+	int	res = 0, type = 0;
 
 	client.setBodyStatus(BODY_STATUS_NONE);
+	if ((res = request.parseURI()))
+		return (res);
 	if ((res = checkForbiddenHeaders(request)))
 		return (res);
 	if ((res = assignHost(client, request)))
 		return (res);
-	//Parse URI
 	if ((res = checkBodyLength(client, request)))
 		return (res);
-	if (res = checkRedirection(client, request))
+	if ((res = client.getHost()->checkRequest(request)))
 		return (res);
-	if ("dir" && (res = checkDirRessource(client, request)))
-		return (res);
-	if (res = checkLocation(client, request))
-		return (res);
-	if (request.getMethod() == POST && )
-	if ("CGI" && (res = checkCGIRessource(client, request)))
-		return (res);
+	if (request.getHeader("expect") == "100-continue")
+		res = RES_CONTINUE;
+	else if (request.getHeader("expect") != "")
+		return (RES_EXPECTATION_FAILED);
 	client.setHeaderStatus(HEADER_STATUS_DONE);
+	return (res);
+}
+
+int	IControl::defineBodyParsing(Client& client, const Request& request)
+{
+	if (request.getType() == REQ_TYPE_CGI)
+		client.setBodyFile(generate_name(client.getHost()->getServerNames().front()));
+	else if (request.getType() == REQ_TYPE_STATIC && request.getMethod() == POST)
+		client.setBodyFile(request.getCGIConfig()->root + request.getUri().path);
+	else
+		client.setBodyFile("");
+}
+
+int	IControl::handleRequestBodyDone(Request& request)
+{
+	if (request.getType() == REQ_TYPE_STATIC) {
+		if (request.getMethod() == POST )
+			return (RES_CREATED);
+		else if (request.getMethod() == DELETE)
+			return (RES_NO_CONTENT);
+	}
+	return (RES_OK);
 }
 
 int	IControl::handleClientIn(Client& client)
 {
 	char	buffer_c[BUFFER_SIZE + 1];
-	int		n_read, ret = 0, response = 0;
+	int		n_read, res = 0;
 
 	if (client.getMode() != READ)
 		return (0);
@@ -289,37 +288,49 @@ int	IControl::handleClientIn(Client& client)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL ERROR
 	
 	buffer_c[n_read] = 0;
-	ret = client.parseRequest(buffer_c);
-	if (ret > 0) //Error occured
-		generateResponse(client, ret);
-	else if (ret < 0) { //Status changed
+	res = client.parseRequest(buffer_c);
+	if (res < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
-			if ((ret = handleClientRequest(client, *client.getRequest())))
-				generateResponse(client, ret);
+			res = handleRequestHeaders(client, *client.getRequest());
+			defineBodyParsing(client, *client.getRequest());
 		}
-		if (client.getBodyStatus() == BODY_STATUS_DONE && ret == 0) {
-			generateResponse(client);
-		}
+		if (res == 0 && client.getBodyStatus() != BODY_STATUS_ONGOING)
+			res = handleRequestBodyDone(*client.getRequest());
 	}
-	else //Nothing changed
-		return (0);
-	client.setMode(WRITE);
-	return (0);
+	return (res);
 }
 
 /// @brief Generate an appropriate response type from the given
 /// status.
 /// @param client 
 /// @param status ```0``` if the response to generate is not an error
+/// @note Possible hints for response
+///				- headers
+///				- final path
+///				- 
 void	IControl::generateResponse(Client& client, int status)
 {
 	if (client.getResponse()) //Not sure
 		return ; //Not sure
-	if (status == RES_CONTINUE)
-		client.setResponse(new SingleLineResponse(100, "Continue"));
-	else if (status > 0) {
-		if (client.getHost())
 
+	switch (status)
+	{
+		case RES_CONTINUE:
+			client.setResponse(new SingleLineResponse(100, "Continue"));
+			break;
+		
+		case RES_OK: //For Static/dir GET or CGI operation
+
+			break;
+
+		case RES_CREATED: //Need path
+			client.setResponse(new StaticPageResponse());
+			break;
+
+		
+
+		default:
+			LOGE("Unknow status: %d", status);
+			break;
 	}
-	return (0);
 }

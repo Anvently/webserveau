@@ -13,8 +13,8 @@ Client::~Client(void) {
 		delete(_request);
 	if (_response)
 		delete(_response);
-	if (_filestream)
-		_filestream->close();
+	if (_bodyStream)
+		_bodyStream->close();
 }
 
 Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
@@ -25,7 +25,7 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	_lastInteraction = time(NULL);
 	_request = NULL;
 	_response = NULL;
-	_filestream = NULL;
+	_bodyStream = NULL;
 	_URI = {};
 }
 
@@ -33,7 +33,7 @@ Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._ad
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
 	 _lastInteraction(copy._lastInteraction), \
 	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
-	_fileName(copy._fileName), _filestream(copy._filestream), _URI(copy._URI)
+	_fileName(copy._fileName), _bodyStream(copy._bodyStream), _URI(copy._URI)
 {
 	this->_request = NULL;
 	this->_response = NULL;
@@ -102,7 +102,7 @@ int	Client::getfd(void) const {
 	return (this->_socket.fd);
 }
 
-Host*	Client::getHost(void) const {
+const Host*	Client::getHost(void) const {
 	return (this->_host);
 }
 
@@ -179,7 +179,7 @@ int	Client::parseRequest(const char* bufferIn) {
 	}
 	else if (_headerStatus == HEADER_STATUS_DONE && _bodyStatus == ONGOING)
 	{
-		res = request->parseInput(fullBuffer, _filestream);
+		res = request->parseInput(fullBuffer, _bodyStream);
 		if (res < 0)
 			_bodyStatus = BODY_STATUS_DONE;
 		return(res);
@@ -234,25 +234,59 @@ std::ostream&	operator<<(std::ostream& os, const Client& client) {
 }
 
 
-int	Client::getHeaderStatus()
+int	Client::getHeaderStatus() const
 {
 	return (this->_headerStatus);
 }
 
-int	Client::getBodyStatus()
+void	Client::setHeaderStatus(int status) {
+	this->_headerStatus = status;
+}
+
+int	Client::getBodyStatus() const
 {
 	return (this->_bodyStatus);
 }
 
-int	Client::getMode()
+void	Client::setBodyStatus(int status) {
+	this->_bodyStatus = status;
+}
+
+
+int	Client::getMode() const
 {
 	return (this->_mode);
 }
 
+void	Client::setMode(int mode) {
+	this->_mode = mode;
+}
+
+const std::string&	Client::getBodyFile() const
+{
+	return (this->_fileName);
+}
+
+void	Client::setBodyFile(const std::string& path)
+{
+	if (path != "")
+		_bodyStream = new std::ofstream(path.c_str(), std::ios_base::trunc);
+	else
+		_bodyStream = NULL;
+}
+
+AResponse*	Client::getResponse() const {
+	return (this->_response);
+}
+
+void	Client::setResponse(AResponse* response) {
+	this->_response = response;
+}
+
 void	Client::deleteFile()
 {
-	if (_filestream)
-		_filestream->close();
+	if (_bodyStream)
+		_bodyStream->close();
 	unlink(_fileName.c_str());
 }
 

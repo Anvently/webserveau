@@ -70,7 +70,7 @@ class	Client : public IObject
 		int					_mode;
 		std::string			_buffer;
 		std::string			_fileName;
-		std::fstream*		_filestream;
+		std::ofstream*		_bodyStream;
 		URI					_URI;
 
 		// May want something more versatile
@@ -97,7 +97,7 @@ class	Client : public IObject
 		static int			getTotalNbrClient(void);
 
 		int					getfd() const;
-		Host*				getHost() const;
+		const Host*			getHost() const;
 		const std::string&	getStrAddr(void) const;
 		int					getAddrPort(void) const;
 
@@ -105,20 +105,23 @@ class	Client : public IObject
 		int					getResponseStatus() const; // returns 1 if response is ready to send
 		Request*			getRequest(); // returns the current not complete request or allocate a new one
 		Request				*getFrontRequest(); // return the oldest request
-		AResponse*			getResponse(); // returns the current not complete response
+		AResponse*			getResponse() const; // returns the current not complete response
 
 		/// @brief
 		/// @param buffer null terminated buffer
 		/// @return ```< 0```
 		int					parseRequest(const char* buffer);
 
-		int					getHeaderStatus();
-		int					getBodyStatus();
-		int					getMode();
+		int					getHeaderStatus() const;
+		int					getBodyStatus() const;
+		int					getMode() const;
+		const std::string&	getBodyFile() const;
 		void				setMode(int mode);
 		void				setHeaderStatus(int);
 		void				setBodyStatus(int);
 		void				setBodyMaxSize(int);
+		// void				setBodyStream(std::ofstream*);
+		void				setBodyFile(const std::string&);
 		void				stashBuffer(std::string &buffer);
 		void				retrieveBuffer(std::string &str);
 		void				clearBuffer();

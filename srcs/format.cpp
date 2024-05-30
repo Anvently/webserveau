@@ -69,7 +69,7 @@ bool nocase_string_eq(const std::string& a, const std::string& b)
 }
 
 
-std::string	generate_name(std::string &hostname)
+std::string	generate_name(const std::string &hostname)
 {
 	struct timeval	t;
 	long long		time;

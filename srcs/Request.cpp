@@ -1,5 +1,6 @@
 #include <Request.hpp>
 
+static const	std::string	dummyString = "";
 
 Request::Request() \
 	: _method(-1), _error_num(0), _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
@@ -27,10 +28,12 @@ void	Request::trimSpace()
 		this->_line.erase(0,1);
 }
 
-std::string	Request::getHeader(std::string const &key)
+const std::string&	Request::getHeader(std::string const &key) const
 {
-	//needs to be modified !
-	return (this->_headers[key]);
+	std::map<std::string,std::string>::const_iterator	it = _headers.find(key);
+	if (it == _headers.end())
+		return (dummyString);
+	return (it->second);
 }
 
 int	Request::_fillError(int error, std::string const &verbose)
@@ -207,7 +210,7 @@ int	Request::parseHeaders(std::string &buffer)
 	return (this->_checkSizes());
 }
 
-int	Request::_parseMesured(std::string &buffer, std::fstream *filestream)
+int	Request::_parseMesured(std::string &buffer, std::ofstream *filestream)
 {
 	size_t	left_to_complete;
 	size_t	cut;
@@ -291,7 +294,7 @@ int	Request::getChunkedSize(std::string &buffer)
 	return (0);
 }
 
-int	Request::_parseChunked(std::string &buffer, std::fstream *filestream)
+int	Request::_parseChunked(std::string &buffer, std::ofstream *filestream)
 {
 	if (this->_b_status == COMPLETE)
 		return (0);
@@ -325,7 +328,7 @@ int	Request::_parseChunked(std::string &buffer, std::fstream *filestream)
 	return (0);
 }
 
-int	Request::parseBody(std::string &buffer, std::fstream *filestream)
+int	Request::parseBody(std::string &buffer, std::ofstream *filestream)
 {
 	if (this->_b_status == COMPLETE || buffer.empty())
 		return (0);
@@ -334,7 +337,7 @@ int	Request::parseBody(std::string &buffer, std::fstream *filestream)
 		// if (this->getLenInfo() || this->_b_status == COMPLETE)
 		// 	return (this->_error_num);
 		// this->_tmp_filename = generate_name(this->_hostname);
-		// this->_filestream.open(this->_tmp_filename.c_str(), std::ios::out | std::ios::app | std::ios::binary);
+		// this->_bodyStream.open(this->_tmp_filename.c_str(), std::ios::out | std::ios::app | std::ios::binary);
 		this->_b_status = ONGOING;
 	}
 	if (this->_chunked)
@@ -451,13 +454,21 @@ int	Request::getMethod() const {
 	return (this->_method);
 }
 
+const URI&	Request::getUri() const {
+	return (this->_parsedUri);
+}
+
+URI&	Request::getUri() {
+	return (this->_parsedUri);
+}
+
 void	Request::setBodyMaxSize(int size)
 {
 	_body_max_size = size;
 }
 
 
-int	Request::parseInput(std::string &buffer, std::fstream *filestream)
+int	Request::parseInput(std::string &buffer, std::ofstream *filestream)
 {
 	if (this->_final_status > TRAILER || buffer.empty())
 		return (0);
@@ -499,4 +510,12 @@ bool	Request::checkHeader(const std::string& key) const {
 void	Request::setStatus(int status)
 {
 	this->_final_status = status;
+}
+
+int	Request::getType() const {
+	return (this->_type);
+}
+
+void	Request::setType(int type) {
+	_type = type;
 }
