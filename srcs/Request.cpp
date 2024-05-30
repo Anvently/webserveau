@@ -27,7 +27,7 @@ void	Request::trimSpace()
 		this->_line.erase(0,1);
 }
 
-std::string	Request::getHeader(std::string const &key)
+const std::string &Request::getHeader(std::string const &key)
 {
 	//needs to be modified !
 	return (this->_headers[key]);
@@ -465,8 +465,8 @@ int	Request::parseInput(std::string &buffer, std::fstream *filestream)
 }
 
 /// @brief Write
-/// @param hostname 
-/// @return 
+/// @param hostname
+/// @return
 int	Request::getHostName(std::string &hostname) const
 {
 	std::map<std::string, std::string>::const_iterator it;
@@ -496,3 +496,108 @@ void	Request::setStatus(int status)
 {
 	this->_final_status = status;
 }
+
+
+int	pruneScheme(std::string &uri)
+{
+	size_t	n = uri.find("://", 0);
+	if (n != std::string::npos)
+	{
+		if (uri.substr(0, n + 3) != "http://")
+			return (1);
+		uri.erase(0, n + 3);
+	}
+	return (0);
+}
+
+int	pruneDelim(std::string &uri, std::string delim)
+{
+	size_t	idx = uri.find(delim, 0);
+	if (idx != std::string::npos)
+		uri.erase(0, idx + delim.size());
+	return (0);
+}
+
+std::string	extractPath(std::string &uri)
+{
+	size_t	idx = uri.find("?", 0);
+	if (idx != std::string::npos)
+	{
+		std::string	path = uri.substr(0, idx);
+		uri.erase(0, idx + 1);
+		return (path);
+	}
+	else
+		return (uri);
+}
+
+int	Request::checkPath()
+{
+	int	level = 0;
+	size_t	idx = 0;
+	size_t	idxx = 0;
+	std::string	subpath;
+	std::vector<std::string> v;
+
+	while ((idx = _s_uri.path.find("//", 0)) != std::string::npos)
+		_s_uri.path.erase(idx, 1);
+	while ((idx = _s_uri.path.find("/./", 0)) != std::string::npos)
+		_s_uri.path.erase(idx, 2);
+	idx = 0;
+	while((idx = _s_uri.path.find("/", 0)) != std::string::npos)
+	{
+		subpath = _s_uri.path.substr(0, idx);
+		_s_uri.path.erase(0, idx + 1);
+		if (subpath == ".." && v.size() == 0)
+			return (1);
+		else if (subpath == ".." && v.size())
+			v.pop_back();
+		else
+			v.push_back(subpath);
+		subpath.clear();
+	}
+	v.push_back(_s_uri.path);
+	_s_uri.path.clear();
+	for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); it++)
+		_s_uri.path+= "/" + *it;
+	_s_uri.path.erase(0,1);
+	return (0);
+}
+
+std::string	Request::getFilename()
+{
+	if (_s_uri.path.empty() || _s_uri.path.back() == '/')
+	{
+		_s_uri.root = _s_uri.path;
+		return ("./");
+	}
+	size_t	idx = _s_uri.path.find_last_of("/");
+	_s_uri.root = _s_uri.path.substr(0, idx);
+	return (_s_uri.path.substr(idx + 1));
+}
+
+void	Request::prunePath()
+{
+	std::string	filename = getFilename();
+	size_t	idx = filename.find_last_of(".");
+	if (idx == std::string::npos)
+		_s_uri.extension = "";
+	else
+		_s_uri.extension = _s_uri.path.substr(idx);
+}
+
+int	Request::parseURI()
+{
+	_s_uri.query = _uri;
+	if (pruneScheme(_s_uri.query))
+		return (_fillError(400, "Bad uri"));
+	pruneDelim(_s_uri.query, "@");
+	pruneDelim(_s_uri.query, "/");
+	_s_uri.path = extractPath(_s_uri.query);
+	if (checkPath())
+		return _fillError(400, "too many ../ in uri");
+	prunePath();
+	return (0);
+}
+
+
