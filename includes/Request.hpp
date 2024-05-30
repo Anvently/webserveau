@@ -9,6 +9,7 @@
 #include <fstream>
 #include <ListenServer.hpp>
 #include <cstring>
+#include <vector>
 
 
 #define HEADER_MAX_SIZE 4096
@@ -37,7 +38,7 @@ typedef struct URI
 	std::string	path;
 	std::string	root;
 	std::string	extension;
-	std::map<std::string, std::string>	var;
+	std::string	query;
 }	URI;
 
 
@@ -138,6 +139,10 @@ class	Request
 		void	setBodyMaxSize(int size);
 
 		int		parseURI();
+		int		checkPath();
+		void	prunePath();
+		std::string	getFilename();
+		void	splitVar(std::string &str);
 
 		//DEBUG
 		void	printRequest() const;
@@ -147,3 +152,4 @@ class	Request
 
 
 #endif
+
