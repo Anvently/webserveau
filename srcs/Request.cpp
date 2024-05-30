@@ -562,15 +562,15 @@ int	Request::checkPath()
 	std::string	subpath;
 	std::vector<std::string> v;
 
-	while ((idx = _s_uri.path.find("//", 0)) != std::string::npos)
-		_s_uri.path.erase(idx, 1);
-	while ((idx = _s_uri.path.find("/./", 0)) != std::string::npos)
-		_s_uri.path.erase(idx, 2);
+	while ((idx = _parsedUri.path.find("//", 0)) != std::string::npos)
+		_parsedUri.path.erase(idx, 1);
+	while ((idx = _parsedUri.path.find("/./", 0)) != std::string::npos)
+		_parsedUri.path.erase(idx, 2);
 	idx = 0;
-	while((idx = _s_uri.path.find("/", 0)) != std::string::npos)
+	while((idx = _parsedUri.path.find("/", 0)) != std::string::npos)
 	{
-		subpath = _s_uri.path.substr(0, idx);
-		_s_uri.path.erase(0, idx + 1);
+		subpath = _parsedUri.path.substr(0, idx);
+		_parsedUri.path.erase(0, idx + 1);
 		if (subpath == ".." && v.size() == 0)
 			return (1);
 		else if (subpath == ".." && v.size())
@@ -579,24 +579,24 @@ int	Request::checkPath()
 			v.push_back(subpath);
 		subpath.clear();
 	}
-	v.push_back(_s_uri.path);
-	_s_uri.path.clear();
+	v.push_back(_parsedUri.path);
+	_parsedUri.path.clear();
 	for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); it++)
-		_s_uri.path+= "/" + *it;
-	_s_uri.path.erase(0,1);
+		_parsedUri.path+= "/" + *it;
+	_parsedUri.path.erase(0,1);
 	return (0);
 }
 
 std::string	Request::getFilename()
 {
-	if (_s_uri.path.empty() || _s_uri.path.back() == '/')
+	if (_parsedUri.path.empty() || _parsedUri.path[_parsedUri.path.length() - 1] == '/')
 	{
-		_s_uri.root = _s_uri.path;
+		_parsedUri.root = _parsedUri.path;
 		return ("./");
 	}
-	size_t	idx = _s_uri.path.find_last_of("/");
-	_s_uri.root = _s_uri.path.substr(0, idx);
-	return (_s_uri.path.substr(idx + 1));
+	size_t	idx = _parsedUri.path.find_last_of("/");
+	_parsedUri.root = _parsedUri.path.substr(0, idx);
+	return (_parsedUri.path.substr(idx + 1));
 }
 
 void	Request::prunePath()
@@ -604,19 +604,19 @@ void	Request::prunePath()
 	std::string	filename = getFilename();
 	size_t	idx = filename.find_last_of(".");
 	if (idx == std::string::npos)
-		_s_uri.extension = "";
+		_parsedUri.extension = "";
 	else
-		_s_uri.extension = _s_uri.path.substr(idx);
+		_parsedUri.extension = _parsedUri.path.substr(idx);
 }
 
 int	Request::parseURI()
 {
-	_s_uri.query = _uri;
-	if (pruneScheme(_s_uri.query))
+	_parsedUri.query = _uri;
+	if (pruneScheme(_parsedUri.query))
 		return (_fillError(400, "Bad uri"));
-	pruneDelim(_s_uri.query, "@");
-	pruneDelim(_s_uri.query, "/");
-	_s_uri.path = extractPath(_s_uri.query);
+	pruneDelim(_parsedUri.query, "@");
+	pruneDelim(_parsedUri.query, "/");
+	_parsedUri.path = extractPath(_parsedUri.query);
 	if (checkPath())
 		return _fillError(400, "too many ../ in uri");
 	prunePath();
