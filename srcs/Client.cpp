@@ -127,7 +127,7 @@ int	Client::getResponseStatus() const {
 	return (0);
 }
 
-void	Client::setHost(std::string hostname) {
+void	Client::setHost(const std::string& hostname) {
 
 	this->_host = this->_listenServer.bindClient(*this, hostname);
 }

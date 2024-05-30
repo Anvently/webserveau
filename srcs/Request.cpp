@@ -464,9 +464,12 @@ int	Request::parseInput(std::string &buffer, std::fstream *filestream)
 	return (0);
 }
 
-int	Request::getHostName(std::string &hostname)
+/// @brief Write
+/// @param hostname 
+/// @return 
+int	Request::getHostName(std::string &hostname) const
 {
-	std::map<std::string, std::string>::iterator it;
+	std::map<std::string, std::string>::const_iterator it;
 	it = this->_headers.find("Host");
 	if (it == this->_headers.end())
 	{
@@ -480,6 +483,13 @@ int	Request::getHostName(std::string &hostname)
 	}
 	hostname = it->second;
 	return (0);
+}
+
+bool	Request::checkHeader(const std::string& key) const {
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	if (it == _headers.end())
+		return (false);
+	return (true);
 }
 
 void	Request::setStatus(int status)

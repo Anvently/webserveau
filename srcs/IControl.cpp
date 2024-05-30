@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <IParseConfig.hpp>
+#include <Response.hpp>
 
 int	IControl::_epollfd = -1;
 
@@ -170,6 +171,85 @@ int	AssignHost(Client *client)
 	return(0);
 }
 
+/**
+@brief check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
+**/
+int	IControl::checkForbiddenHeaders(const Request& request) {
+	if (1)
+		return (RES_NOT_IMPLEMENTED);
+	return (0);
+}
+
+/**
+@brief check if host is given, empty or not, assign correct or first host found.
+Check content-length
+**/
+int	IControl::assignHost(Client& client, const Request& request) {
+	if (request.checkHeader("host") == false)
+		return (RES_BAD_REQUEST);
+	client.setHost(request.getHeader("host"));
+	return (0);
+}
+
+/// @brief Check if header tells about the existence of a body and if it 
+/// match host mast body size, if a body is present, update client body status
+/// to ```ONGOING```.
+/// @param client 
+/// @param request 
+/// @return ```status``` of the error or ```0``` if no error.
+int	IControl::checkBodyLength(Client& client, const Request& request) 
+{
+	int bodyLength = -1;
+	if (request.checkHeader("content-length") == true) {
+		getInt(request.getHeader("content-length"), 10, bodyLength);
+		if (bodyLength > client.getHost()->getMaxSize())
+			return (RES_REQUEST_ENTITY_TOO_LARGE);
+	}
+	if (bodyLength != -1 || request.getHeader("transfer-encoding") == "chunked")
+	{
+		client.setBodyStatus(BODY_STATUS_ONGOING);
+		client.setBodyMaxSize(client.getHost()->getMaxSize());
+	}
+	return (0);
+}
+
+/**
+	@brief Should be called once the full header is parsed
+		- if header READY
+			- check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
+			- check host rules
+				- identify host
+				- check headers content-length
+			- parse uri, get location (and parameters) and check for body
+				- check redirects
+				- if dir && default_uri
+					- change uri
+				- check if cgi or static/dir_listing
+				- check allowed methods
+				- if not static POST
+					- check ressource existence
+				- else
+					- check upload settings
+				- if continue
+					- generate body parsing config (creating ostream and max_chunk_length)
+					- genereate CONTINUE RESPONSE
+				- else if body
+					- resume body parsing as CGI
+**/
+int	IControl::handleClientRequest(Client& client, const Request& request) {
+	int	res = 0;
+
+	client.setBodyStatus(BODY_STATUS_NONE);
+	if ((res = checkForbiddenHeaders(request)))
+		return (res);
+	if ((res = assignHost(client, request)))
+		return (res);
+	//Parse URI
+	if ((res = checkBodyLength(client, request)))
+		return (res);
+	client.setHeaderStatus(HEADER_STATUS_DONE);
+}
+
 int	IControl::handleClientIn(Client& client)
 {
 	char	buffer_c[BUFFER_SIZE + 1];
@@ -186,7 +266,7 @@ int	IControl::handleClientIn(Client& client)
 		generateResponse(client, ret);
 	else if (ret < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
-			if ((ret = handleClientRequest(client)))
+			if ((ret = handleClientRequest(client, *client.getRequest())))
 				generateResponse(client, ret);
 		}
 		if (client.getBodyStatus() == BODY_STATUS_DONE && ret == 0) {
@@ -199,12 +279,19 @@ int	IControl::handleClientIn(Client& client)
 	return (0);
 }
 
-void	IControl::generateResponse(Client& client, int ret)
+/// @brief Generate an appropriate response type from the given
+/// status.
+/// @param client 
+/// @param status ```0``` if the response to generate is not an error
+void	IControl::generateResponse(Client& client, int status)
 {
-	if (response) {
-		if (client.getResponse()) //Not sure
-			delete (client.getResponse()); //Not sure
-		client.setResponse(new Response(ret));
-		
+	if (client.getResponse()) //Not sure
+		return ; //Not sure
+	if (status == RES_CONTINUE)
+		client.setResponse(new SingleLineResponse(100, "Continue"));
+	else if (status > 0) {
+		if (client.getHost())
+
 	}
+	return (0);
 }
