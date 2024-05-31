@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <IControl.hpp>
 
-// Parse config file into host vector
 class IControl;
 
 class IParseConfig
@@ -57,7 +56,7 @@ class IParseConfig
 		static void				parsePort(std::istream& istream, Host& host);
 		static void				parseServerName(std::istream& istream, Host& host);
 		static void				parseBodyMaxSize(std::istream& istream, Host& host);
-		static void				parseAllowedMethods(std::istream& istream, bool (&dest)[METHOD_NBR]);
+		static void				parseAllowedMethods(std::istream& istream, int& methods);
 		static void				parseRedirection(std::istream& istream, Location& location);
 		static void				parsePath(std::istream& istream, std::string& dest, const char* id = NULL);
 		static void				parseBoolean(std::istream& istream, bool& dest, const char* id = NULL);
@@ -66,6 +65,8 @@ class IParseConfig
 		friend int				IControl::handleCommandPrompt(epoll_event* event);
 
 	public:
+
+		static std::string		default_error_pages;
 
 		static int				parseConfigFile(const char* path);
 

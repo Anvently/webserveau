@@ -91,8 +91,8 @@ class	Request
 		URI									_parsedUri;
 		int									_final_status;
 		int									_type;
-		Location*							_hostLocation;
-		CGIConfig*							_cgiConfig;
+		Location*							_locationRules;
+		CGIConfig*							_cgi;
 
 		int	_checkSizes();
 		int	_parseChunked(std::string &buffer, std::ofstream *filestream);

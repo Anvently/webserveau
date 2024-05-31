@@ -7,6 +7,7 @@ std::ifstream	IParseConfig::_fileStream;
 std::string		IParseConfig::_lineBuffer;
 int				IParseConfig::_lineNbr = 1;
 int				IParseConfig::_lineNbrEndOfBlock = 1;
+std::string		IParseConfig::default_error_pages = "errors_default/";
 
 bool	IParseConfig::checkFilePath(const char* path)
 {
@@ -166,7 +167,7 @@ inline bool	IParseConfig::checkSemiColon(std::istream& istream)
 /// Check and skip for leading spaces and/or comments.
 /// Expand quotes as single word. Handles escaping character with ```\\```.
 /// @param istream 
-/// @param word 
+/// @param word Must be cleared before calling the function
 /// @return  ```0``` if a word was successfully extracted. If a delimiter
 /// (excepting whitespaces) without preceding word is found, return the delimiter.
 int	IParseConfig::	getNextWord(std::istream& istream, std::string& word)
@@ -366,6 +367,10 @@ void	IParseConfig::handleConfigToken(const std::string& token)
 {
 	if (token == "server")
 		parseHost(_fileStream);
+	else if (token == "error_pages") {
+		IParseConfig::default_error_pages.clear();
+		parsePath(_fileStream, IParseConfig::default_error_pages, "default error page location");
+	}
 	else
 		throw (UnknownTokenException(token));
 }
@@ -473,7 +478,7 @@ void	IParseConfig::parseBodyMaxSize(std::istream& istream, Host& host)
 		LOGE("Invalid max body size");
 }
 
-void	IParseConfig::parseAllowedMethods(std::istream& istream, bool (&dest)[METHOD_NBR])
+void	IParseConfig::parseAllowedMethods(std::istream& istream, int& dest)
 {
 	std::deque<std::string>	methods;
 	parseValues(istream, methods);
@@ -488,7 +493,7 @@ void	IParseConfig::parseAllowedMethods(std::istream& istream, bool (&dest)[METHO
 			LOGE("Invalid method");
 			return;
 		}
-		dest[index] = true;
+		dest |= (1 << index);
 	}
 	// LOGI("Allowed methods :");
 	// for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
@@ -516,12 +521,18 @@ void	IParseConfig::parseRedirection(std::istream& istream, Location& location)
 	}
 }
 
+/// @brief Replace to trim starting / and must end with /
+/// Remove consecutives *
+/// @param istream 
+/// @param dest 
+/// @param id 
 void	IParseConfig::parsePath(std::istream& istream, std::string& dest, const char* id)
 {
 	if (getNextWord(istream, dest)) {
 		LOGE("%s is missing", id);
 		return;
 	}
+
 }
 
 void	IParseConfig::parseBoolean(std::istream& istream, bool& dest, const char* id)

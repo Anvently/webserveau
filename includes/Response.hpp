@@ -52,7 +52,6 @@ class	AResponse
 {
 	protected:
 
-
 		int									_status;
 		std::string							_description;
 

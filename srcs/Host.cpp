@@ -22,32 +22,36 @@ Host::Host(const Host& copy) : _addr(copy._addr), _port(copy._port), \
 	_server_names(copy._server_names), _locationMap(copy._locationMap), \
 	_cgiMap(copy._cgiMap), _clients(copy._clients) {}
 
-Location::Location(void) : dir_listing(false), upload(false) {
-	for (int i = 0; i < METHOD_NBR; i++) {
-		methods[i] = false;
-	}
-}
+Location::Location(void) : dir_listing(false), upload(false), methods(GET) {}
 
-Location::Location(const Location& copy) : root(copy.root), dir_listing(copy.dir_listing), \
+Location::Location(const Location& copy) : root(copy.root), methods(copy.methods), dir_listing(copy.dir_listing), \
 	default_uri(copy.default_uri), upload(copy.upload), upload_root(copy.upload_root), \
-	addr_redir(copy.addr_redir)
-{
-	for (int i = 0; i < METHOD_NBR; i++) {
-		methods[i] = copy.methods[i];
-	}
+	redir(copy.redir), addr_redir(copy.addr_redir)
+{}
+
+CGIConfig::CGIConfig(void) : methods(GET) {}
+
+CGIConfig::CGIConfig(const CGIConfig& copy) : exec(copy.exec), root(copy.root), methods(copy.methods)
+{}
+
+bool	CGIConfig::operator==(const CGIConfig& rhs) const {
+	if (this->exec != rhs.exec
+		|| this->root != rhs.root
+		|| this->methods != rhs.methods)
+		return (false);
+	return (true);
 }
 
-CGIConfig::CGIConfig(void) {
-	for (int i = 0; i < METHOD_NBR; i++) {
-		methods[i] = false;
-	}
-}
-
-CGIConfig::CGIConfig(const CGIConfig& copy) : exec(copy.exec), root(copy.root)
-{
-	for (int i = 0; i < METHOD_NBR; i++) {
-		methods[i] = copy.methods[i];
-	}
+bool	Location::operator==(const Location& rhs) const {
+	if (this->redir == rhs.redir
+		|| !std::equal(rhs.addr_redir.begin(), rhs.addr_redir.end(), this->addr_redir.begin())
+		|| this->default_uri != rhs.default_uri
+		|| this->dir_listing != rhs.dir_listing
+		|| this->methods != rhs.methods
+		|| this->upload != rhs.upload
+		|| this->upload_root != rhs.upload_root)
+		return (false);
+	return (true);
 }
 
 std::list<Host>::iterator	Host::findHost(Host* host)
@@ -97,18 +101,12 @@ Client*	Host::getClientByFd(int fd) const {
 	return (NULL);
 }
 
-Location*	Host::getLocation(const std::string& path) const {
-	std::map<std::string, Location*>::const_iterator	pos = _locationMap.find(path);
-	if (pos == _locationMap.end())
-		return (NULL);
-	return (pos->second);
+const Location*	Host::getLocation(const std::string& path) const {
+	return (getMapObjectByKey(_locationMap, path));
 }
 
-CGIConfig*	Host::getCGIConfig(const std::string& path) const {
-	std::map<std::string, CGIConfig*>::const_iterator	pos = _cgiMap.find(path);
-	if (pos == _cgiMap.end())
-		return (NULL);
-	return (pos->second);
+const CGIConfig*	Host::getCGIConfig(const std::string& path) const {
+	return (getMapObjectByKey(_cgiMap, path));
 }
 
 const std::vector<std::string>&	Host::getServerNames(void) const {
@@ -147,25 +145,6 @@ void	Host::addClient(Client* newClient) {
 void	Host::shutdown(void) {
 	for (std::list<Client*>::iterator it = _clients.begin(); it != _clients.end(); it++)
 		Client::deleteClient(*it);
-}
-
-bool	CGIConfig::operator==(const CGIConfig& rhs) const {
-	if (this->exec != rhs.exec
-		|| this->root != rhs.root
-		|| !std::equal(&rhs.methods[0], &rhs.methods[METHOD_NBR], &this->methods[0]))
-		return (false);
-	return (true);
-}
-
-bool	Location::operator==(const Location& rhs) const {
-	if (!std::equal(rhs.addr_redir.begin(), rhs.addr_redir.end(), this->addr_redir.begin())
-		|| this->default_uri != rhs.default_uri
-		|| this->dir_listing != rhs.dir_listing
-		|| !std::equal(&rhs.methods[0], &rhs.methods[METHOD_NBR], &this->methods[0])
-		|| this->upload != rhs.upload
-		|| this->upload_root != rhs.upload_root)
-		return (false);
-	return (true);
 }
 
 void	Host::addCGIConfig(const std::deque<std::string>& names, CGIConfig& cgiConfig)
@@ -253,12 +232,14 @@ std::ostream&	operator<<(std::ostream& os, const Location& location)
 		os << "			upload_root: " << location.upload_root << std::endl;
 	os << "			allowed methods: ";
 	for (int i = 0; i < METHOD_NBR; i++)
-		os << (location.methods[i] ? METHOD_STR[i] : "");
+		os << ((location.methods & (1 << i)) ? METHOD_STR[i] : "");
 	os << std::endl;
-	os << "			redirections: \n";
-	for (std::map<int, std::string>::const_iterator it = location.addr_redir.begin();\
-			it != location.addr_redir.end(); it++)
-		os << "			  - " << it->first << " => " << it->second << std::endl;
+	if (location.redir) {
+		os << "			redirections (" <<  location.redir << "): \n";
+		for (std::vector<std::string>::const_iterator it = location.addr_redir.begin();\
+				it != location.addr_redir.end(); it++)
+			os << "			  - " << *it << std::endl;
+	}
 	return (os);
 }
 
@@ -268,7 +249,7 @@ std::ostream&	operator<<(std::ostream& os, const CGIConfig& CGIConfig)
 	os << "			exec_path: " << CGIConfig.exec << std::endl;
 	os << "			allowed methods: ";
 	for (int i = 0; i < METHOD_NBR; i++)
-		os << (CGIConfig.methods[i] ? METHOD_STR[i] : "");
+		os << ((CGIConfig.methods & (1 << i)) ? METHOD_STR[i] : "");
 	os << std::endl;
 	return (os);
 }
@@ -283,12 +264,12 @@ std::ostream&	operator<<(std::ostream& os, const Host& host)
 /// @param client 
 /// @param request 
 /// @return 
-int	Host::checkRedirection(Location& location, const Request& request) const
+int	Host::checkRedirection(const Location& location, const Request& request) const
 {
 	return (0);
 }
 
-inline int	Host::assertRequestType(Location* loc, CGIConfig* cgi, const Request& request)
+inline int	Host::assertRequestType(const Location* loc, const CGIConfig* cgi, const Request& request)
 {
 	if (cgi)
 		return (REQ_TYPE_CGI);
@@ -300,9 +281,9 @@ inline int	Host::assertRequestType(Location* loc, CGIConfig* cgi, const Request&
 
 /// Should be called if the ressource was a directory.
 /// Switch path to index file if given by host and return ```0```.
-/// Return error if dir_listing is not allowed, if method is not ```GET```
+/// Return error if dir_listing is not allowed, if methods is not ```GET```
 /// or the dir doesn't exist.
-int	Host::checkDirRessource(Location& location, Request& request) const
+int	Host::checkDirRessource(const Location& location, Request& request) const
 {
 	URI& test = request.getUri();
 	return (0);
@@ -313,17 +294,17 @@ int	Host::checkDirRessource(Location& location, Request& request) const
 /// @param location 
 /// @param request 
 /// @return 
-int	Host::checkLocationRules(Location& location, const Request& request) const
+int	Host::checkLocationRules(const Location& location, const Request& request) const
 {
 	if (request.getMethod() == POST && request.getUri().)
 	return (0);
 }
 
-/// @brief Check if method match allowed methods for CGI
+/// @brief Check if methods match allowed methods for CGI
 /// @param cgi 
 /// @param request 
 /// @return 
-int	Host::checkCGIRules(CGIConfig& cgi, const Request& request) const
+int	Host::checkCGIRules(const CGIConfig& cgi, const Request& request) const
 {
 	return (0);
 }
@@ -358,8 +339,8 @@ bool	Host::checkRessourcePath(const std::string& path, int type)
  **/
 int	Host::checkRequest(Request& request) const {
 	int	res = 0;
-	Location*	loc;
-	CGIConfig*	cgi;
+	const Location*	loc;
+	const CGIConfig*	cgi;
 
 	loc = getLocation(request.getUri().root);
 	cgi = getCGIConfig(request.getUri().extension);

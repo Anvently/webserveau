@@ -1,10 +1,24 @@
 CHrome behaviour:
 
+URI match example :
+*/img1.png
+*/*.png
+*.png
+*.png*
+*/img1.pn*
+*/*mg1.pn*
+*/tests/imgs/*
+*/imgs/*
+*/root/*/imgs/*
+*/imgs/*/imgs/*
+*/test/*
+*/root/*/tes*
+root/imgs/root/serv/test/imgs/img1.png
+
+
 TODO
 
 	- IParseConfig :
-		- add default error page for all server
-		- add redirections multiple values
 		- check root and lcoation path => don't start with / but ends with /
 		- implement standalone wildcard ?
 			- chain location rules

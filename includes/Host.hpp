@@ -12,7 +12,6 @@
 #include <Request.hpp>
 // #include <Client.hpp>
 
-
 class IParseConfig;
 class Client;
 
@@ -22,7 +21,7 @@ struct Location
 	Location(const Location&);
 
 	std::string					root;
-	bool						methods[3]; //GET-POST-DELETE
+	int							methods;
 	bool						dir_listing; //ignore is default_uri != 0
 	std::string					default_uri;
 
@@ -30,7 +29,8 @@ struct Location
 	std::string					upload_root;
 
 	// bool	redirection;
-	std::map<int, std::string>	addr_redir;
+	int							redir;
+	std::vector<std::string>	addr_redir;
 
 	bool						operator==(const Location&) const;
 };
@@ -44,7 +44,7 @@ struct CGIConfig
 
 	std::string					exec; //example '/bin/bash'
 	std::string					root;
-	bool						methods[METHOD_NBR]; //GET-POST-DELETE
+	int							methods; //GET-POST-DELETE
 
 	bool						operator==(const CGIConfig&) const;
 };
@@ -83,12 +83,18 @@ class	Host {
 
 		void				printProperties(std::ostream& os) const;
 
-		int					checkRedirection(Location& location, const Request& request) const;
-		static inline int	assertRequestType(Location*, CGIConfig*, const Request&);
-		int					checkDirRessource(Location& location, Request& request) const;
-		int					checkLocationRules(Location& location, const Request& request) const;
-		int					checkCGIRules(CGIConfig& cgi, const Request& request) const;
+		int					checkRedirection(const Location& location, const Request& request) const;
+		static inline int	assertRequestType(const Location*, const CGIConfig*, const Request&);
+		int					checkDirRessource(const Location& location, Request& request) const;
+		int					checkLocationRules(const Location& location, const Request& request) const;
+		int					checkCGIRules(const CGIConfig& cgi, const Request& request) const;
 		static bool			checkRessourcePath(const std::string& path, int type = 0);
+
+		template <typename T>
+		const T				getMapObjectByKey(const typename std::map<std::string, T>&, const std::string& key) const;
+
+		template <typename T>
+		T*					getObjectMatch(const typename std::map<std::string, T*>&, const std::string& uri) const;
 
 	public:
 
@@ -105,8 +111,8 @@ class	Host {
 		int								getMaxSize() const;
 		const std::string&				getAddr() const;
 		Client							*getClientByFd(int fd) const;
-		Location*						getLocation(std::string const &path) const; //return the "/" loc if no match
-		CGIConfig*						getCGIConfig(std::string const &path) const;
+		const Location*					getLocation(std::string const &path) const; //return the "/" loc if no match
+		const CGIConfig*				getCGIConfig(std::string const &path) const;
 		const std::vector<std::string>&	getServerNames(void) const;
 		std::list<Client*>::const_iterator	getClientListBegin(void) const;
 		std::list<Client*>::const_iterator	getClientListEnd(void) const;
@@ -125,5 +131,34 @@ class	Host {
 };
 
 std::ostream&	operator<<(std::ostream& os, const Host& host);
+
+template <typename T>
+const T	Host::getMapObjectByKey(const typename std::map<std::string, T>& map, const std::string& key) const {
+	std::map<std::string, T>::const_iterator	pos = map.find(key);
+	if (pos == map.end())
+		return (NULL);
+	return (pos->second);
+}
+
+bool	isUriMatch(const std::string& uriRef, const std::string& expression, const std::string* previousMatch);
+
+template <typename T>
+T*	Host::getObjectMatch(const typename std::map<std::string, T*>& map, const std::string& uri) const {
+	const typename std::pair<const std::string, T*>*	bestMatch = NULL;
+
+	for (typename std::map<std::string, T*>::const_iterator it = map.begin(); it != map.end(); it++)
+	{
+		if (isBetterMatch(uri, it->first, (bestMatch ? &bestMatch->first : NULL)))
+			bestMatch = &*it;
+	}
+	if (bestMatch)
+		return (bestMatch->second);
+	return (NULL);
+
+}
+
+
+// size_t	evaluateMatchStrength(const std::string& expression, const std::string& uri);
+
 
 #endif

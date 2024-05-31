@@ -20,7 +20,8 @@ Request::Request(const Request& copy) \
 }
 
 Request::~Request()
-{}
+{
+}
 
 void	Request::trimSpace()
 {

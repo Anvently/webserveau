@@ -333,7 +333,7 @@ void	IControl::generateResponse(Client& client, int status)
 			break;
 
 		case RES_CREATED: //Need path
-			client.setResponse(new StaticPageResponse());
+			// client.setResponse(new StaticPageResponse());
 			break;
 
 		case RES_NO_CONTENT: //ok but no body, for DELETE
@@ -364,7 +364,6 @@ void	IControl::generateResponse(Client& client, int status)
 			//The new URI should be given in location field
 			//Dynamic body containing html redirection
 			break;
-
 
 		case RES_BAD_REQUEST: //Verbose hint
 			//Dynamic body

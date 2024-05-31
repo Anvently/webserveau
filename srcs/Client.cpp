@@ -26,14 +26,13 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	_request = NULL;
 	_response = NULL;
 	_bodyStream = NULL;
-	_URI = {};
 }
 
 Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._addressStr), \
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
 	 _lastInteraction(copy._lastInteraction), \
 	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
-	_fileName(copy._fileName), _bodyStream(copy._bodyStream), _URI(copy._URI)
+	_fileName(copy._fileName), _bodyStream(copy._bodyStream)
 {
 	this->_request = NULL;
 	this->_response = NULL;

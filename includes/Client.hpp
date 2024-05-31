@@ -71,7 +71,6 @@ class	Client : public IObject
 		std::string			_buffer;
 		std::string			_fileName;
 		std::ofstream*		_bodyStream;
-		URI					_URI;
 
 		// May want something more versatile
 		// (If CGI, it would be linked to a pipe
