@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <fstream>
+#include <Request.hpp>
 
 // 1xx indicates an informational message only
 // 2xx indicates success of some kind
@@ -15,8 +16,12 @@
 #define RES_OK 200
 #define RES_CREATED 201
 #define RES_NO_CONTENT 204
+#define RES_MULTIPLE_CHOICE 300
+#define RES_MOVED_PERMANENTLY 301
+#define RES_FOUND 302
+#define RES_SEE_OTHER 303
+#define RES_TEMPORARY_REDIRECT 307
 #define RES_BAD_REQUEST 400
-#define RES_UNAUTHORIZED 401
 #define RES_403_FORBIDDEN 403
 #define RES_NOT_FOUND 404
 #define RES_METHOD_NOT_ALLOWED 405
@@ -27,6 +32,16 @@
 #define RES_EXPECTATION_FAILED 417
 #define RES_INTERNAL_ERROR 500
 #define RES_NOT_IMPLEMENTED 501
+
+/*
+Response hints: 
+	- final path
+	- was the ressource already existing ?
+	- redirection location
+	- allowed methods
+	- verbose error
+
+*/
 
 /** @brief 
 
@@ -62,66 +77,69 @@ class	SingleLineResponse : public AResponse
 		virtual int		writeResponse(std::queue<char*>& outQueue);
 };
 
-class	EmptyBodyResponse : public AResponse
+class	HeaderResponse : public AResponse
 {
-	private:
+	protected:
 
-		EmptyBodyResponse(void) {}
-		std::map<std::string, std::string>	_headers;
+		HeaderResponse(void) {}
+		std::map<std::string, std::string, i_less>	_headers;
 
 	public:
 
-		EmptyBodyResponse(int status, const std::string& description) {}
-		~EmptyBodyResponse(void) {}
+		HeaderResponse(int status, const std::string& description) {}
+		~HeaderResponse(void) {}
 
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	StaticPageResponse : public AResponse
+class	StaticPageResponse : public AResponse, public HeaderResponse
 {
 	private:
 
-		std::map<std::string, std::string>	_headers;
-		std::ifstream						_ifstream;
-		std::string							_path;
+		StaticPageResponse(/* args */);
+
+		std::ifstream							_ifstream;
+		std::string								_path;
 
 	public:
-		StaticPageResponse(/* args */);
+
+		StaticPageResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
 		~StaticPageResponse();
 
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	CGIResponse : public AResponse
+class	CGIResponse : public AResponse, public HeaderResponse
 {
 	private:
 
-		std::map<std::string, std::string>	_headers;
+		CGIResponse();
+
 		int									_pipeFd;
 
 	public:
 
-		CGIResponse(/* args */);
+		CGIResponse(const std::string& infile, const Request& request);
 		~CGIResponse();
 
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	DynamicReponse : public AResponse
+class	DynamicReponse : public AResponse, public HeaderResponse
 {
 
 	private:
 
 		DynamicReponse(/* args */);
-		std::map<std::string, std::string>	_headers;
 		int									_pipeFd;
 		std::string							_body;
 
 	public:
 
-		typedef	void (*bodyGenerator_func)(DynamicReponse&, const std::string);
-		
-		DynamicReponse(bodyGenerator_func, const std::string&);
+		// typedef	void (*bodyGenerator_func)(DynamicReponse&, const std::string);
+
+		DynamicReponse(int status, const Request& request);
+		// DynamicReponse(bodyGenerator_func, const std::string&);
 		~DynamicReponse();
 
 	virtual int		writeResponse(std::queue<char*>& outQueue) {}

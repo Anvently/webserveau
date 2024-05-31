@@ -269,7 +269,7 @@ int	IControl::defineBodyParsing(Client& client, const Request& request)
 int	IControl::handleRequestBodyDone(Request& request)
 {
 	if (request.getType() == REQ_TYPE_STATIC) {
-		if (request.getMethod() == POST )
+		if (request.getMethod() == POST)
 			return (RES_CREATED);
 		else if (request.getMethod() == DELETE)
 			return (RES_NO_CONTENT);
@@ -320,14 +320,91 @@ void	IControl::generateResponse(Client& client, int status)
 			break;
 		
 		case RES_OK: //For Static/dir GET or CGI operation
-
+			/*
+				If cgi
+					- file path
+					- cgiConfig
+					- method && headers
+				If dir_listing
+					- locationRule
+				If static
+					- file path
+			*/
 			break;
 
 		case RES_CREATED: //Need path
 			client.setResponse(new StaticPageResponse());
 			break;
 
+		case RES_NO_CONTENT: //ok but no body, for DELETE
+			
+			break;
+
+		case RES_MULTIPLE_CHOICE:
+			//List of redirections in body, with the first one in location header
+			//Dynamic body
+			break;
+
+		case RES_MOVED_PERMANENTLY:
+			//The new URI should be given in location field
+			//Dynamic body containing html redirection
+			break;
+
+		case RES_FOUND:
+			//The new URI should be given in location field
+			//Dynamic body containing html redirection
+			break;
 		
+		case RES_SEE_OTHER:
+			//The new URI should be given in location field
+			//Dynamic body containing html redirection
+			break;
+
+		case RES_TEMPORARY_REDIRECT:
+			//The new URI should be given in location field
+			//Dynamic body containing html redirection
+			break;
+
+
+		case RES_BAD_REQUEST: //Verbose hint
+			//Dynamic body
+			break;
+
+		case RES_NOT_FOUND: //Full static page
+		
+		break;
+
+		case RES_METHOD_NOT_ALLOWED: //Full static page, must contains allow header
+		
+		break;
+
+		case RES_TIMEOUT: //Full static page
+		
+		break;
+
+		case RES_LENGTH_REQUIRED: //Full static page
+		
+		break;
+
+		case RES_REQUEST_ENTITY_TOO_LARGE: //Full static page
+		
+		break;
+
+		case RES_REQUEST_URI_TOO_LONG: //Full static page
+		
+		break;
+
+		case RES_EXPECTATION_FAILED: //Full static page
+		
+		break;
+
+		case RES_INTERNAL_ERROR: //Full static page
+		
+		break;
+
+		case RES_NOT_IMPLEMENTED: //Full static page
+		
+		break;
 
 		default:
 			LOGE("Unknow status: %d", status);

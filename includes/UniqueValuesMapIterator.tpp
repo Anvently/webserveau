@@ -1,3 +1,6 @@
+#ifndef UNIQUE_VALUE_MAP_ITERATOR
+# define UNIQUE_VALUE_MAP_ITERATOR
+
 #include <map>
 #include <set>
 #include <list>
@@ -134,3 +137,5 @@ class UniqueValuesMapIterator
 			return (tmp);
 		};
 };
+
+#endif

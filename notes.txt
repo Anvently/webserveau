@@ -2,6 +2,15 @@ CHrome behaviour:
 
 TODO
 
+	- IParseConfig :
+		- add default error page for all server
+		- add redirections multiple values
+		- check root and lcoation path => don't start with / but ends with /
+		- implement standalone wildcard ?
+			- chain location rules
+		- handle an host belonging to multiple listenServer 
+
+
 	- Parsing headers
 		- Verifiy : 
 			- content-Encoding
