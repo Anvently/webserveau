@@ -154,13 +154,13 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 {
 	int	res = 0;
 
-	if (event->events & EPOLLIN) {
+	if ((event->events & EPOLLIN) && client.getMode() == READ) {
 		if (res = IControl::handleClientIn(client)) {
 			generateResponse(client, res);
 			client.setMode(WRITE);
 		}
 	}
-	else if (event->events & EPOLLOUT)
+	else if ((event->events & EPOLLOUT) && client.getMode() == WRITE)
 		return (0);
 	return (0);
 }

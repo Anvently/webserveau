@@ -42,6 +42,18 @@ typedef struct URI
 }	URI;
 
 
+typedef struct ResHints {
+	std::string							path;
+	bool								alreadyExist;
+	bool								unlink;
+	std::string							verboseError;
+	int									status; 
+	Location*							locationRules;
+	CGIConfig*							cgiRules;
+	int									type; //CGI/dir/static
+	std::map<std::string, std::string>	headers;
+};
+
 struct i_less {
 	static inline char	lowercase(char c) {
 		if (c >= 'A' || c <= 'Z')
@@ -69,8 +81,6 @@ class	Request
 		std::string							_formated_headers;
 		std::string							_uri;
 		int									_method;
-		int									_error_num;
-		std::string							_error_verbose;
 		int									_status;
 	
 		int									_header_size;
@@ -88,11 +98,9 @@ class	Request
 		int									_trailer_status;
 		int									_trailer_size;
 
+		ResHints							_resHints;
 		URI									_parsedUri;
 		int									_final_status;
-		int									_type;
-		Location*							_locationRules;
-		CGIConfig*							_cgi;
 
 		int	_checkSizes();
 		int	_parseChunked(std::string &buffer, std::ofstream *filestream);

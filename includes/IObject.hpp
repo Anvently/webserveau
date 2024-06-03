@@ -9,6 +9,7 @@ class IObject{
 		IObject() {}
 		virtual ~IObject() {}
 
+		// static std::set<IObject*>	objs;
 
 };
 

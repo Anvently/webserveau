@@ -88,6 +88,7 @@ int	main(void)
 			if (IControl::handleEpoll(events, nbr_events) < 0)
 				break;
 		}
+		
 	}
 	return (cleanExit(0));
 }

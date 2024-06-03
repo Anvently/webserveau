@@ -91,38 +91,40 @@ class	HeaderResponse : public AResponse
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	StaticPageResponse : public AResponse, public HeaderResponse
+class	FileResponse : public AResponse, public HeaderResponse
 {
 	private:
 
-		StaticPageResponse(/* args */);
+		FileResponse(/* args */);
 
-		std::ifstream							_ifstream;
+		std::ifstream*							_ifstream;
 		std::string								_path;
 
 	public:
 
-		StaticPageResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
-		~StaticPageResponse();
+		FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
+		~FileResponse();
 
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
-class	CGIResponse : public AResponse, public HeaderResponse
-{
-	private:
+// class	CGIResponse : public AResponse, public HeaderResponse
+// {
+// 	private:
 
-		CGIResponse();
+// 		CGIResponse();
 
-		int									_pipeFd;
+// 		int									_pipeFd;
+// 		int									_pid;
+// 		//IOCGI ?
 
-	public:
+// 	public:
 
-		CGIResponse(const std::string& infile, const Request& request);
-		~CGIResponse();
+// 		CGIResponse(const std::string& infile, const Request& request);
+// 		~CGIResponse();
 
-		virtual int		writeResponse(std::queue<char*>& outQueue) {}
-};
+// 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
+// };
 
 class	DynamicReponse : public AResponse, public HeaderResponse
 {
