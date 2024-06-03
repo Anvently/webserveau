@@ -66,7 +66,7 @@ class IControl
 			- send response
 		**/
 		static int	handleRequestHeaders(Client& client, Request& request);
-		static int	defineBodyParsing(Client& client, const Request& request);
+		static int	defineBodyParsing(Client& client, Request& request);
 		static int	handleRequestBodyDone(Request& request);
 
 		static int	checkForbiddenHeaders(Request& request);

@@ -48,11 +48,12 @@ typedef struct ResHints {
 	std::string							path;
 	bool								alreadyExist;
 	bool								unlink;
-	std::string							verboseError;
+	std::string							errorVerbose;
 	int									status; 
-	Location*							locationRules;
-	CGIConfig*							cgiRules;
-	int									type; //CGI/dir/static
+	const Location*						locationRules;
+	const CGIConfig*					cgiRules;
+	std::vector<std::string>*			redirList;
+	// int									requestType; //CGI/dir/static
 	std::map<std::string, std::string>	headers;
 };
 
@@ -100,7 +101,6 @@ class	Request
 		int									_trailer_status;
 		int									_trailer_size;
 
-		URI									_parsedUri;
 		int									_final_status;
 
 		int	_checkSizes();
@@ -113,6 +113,8 @@ class	Request
 		Request(const Request& copy);
 		~Request();
 
+		int									_type;
+		URI									_parsedUri;
 		ResHints							_resHints;
 
 		void		addHeader(std::string const &name, std::string const &value);
@@ -132,14 +134,6 @@ class	Request
 		void				setStatus(int status);
 		int					getError() const;
 		int					getMethod() const;
-		const URI&			getUri() const;
-		URI&				getUri();
-		int					getType() const;
-		void				setType(int);
-		const Location*		getLocation() const;
-		const CGIConfig*	getCGIConfig() const;
-		void				setLocation(Location*);
-		void				setCGIConfig(CGIConfig*);
 
 		const std::string&	getHeader(std::string const &key) const;
 		int					getHostName(std::string &hostname) const;
@@ -149,6 +143,7 @@ class	Request
 		void	printHeaders();
 		void	setBodyMaxSize(int size);
 
+		int		parseURI(const std::string& uri);
 		int		parseURI();
 		int		checkPath();
 		void	prunePath();

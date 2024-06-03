@@ -22,7 +22,7 @@
 #define RES_SEE_OTHER 303
 #define RES_TEMPORARY_REDIRECT 307
 #define RES_BAD_REQUEST 400
-#define RES_403_FORBIDDEN 403
+#define RES_FORBIDDEN 403
 #define RES_NOT_FOUND 404
 #define RES_METHOD_NOT_ALLOWED 405
 #define RES_TIMEOUT 408
@@ -102,6 +102,7 @@ class	FileResponse : public AResponse, public HeaderResponse
 
 	public:
 
+		FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
 		FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
 		~FileResponse();
 

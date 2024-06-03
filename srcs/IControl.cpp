@@ -181,11 +181,11 @@ int	AssignHost(Client *client)
 **/
 int	IControl::checkForbiddenHeaders(Request& request) {
 	if (request.getHeader("accept-ranges") != "") {
-		request._resHints.verboseError = "accept-range header not implemented";
+		request._resHints.errorVerbose = "accept-range header not implemented";
 	} else if (request.getHeader("content-encoding") != "identity") {
-		request._resHints.verboseError = "identity is the only value supported for content-encoding";
+		request._resHints.errorVerbose = "identity is the only value supported for content-encoding";
 	} else if (request.getHeader("transfer-encoding") != "chunked") {
-		request._resHints.verboseError = "chunked is the only value supported for transfer-encoding";
+		request._resHints.errorVerbose = "chunked is the only value supported for transfer-encoding";
 	}
 	else
 		return (0);
@@ -199,7 +199,7 @@ Check content-length
 **/
 int	IControl::assignHost(Client& client, Request& request) {
 	if (request.checkHeader("host") == false) {
-		request._resHints.verboseError = "request must include an host header";
+		request._resHints.errorVerbose = "request must include an host header";
 		request._resHints.status = RES_BAD_REQUEST;
 		return (RES_BAD_REQUEST);
 	}
@@ -263,27 +263,65 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 		return (res);
 	if (request.getHeader("expect") == "100-continue")
 		res = RES_CONTINUE;
-	else if (request.getHeader("expect") != "")
+	else if (request.getHeader("expect") != "") {
+		request._resHints.status = RES_EXPECTATION_FAILED;
 		return (RES_EXPECTATION_FAILED);
+	}
 	client.setHeaderStatus(HEADER_STATUS_DONE);
 	return (res);
 }
 
-int	IControl::defineBodyParsing(Client& client, const Request& request)
+enum	fileSituation {FILE_DONT_EXIT, FILE_EXIST, FILE_IS_NOT_REG};
+
+static int	checkFileExist(const char *path) {
+	struct stat	f_stat;
+	if (stat(path, &f_stat))
+		return (FILE_DONT_EXIT);
+	if (S_ISREG(f_stat.st_mode) == false)
+		return (FILE_IS_NOT_REG);
+	return (FILE_EXIST);
+}
+
+int	IControl::defineBodyParsing(Client& client, Request& request)
 {
-	if (request.getType() == REQ_TYPE_CGI)
+	if (request._type == REQ_TYPE_CGI)
 		client.setBodyFile(generate_name(client.getHost()->getServerNames().front()));
-	else if (request.getType() == REQ_TYPE_STATIC && request.getMethod() == POST)
-		client.setBodyFile(request.getCGIConfig()->root + request.getUri().path);
+	else if (request._type == REQ_TYPE_STATIC && request.getMethod() == POST) {
+		std::string	filePath;
+		filePath = request._resHints.locationRules->root \
+			+ (request._resHints.locationRules->upload_root != "" ? \
+					request._resHints.locationRules->upload_root : "") \
+			+ request._parsedUri.path;
+		switch (checkFileExist(filePath.c_str()))
+		{
+			case FILE_DONT_EXIT:
+				request._resHints.alreadyExist = false;
+				request._resHints.status = RES_CREATED;
+				break;
+			
+			case FILE_EXIST:
+				request._resHints.alreadyExist = true;
+				request._resHints.status = RES_OK;
+				break;
+
+			case FILE_IS_NOT_REG:
+				request._resHints.status = RES_FORBIDDEN;
+				return (RES_FORBIDDEN);
+		}
+		request._resHints.path = filePath;
+		client.setBodyFile(filePath);
+	}
 	else
 		client.setBodyFile("");
+	return (0);
 }
 
 int	IControl::handleRequestBodyDone(Request& request)
 {
-	if (request.getType() == REQ_TYPE_STATIC) {
-		if (request.getMethod() == POST)
-			return (RES_CREATED);
+	if (request._type == REQ_TYPE_STATIC) {
+		if (request.getMethod() == POST) {
+			return (request._resHints.status);
+		}
 		else if (request.getMethod() == DELETE)
 			return (RES_NO_CONTENT);
 	}

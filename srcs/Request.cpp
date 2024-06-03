@@ -610,6 +610,11 @@ void	Request::prunePath()
 		_parsedUri.extension = _parsedUri.path.substr(idx);
 }
 
+int	Request::parseURI(const std::string& suffix) {
+	_uri += suffix;
+	return (parseURI());
+}
+
 int	Request::parseURI()
 {
 	_parsedUri.query = _uri;

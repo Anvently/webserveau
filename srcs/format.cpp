@@ -6,6 +6,7 @@
 #include <cctype>
 #include <iostream>
 #include <sstream>
+#include <vector>
 #include <sys/time.h>
 
 static const std::string deci = "0123456789";
