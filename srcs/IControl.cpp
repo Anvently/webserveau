@@ -130,7 +130,6 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 		//.....
 
 	}
-	// a round of parsing has been done, could try to assign clients to hosts
 	//also need to check to timeout some connections
 	return (0);
 }
@@ -207,13 +206,13 @@ int	IControl::assignHost(Client& client, Request& request) {
 	return (0);
 }
 
-/// @brief Check if header tells about the existence of a body and if it 
+/// @brief Check if header tells about the existence of a body and if it
 /// match host mast body size, if a body is present, update client body status
 /// to ```ONGOING```.
-/// @param client 
-/// @param request 
+/// @param client
+/// @param request
 /// @return ```status``` of the error or ```0``` if no error.
-int	IControl::checkBodyLength(Client& client, Request& request) 
+int	IControl::checkBodyLength(Client& client, Request& request)
 {
 	int bodyLength = -1;
 	if (request.checkHeader("content-length") == true) {
@@ -337,7 +336,7 @@ int	IControl::handleClientIn(Client& client)
 		return (0);
 	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL ERROR
-	
+
 	buffer_c[n_read] = 0;
 	res = client.parseRequest(buffer_c);
 	if (res < 0) { //Status changed
@@ -353,12 +352,12 @@ int	IControl::handleClientIn(Client& client)
 
 /// @brief Generate an appropriate response type from the given
 /// status.
-/// @param client 
+/// @param client
 /// @param status ```0``` if the response to generate is not an error
 /// @note Possible hints for response
 ///				- headers
 ///				- final path
-///				- 
+///				-
 void	IControl::generateResponse(Client& client, int status)
 {
 	if (client.getResponse()) //Not sure
@@ -369,7 +368,7 @@ void	IControl::generateResponse(Client& client, int status)
 		case RES_CONTINUE:
 			client.setResponse(new SingleLineResponse(100, "Continue"));
 			break;
-		
+
 		case RES_OK: //For Static/dir GET or CGI operation
 			/*
 				If cgi
@@ -388,7 +387,7 @@ void	IControl::generateResponse(Client& client, int status)
 			break;
 
 		case RES_NO_CONTENT: //ok but no body, for DELETE
-			
+
 			break;
 
 		case RES_MULTIPLE_CHOICE:
@@ -405,7 +404,7 @@ void	IControl::generateResponse(Client& client, int status)
 			//The new URI should be given in location field
 			//Dynamic body containing html redirection
 			break;
-		
+
 		case RES_SEE_OTHER:
 			//The new URI should be given in location field
 			//Dynamic body containing html redirection
@@ -421,39 +420,39 @@ void	IControl::generateResponse(Client& client, int status)
 			break;
 
 		case RES_NOT_FOUND: //Full static page
-		
+
 		break;
 
 		case RES_METHOD_NOT_ALLOWED: //Full static page, must contains allow header
-		
+
 		break;
 
 		case RES_TIMEOUT: //Full static page
-		
+
 		break;
 
 		case RES_LENGTH_REQUIRED: //Full static page
-		
+
 		break;
 
 		case RES_REQUEST_ENTITY_TOO_LARGE: //Full static page
-		
+
 		break;
 
 		case RES_REQUEST_URI_TOO_LONG: //Full static page
-		
+
 		break;
 
 		case RES_EXPECTATION_FAILED: //Full static page
-		
+
 		break;
 
 		case RES_INTERNAL_ERROR: //Full static page
-		
+
 		break;
 
 		case RES_NOT_IMPLEMENTED: //Full static page
-		
+
 		break;
 
 		default:

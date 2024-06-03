@@ -3,18 +3,18 @@
 static const	std::string	dummyString = "";
 
 Request::Request() \
-	: _method(-1), _error_num(0), _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
-		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0), _trailer_size(0), _final_status(ONGOING)
+	: _method(-1), _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
+		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0), _trailer_size(0), _resHints{}, _final_status(ONGOING)
 {
 
 }
 
 Request::Request(const Request& copy) \
-	: _method(copy._method), _error_num(copy._error_num), _status(copy._status), \
+	: _method(copy._method), _status(copy._status), \
 		 _header_size(copy._header_size), _body_max_size(copy._body_max_size), _len(copy._len),  _content_length(copy._content_length), \
 		 _chunked(copy._chunked), _b_status(copy._b_status), \
 		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), _trailer_status(copy._trailer_status), \
-		_trailer_size(copy._trailer_size), _final_status(copy._final_status)
+		_trailer_size(copy._trailer_size), _resHints(copy._resHints),_final_status(copy._final_status)
 {
 
 }
@@ -39,9 +39,9 @@ const std::string&	Request::getHeader(std::string const &key) const
 
 int	Request::_fillError(int error, std::string const &verbose)
 {
-	this->_error_num = error;
-	this->_error_verbose = verbose;
-	this->_line = "";
+	this->_resHints.status = error;
+	this->_resHints.verboseError = verbose;
+	this->_line.clear();
 	this->_final_status = ERROR;
 	return (error);
 }
@@ -179,7 +179,7 @@ int	Request::parseHeaders(std::string &buffer)
 		if (this->_line.size() > HEADER_MAX_SIZE)
 			return (this->_fillError(414, "Request uri too long"));
 		if (this->parseRequestLine())
-			return (this->_error_num);
+			return (getError());
 		this->_line = "";
 		this->_status = ONGOING;
 	}
@@ -303,7 +303,7 @@ int	Request::_parseChunked(std::string &buffer, std::ofstream *filestream)
 	while (buffer != "")
 	{
 		if (this->getChunkedSize(buffer))
-			return (this->_error_num);
+			return (getError());
 		if (this->_chunked_status == 1 && this->_len == 0)
 		{
 			this->_b_status = COMPLETE;
@@ -357,7 +357,7 @@ void	Request::printRequest() const
 	std::cout << "uri is: " << this->_uri << std::endl;
 	std::cout << "status is: " << this->_status << std::endl;
 	std::cout << "bstatus is: " << this->_b_status << std::endl;
-	std::cout << "error is: " << this->_error_num << std::endl;
+	std::cout << "error is: " << this->_resHints.status << std::endl;
 }
 
 
@@ -448,7 +448,7 @@ int	Request::_checkSizes()
 
 int	Request::getError() const
 {
-	return (this->_error_num);
+	return (this->_resHints.status);
 }
 
 int	Request::getMethod() const {
@@ -474,9 +474,9 @@ int	Request::parseInput(std::string &buffer, std::ofstream *filestream)
 	if (this->_final_status > TRAILER || buffer.empty())
 		return (0);
 	if (this->parseBody(buffer, filestream))
-		return (this->_error_num);
+		return (getError());
 	if (this->parseTrailerHeaders(buffer))
-		return (this->_error_num);
+		return (getError());
 	return (0);
 }
 
@@ -514,11 +514,11 @@ void	Request::setStatus(int status)
 }
 
 int	Request::getType() const {
-	return (this->_type);
+	return (this->_resHints.type);
 }
 
 void	Request::setType(int type) {
-	_type = type;
+	_resHints.type = type;
 }
 
 
