@@ -73,7 +73,6 @@ class IControl
 		static int	assignHost(Client& client, Request& request);
 		static int	checkBodyLength(Client& client, Request& request);
 
-		static void	generateResponse(Client& client, int status = 0);
 
 		static void	handleKillCommand(std::deque<std::string>& words);
 		static void	handlePrintCommand(std::deque<std::string>& words);
@@ -90,7 +89,9 @@ class IControl
 		static int	handleEpoll(epoll_event* events, int nbrEvents);
 		static int	handleCommandPrompt(epoll_event* event);
 
+		static void	generateResponse(Client& client, int status = 0);
+
+
 };
 
 #endif
- 

@@ -88,7 +88,7 @@ int	main(void)
 			if (IControl::handleEpoll(events, nbr_events) < 0)
 				break;
 		}
-		
+		Client::checkTO();
 	}
 	return (cleanExit(0));
 }

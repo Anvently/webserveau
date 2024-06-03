@@ -19,6 +19,8 @@
 // class Response;
 
 #define MAX_NBR_OUT_BUFFERS 10
+#define CLIENT_TIME_OUT 10000 //timeout in milliseconds for client input
+
 
 #ifndef BUFFER_SIZE
 # define BUFFER_SIZE 4096

@@ -4,6 +4,7 @@
 #include <ctime>
 #include <arpa/inet.h>
 #include <ILogger.hpp>
+#include <IControl.hpp>
 
 std::list<Client>	Client::_clientList;
 
@@ -22,7 +23,7 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	_bodyStatus(BODY_STATUS_NONE), _mode(READ)
 {
 	_port = 0;
-	_lastInteraction = time(NULL);
+	gettimeofday(&_lastInteraction, NULL);
 	_request = NULL;
 	_response = NULL;
 	_bodyStream = NULL;
@@ -141,7 +142,10 @@ void	Client::shutdownConnection(void) {
 Request*	Client::getRequest()
 {
 	if (_request == NULL)
+	{
+		updateLastInteraction();
 		_request = new Request();
+	}
 	return (_request);
 }
 
@@ -227,7 +231,7 @@ std::ostream&	operator<<(std::ostream& os, const Client& client) {
 		os << " | status = " << client._request->getStatus() << " | error = " \
 			<< client._request->getError();
 	os << std::endl;
-	os << "		last interaction: " << time(NULL) - client._lastInteraction << std::endl;
+	os << "		last interaction: " << getDuration(client._lastInteraction) << " ms" << std::endl;
 	os << "		nbr of out buffers: " << client._outBuffers.size() << std::endl;
 	return (os);
 }
@@ -290,11 +294,30 @@ void	Client::deleteFile()
 }
 
 
+long long	getDuration(struct timeval time)
+{
+	struct timeval	now;
+	gettimeofday(&now, NULL);
+
+	return (now.tv_sec * 1000 + now.tv_usec / 1000 - time.tv_sec * 1000 - time.tv_usec / 1000);
+}
 
 void	Client::checkTO()
 {
+
 	for (std::list<Client>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
 	{
-		
+		if (getDuration(it->_lastInteraction) > CLIENT_TIME_OUT)
+		{
+			it->setMode(WRITE);
+			it->_request->setStatus(COMPLETE);
+			it->_request->_fillError(408, "");
+			IControl::generateResponse(*it, 408);
+		}
 	}
+}
+
+void	Client::updateLastInteraction()
+{
+	gettimeofday(&_lastInteraction, NULL);
 }
