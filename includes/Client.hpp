@@ -10,6 +10,7 @@
 #include <queue>
 #include <sys/socket.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 
 // class Request;
@@ -63,7 +64,7 @@ class	Client : public IObject
 		Request*			_request;
 		AResponse*			_response;
 
-		time_t				_lastInteraction;
+		struct timeval		_lastInteraction;
 
 		int					_headerStatus;
 		int					_bodyStatus;
@@ -106,6 +107,7 @@ class	Client : public IObject
 		Request				*getFrontRequest(); // return the oldest request
 		AResponse*			getResponse() const; // returns the current not complete response
 
+		static void			checkTO();
 		/// @brief
 		/// @param buffer null terminated buffer
 		/// @return ```< 0```

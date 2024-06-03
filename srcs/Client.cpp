@@ -291,3 +291,10 @@ void	Client::deleteFile()
 
 
 
+void	Client::checkTO()
+{
+	for (std::list<Client>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
+	{
+		
+	}
+}
