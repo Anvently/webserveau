@@ -48,7 +48,7 @@ typedef struct ResHints {
 	std::string							path;
 	bool								alreadyExist;
 	bool								unlink;
-	std::string							errorVerbose;
+	std::string							verboseError;
 	int									status; 
 	const Location*						locationRules;
 	const CGIConfig*					cgiRules;
@@ -83,7 +83,6 @@ class	Request
 		std::map<std::string, std::string, i_less>	_headers;
 		std::string							_formated_headers;
 		std::string							_uri;
-		int									_method;
 		int									_status;
 	
 		int									_header_size;
@@ -114,6 +113,7 @@ class	Request
 		~Request();
 
 		int									_type;
+		int									_method;
 		URI									_parsedUri;
 		ResHints							_resHints;
 
@@ -133,7 +133,6 @@ class	Request
 		int					getStatus(void) const;
 		void				setStatus(int status);
 		int					getError() const;
-		int					getMethod() const;
 
 		const std::string&	getHeader(std::string const &key) const;
 		int					getHostName(std::string &hostname) const;

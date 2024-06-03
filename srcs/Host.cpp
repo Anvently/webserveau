@@ -329,7 +329,7 @@ int	Host::checkDirRessource(Request& request) const
 		request.parseURI(location.default_uri);
 		return (0);
 	} else if (location.dir_listing == true) {
-		if (request.getMethod() != GET) {
+		if (request._method != GET) {
 			request._resHints.status = RES_FORBIDDEN;
 			return (RES_FORBIDDEN);
 		}
@@ -345,11 +345,11 @@ int	Host::checkDirRessource(Request& request) const
 /// @return 
 int	Host::checkLocationRules(Request& request) const
 {
-	if ((request._resHints.locationRules->methods & request.getMethod()) == 0) {
+	if ((request._resHints.locationRules->methods & request._method) == 0) {
 		request._resHints.status = RES_METHOD_NOT_ALLOWED;
 		return (RES_METHOD_NOT_ALLOWED);
 	}
-	if (request.getMethod() == POST && request._type == REQ_TYPE_STATIC) {
+	if (request._method == POST && request._type == REQ_TYPE_STATIC) {
 		if (request._resHints.locationRules->upload == false) {
 			request._resHints.status = RES_FORBIDDEN;
 			return (RES_FORBIDDEN);
@@ -364,7 +364,7 @@ int	Host::checkLocationRules(Request& request) const
 /// @return 
 int	Host::checkCGIRules(Request& request) const
 {
-	if ((request._resHints.cgiRules->methods & request.getMethod()) == 0) {
+	if ((request._resHints.cgiRules->methods & request._method) == 0) {
 		request._resHints.status = RES_METHOD_NOT_ALLOWED;
 		return (RES_METHOD_NOT_ALLOWED);
 	}
@@ -388,6 +388,30 @@ bool	Host::checkRessourcePath(const std::string& path, int type)
 	else if (type == REQ_TYPE_DIR && S_ISDIR(f_stat.st_mode) == false)
 		return (false);
 	return (true);
+}
+
+int	Host::checkRessourceExistence(Request& request) const {
+	std::string	path;
+
+	if (request._type == REQ_TYPE_CGI) {
+		path = request._resHints.cgiRules->root + request._parsedUri.path;
+		if (checkRessourcePath(path, REQ_TYPE_CGI) == true)
+			return (0);
+	} else {
+		if (request._method == POST) {
+			path = (request._resHints.locationRules->upload_root != "" ? \
+							request._resHints.locationRules->upload_root : \
+							request._resHints.locationRules->root);
+			if (checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR) == true)
+				return (0);
+		} else {
+			path = request._resHints.locationRules->root + request._parsedUri.path;
+			if (checkRessourcePath(path, request._type) == true)
+				return (0);
+		}
+	}
+	request._resHints.status = RES_NOT_FOUND;
+	return (RES_NOT_FOUND);
 }
 
 /** @brief Check request validity from an host perspective.
@@ -420,15 +444,9 @@ int	Host::checkRequest(Request& request) const {
 	}
 	if (request._resHints.locationRules && (res = checkLocationRules(request)))
 		return (res);
-	if (request._type == REQ_TYPE_CGI) {
-		if (res = checkCGIRules(request))
-			return (res);
-		if (res = checkRessourcePath(request._resHints.cgiRules->root + request._parsedUri.path, REQ_TYPE_CGI)) {
-			request._resHints.status = RES_NOT_FOUND;
-			return (RES_NOT_FOUND);
-		}
-	} else if (request.getMethod() != POST && (res = checkRessourcePath(request._resHints.locationRules->root + request._parsedUri.path, request._type))) {
-		request._resHints.status = RES_NOT_FOUND;
-		return (RES_NOT_FOUND);
-	}
+	if (request._type == REQ_TYPE_CGI && (res = checkCGIRules(request)))
+		return (res);
+	if (res = checkRessourceExistence(request))
+		return (res);
+	return (res);
 }

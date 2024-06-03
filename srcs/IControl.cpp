@@ -180,11 +180,11 @@ int	AssignHost(Client *client)
 **/
 int	IControl::checkForbiddenHeaders(Request& request) {
 	if (request.getHeader("accept-ranges") != "") {
-		request._resHints.errorVerbose = "accept-range header not implemented";
+		request._resHints.verboseError = "accept-range header not implemented";
 	} else if (request.getHeader("content-encoding") != "identity") {
-		request._resHints.errorVerbose = "identity is the only value supported for content-encoding";
+		request._resHints.verboseError = "identity is the only value supported for content-encoding";
 	} else if (request.getHeader("transfer-encoding") != "chunked") {
-		request._resHints.errorVerbose = "chunked is the only value supported for transfer-encoding";
+		request._resHints.verboseError = "chunked is the only value supported for transfer-encoding";
 	}
 	else
 		return (0);
@@ -198,7 +198,7 @@ Check content-length
 **/
 int	IControl::assignHost(Client& client, Request& request) {
 	if (request.checkHeader("host") == false) {
-		request._resHints.errorVerbose = "request must include an host header";
+		request._resHints.verboseError = "request must include an host header";
 		request._resHints.status = RES_BAD_REQUEST;
 		return (RES_BAD_REQUEST);
 	}
@@ -285,7 +285,7 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 {
 	if (request._type == REQ_TYPE_CGI)
 		client.setBodyFile(generate_name(client.getHost()->getServerNames().front()));
-	else if (request._type == REQ_TYPE_STATIC && request.getMethod() == POST) {
+	else if (request._type == REQ_TYPE_STATIC && request._method == POST) {
 		std::string	filePath;
 		filePath = request._resHints.locationRules->root \
 			+ (request._resHints.locationRules->upload_root != "" ? \
@@ -318,10 +318,10 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 int	IControl::handleRequestBodyDone(Request& request)
 {
 	if (request._type == REQ_TYPE_STATIC) {
-		if (request.getMethod() == POST) {
+		if (request._method == POST) {
 			return (request._resHints.status);
 		}
-		else if (request.getMethod() == DELETE)
+		else if (request._method == DELETE)
 			return (RES_NO_CONTENT);
 	}
 	return (RES_OK);

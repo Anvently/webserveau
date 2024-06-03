@@ -88,6 +88,7 @@ class	Host {
 		int					checkDirRessource(Request& request) const;
 		int					checkLocationRules(Request& request) const;
 		int					checkCGIRules(Request& request) const;
+		int					checkRessourceExistence(Request& request) const;
 		static bool			checkRessourcePath(const std::string& path, int type = 0);
 
 		template <typename T>
