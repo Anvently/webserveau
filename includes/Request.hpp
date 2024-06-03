@@ -41,6 +41,8 @@ typedef struct URI
 	std::string	query;
 }	URI;
 
+class Location;
+class CGIConfig;
 
 typedef struct ResHints {
 	std::string							path;
@@ -98,7 +100,6 @@ class	Request
 		int									_trailer_status;
 		int									_trailer_size;
 
-		ResHints							_resHints;
 		URI									_parsedUri;
 		int									_final_status;
 
@@ -111,6 +112,8 @@ class	Request
 		Request();
 		Request(const Request& copy);
 		~Request();
+
+		ResHints							_resHints;
 
 		void		addHeader(std::string const &name, std::string const &value);
 		int			getLine(std::string &buffer);

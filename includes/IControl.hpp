@@ -69,9 +69,9 @@ class IControl
 		static int	defineBodyParsing(Client& client, const Request& request);
 		static int	handleRequestBodyDone(Request& request);
 
-		static int	checkForbiddenHeaders(const Request& request);
-		static int	assignHost(Client& client, const Request& request);
-		static int	checkBodyLength(Client& client, const Request& request);
+		static int	checkForbiddenHeaders(Request& request);
+		static int	assignHost(Client& client, Request& request);
+		static int	checkBodyLength(Client& client, Request& request);
 
 		static void	generateResponse(Client& client, int status = 0);
 

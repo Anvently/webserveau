@@ -179,19 +179,30 @@ int	AssignHost(Client *client)
 /**
 @brief check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
 **/
-int	IControl::checkForbiddenHeaders(const Request& request) {
-	if (1)
-		return (RES_NOT_IMPLEMENTED);
-	return (0);
+int	IControl::checkForbiddenHeaders(Request& request) {
+	if (request.getHeader("accept-ranges") != "") {
+		request._resHints.verboseError = "accept-range header not implemented";
+	} else if (request.getHeader("content-encoding") != "identity") {
+		request._resHints.verboseError = "identity is the only value supported for content-encoding";
+	} else if (request.getHeader("transfer-encoding") != "chunked") {
+		request._resHints.verboseError = "chunked is the only value supported for transfer-encoding";
+	}
+	else
+		return (0);
+	request._resHints.status = RES_NOT_IMPLEMENTED;
+	return (RES_NOT_IMPLEMENTED);
 }
 
 /**
 @brief check if host is given, empty or not, assign correct or first host found.
 Check content-length
 **/
-int	IControl::assignHost(Client& client, const Request& request) {
-	if (request.checkHeader("host") == false)
+int	IControl::assignHost(Client& client, Request& request) {
+	if (request.checkHeader("host") == false) {
+		request._resHints.verboseError = "request must include an host header";
+		request._resHints.status = RES_BAD_REQUEST;
 		return (RES_BAD_REQUEST);
+	}
 	client.setHost(request.getHeader("host"));
 	return (0);
 }
@@ -202,13 +213,15 @@ int	IControl::assignHost(Client& client, const Request& request) {
 /// @param client 
 /// @param request 
 /// @return ```status``` of the error or ```0``` if no error.
-int	IControl::checkBodyLength(Client& client, const Request& request) 
+int	IControl::checkBodyLength(Client& client, Request& request) 
 {
 	int bodyLength = -1;
 	if (request.checkHeader("content-length") == true) {
 		getInt(request.getHeader("content-length"), 10, bodyLength);
-		if (bodyLength > client.getHost()->getMaxSize())
+		if (bodyLength > client.getHost()->getMaxSize()) {
+			request._resHints.status = RES_REQUEST_ENTITY_TOO_LARGE;
 			return (RES_REQUEST_ENTITY_TOO_LARGE);
+		}
 	}
 	if (bodyLength != -1 || request.getHeader("transfer-encoding") == "chunked")
 	{
