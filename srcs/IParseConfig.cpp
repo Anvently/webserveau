@@ -504,7 +504,7 @@ void	IParseConfig::parseAllowedMethods(std::istream& istream, int& dest)
 
 void	IParseConfig::parseRedirection(std::istream& istream, Location& location)
 {
-	int	errorCode;
+	int	redirectionStatus;
 	std::deque<std::string>	values;
 
 	parseValues(istream, values);
@@ -512,14 +512,12 @@ void	IParseConfig::parseRedirection(std::istream& istream, Location& location)
 		LOGE("Empty redirection");
 	else if (values.size() != 2)
 		LOGE("Incorrect number of values for redirection");
-	else if (getInt(values.at(0), 10, errorCode))
+	else if (getInt(values.at(0), 10, redirectionStatus))
 		LOGE("Invalid redirection code");
 	else
 	{
-		location.addr_redir[errorCode] = values.at(1);
-		// LOGI("Redirections :");
-		// for (std::deque<std::string>::iterator it = values.begin(); it != values.end(); it++)
-			// LOGI("	- %ss", &*it);
+		location.redir = redirectionStatus;
+		std::copy(values.begin() + 1, values.end(), std::back_inserter(location.addr_redir));
 	}
 }
 

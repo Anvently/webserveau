@@ -40,19 +40,24 @@ methods(copy.methods), extension(copy.extension)
 bool	CGIConfig::operator==(const CGIConfig& rhs) const {
 	if (this->exec != rhs.exec
 		|| this->root != rhs.root
-		|| this->methods != rhs.methods)
+		|| this->methods != rhs.methods
+		|| this->extension != rhs.extension)
 		return (false);
 	return (true);
 }
 
+// 
+
 bool	Location::operator==(const Location& rhs) const {
-	if (this->redir == rhs.redir
-		|| !std::equal(rhs.addr_redir.begin(), rhs.addr_redir.end(), this->addr_redir.begin())
+	if (this->addr_redir.size() != rhs.addr_redir.size()
+		|| !std::equal(this->addr_redir.begin(), this->addr_redir.end(), rhs.addr_redir.begin())
+		|| this->redir != rhs.redir
 		|| this->default_uri != rhs.default_uri
 		|| this->dir_listing != rhs.dir_listing
 		|| this->methods != rhs.methods
 		|| this->upload != rhs.upload
-		|| this->upload_root != rhs.upload_root)
+		|| this->upload_root != rhs.upload_root
+		|| this->root != rhs.root)
 		return (false);
 	return (true);
 }
