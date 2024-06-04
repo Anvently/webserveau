@@ -358,7 +358,7 @@ void	ILogger::printLogConfig(void)
 		std::cout << (entry->levels[4] ? " | VERBOSE" : "");
 		std::cout << "\n		 colorize = " << entry->colorize << std::endl;
 	}
-	std::cout << TERM_CL_RESET;
+	std::cout << TERM_CL_RESET << std::flush(std::cout);
 }
 
 /// @brief Default configuration. Is called at the first call to log()

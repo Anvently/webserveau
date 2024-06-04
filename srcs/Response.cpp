@@ -1,6 +1,7 @@
 #include <Response.hpp>
 #include <Request.hpp>
 #include <sys/time.h>
+#include <fstream>
 #include <ctime>
 
 static	std::string	days[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
@@ -25,7 +26,6 @@ SingleLineResponse::SingleLineResponse(int status, const std::string& descriptio
 
 int	SingleLineResponse::writeResponse(std::queue<std::string>& outQueue)
 {
-	char	*str;
 	std::string	portion;
 
 	while(!_response.empty())
@@ -85,7 +85,6 @@ void	HeaderResponse::_formatHeaders()
 
 int	HeaderResponse::writeResponse(std::queue<std::string>& outQueue)
 {
-	char	*str;
 	std::string	portion;
 
 	_formatHeaders();
@@ -110,15 +109,23 @@ FileResponse::~FileResponse(void) {}
 FileResponse::FileResponse(const std::string& infile, int status, const std::string &description): HeaderResponse(status, description)
 {
 	_path = infile;
-	_ifstream.open(_path, std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
-}
-
-FileResponse::~FileResponse()
-{
-
+	_ifstream.open(_path.c_str(), std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
 }
 
 int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
 {
-	
+	(void) outQueue;
+	return (0);
+}
+
+DynamicResponse::DynamicResponse(int status, const Request& request) {
+	(void) status;
+	(void) request;
+}
+
+DynamicResponse::~DynamicResponse(void) {}
+
+int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
+	(void)outQueue;
+	return (0);
 }

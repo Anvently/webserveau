@@ -57,12 +57,13 @@ class	AResponse
 {
 	protected:
 
+		AResponse(void) {}
 		int									_status;
 		std::string							_description;
 
 	public:
 
-		virtual ~AResponse() = 0;
+		virtual ~AResponse() {}
 		virtual int			writeResponse(std::queue<std::string>& outQueue) = 0;
 		static AResponse	*genResponse(ResHints &hints);
 
@@ -120,40 +121,22 @@ class	FileResponse : public HeaderResponse
 		virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
 
-// class	CGIResponse : public AResponse, public HeaderResponse
-// {
-// 	private:
-
-// 		CGIResponse();
-
-// 		int									_pipeFd;
-// 		int									_pid;
-// 		//IOCGI ?
-
-// 	public:
-
-// 		CGIResponse(const std::string& infile, const Request& request);
-// 		~CGIResponse();
-
-// 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
-// };
-
-class	DynamicReponse : public HeaderResponse
+class	DynamicResponse : public HeaderResponse
 {
 
 	private:
 
-		DynamicReponse(/* args */);
+		DynamicResponse(/* args */);
 		int									_pipeFd;
 		std::string							_body;
 
 	public:
 
-		// typedef	void (*bodyGenerator_func)(DynamicReponse&, const std::string);
+		// typedef	void (*bodyGenerator_func)(DynamicResponse&, const std::string);
 
-		DynamicReponse(int status, const Request& request) {}
-		// DynamicReponse(bodyGenerator_func, const std::string&);
-		virtual ~DynamicReponse() {}
+		DynamicResponse(int status, const Request& request);
+		// DynamicResponse(bodyGenerator_func, const std::string&);
+		virtual ~DynamicResponse();
 
 	virtual int		writeResponse(std::queue<std::string>& outQueue);
 };

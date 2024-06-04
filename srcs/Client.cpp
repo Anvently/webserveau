@@ -48,8 +48,6 @@ int	Client::getTotalNbrClient(void) {
 
 void	Client::clearBuffers(void) {
 	while (!_outBuffers.empty()) {
-		char* buffer = _outBuffers.front();
-		delete buffer;
 		_outBuffers.pop();
 	}
 }

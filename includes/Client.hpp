@@ -91,7 +91,7 @@ class	Client : public IObject
 	public:
 
 		std::queue<std::string>	_outBuffers;
-		CGIProcess*			_cgiProcess;
+		CGIProcess*				_cgiProcess;
 
 		Client(const Client &Copy);
 		virtual ~Client();
