@@ -56,7 +56,11 @@ typedef struct ResHints {
 	bool								alreadyExist;
 	bool								unlink;
 	std::string							verboseError;
-	int									status; 
+	int									status;
+	Location*							locationRules;
+	CGIConfig*							cgiRules;
+	int									type; //CGI/dir/static
+	int									status;
 	const Location*						locationRules;
 	const CGIConfig*					cgiRules;
 	std::vector<std::string>*			redirList;
@@ -94,7 +98,7 @@ class	Request
 		std::string							_formated_headers;
 		std::string							_uri;
 		int									_status;
-	
+
 		int									_header_size;
 
 		std::string							_line;

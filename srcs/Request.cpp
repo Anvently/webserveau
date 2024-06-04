@@ -596,6 +596,7 @@ std::string	Request::getFilename()
 void	Request::prunePath()
 {
 	std::string	filename = getFilename();
+	_parsedUri.filename = filename;
 	size_t	idx = filename.find_last_of(".");
 	if (idx == std::string::npos)
 		_parsedUri.extension = "";
