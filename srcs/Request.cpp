@@ -183,7 +183,7 @@ int	Request::parseHeaders(std::string &buffer)
 	std::string	header_name;
 	std::string	header_value;
 
-	if (this->_status == COMPLETE)
+	if (this->_status == TERM)
 		return (0);
 	this->_header_size += buffer.size();
 	if (this->_status == NEW)
@@ -205,7 +205,7 @@ int	Request::parseHeaders(std::string &buffer)
 			return (this->_checkSizes());
 		if (this->_line == "")
 		{
-			this->_status = COMPLETE;
+			this->_status = TERM;
 			this->_final_status = HOST;
 			this->_line.clear();
 			return (-1);
@@ -246,7 +246,7 @@ int	Request::_parseMesured(std::string &buffer, std::ofstream *filestream)
 	buffer = buffer.substr(cut, std::string::npos);
 	if (this->_len == this->_content_length)
 	{
-		this->_b_status = COMPLETE;
+		this->_b_status = TERM;
 		this->_final_status = COMPLETE;
 		if (filestream)
 			filestream->close();
@@ -276,7 +276,7 @@ int	Request::getLenInfo()
 	}
 	else{
 
-		this->_b_status = COMPLETE;
+		this->_b_status = TERM;
 		this->_final_status = COMPLETE;
 	}
 	return (0);
@@ -313,7 +313,7 @@ int	Request::getChunkedSize(std::string &buffer)
 
 int	Request::_parseChunked(std::string &buffer, std::ofstream *filestream)
 {
-	if (this->_b_status == COMPLETE)
+	if (this->_b_status == TERM)
 		return (0);
 	this->_chunked_body_size += buffer.size();
 	while (buffer != "")
@@ -322,7 +322,7 @@ int	Request::_parseChunked(std::string &buffer, std::ofstream *filestream)
 			return (getError());
 		if (this->_chunked_status == 1 && this->_len == 0)
 		{
-			this->_b_status = COMPLETE;
+			this->_b_status = TERM;
 			this->_final_status = TRAILER;
 			this->_line.clear();
 			if (filestream)
@@ -347,7 +347,7 @@ int	Request::_parseChunked(std::string &buffer, std::ofstream *filestream)
 
 int	Request::parseBody(std::string &buffer, std::ofstream *filestream)
 {
-	if (this->_b_status == COMPLETE || buffer.empty())
+	if (this->_b_status == TERM || buffer.empty())
 		return (0);
 	if (this->_b_status == NEW)
 	{
@@ -401,11 +401,11 @@ int	Request::parseTrailerHeaders(std::string &buffer)
 	std::string	header_name;
 	std::string	header_value;
 
-	if (this->_b_status != COMPLETE)
+	if (this->_b_status != TERM)
 		return (0);
 	if (this->_chunked == 0 || this->getHeader("Trailer") == "")
 	{
-		this->_trailer_status = COMPLETE;
+		this->_trailer_status = TERM;
 		this->_final_status = COMPLETE;
 		return (-1);
 	}
@@ -416,7 +416,7 @@ int	Request::parseTrailerHeaders(std::string &buffer)
 			return (this->_checkSizes());
 		if (this->_line.empty())
 		{
-			this->_trailer_status = COMPLETE;
+			this->_trailer_status = TERM;
 			this->_final_status = COMPLETE;
 			this->_line.clear();
 			return (-1);
@@ -446,7 +446,7 @@ int	Request::_checkSizes()
 		else
 			return (0);
 	}
-	if (this->_status == COMPLETE && this->_b_status == ONGOING)
+	if (this->_status == TERM && this->_b_status == ONGOING)
 	{
 		if (this->_chunked && this->_chunked_body_size > this->_body_max_size)
 			return (this->_fillError(413, "Request entity too large"));

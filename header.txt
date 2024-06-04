@@ -35,11 +35,15 @@ Date => "Date: Tue, 23 May 2024 19:21:44 GMT
 
 fichier statique
 	- ifstream
-		- 
+		-
 CGI
 	- pipe => outBuffers
 headears/ERROR
 	- strings => outBUffers
 
 
+
+Accept-Encoding: identity
+Accept-Ranges: none
+Date: GENERATE DAY
 

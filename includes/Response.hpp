@@ -8,6 +8,7 @@
 #include <Request.hpp>
 #include <queue>
 #include <iterator>
+#include <sstream>
 
 // 1xx indicates an informational message only
 // 2xx indicates success of some kind
@@ -90,6 +91,8 @@ class	HeaderResponse : public AResponse
 		std::map<std::string, std::string, i_less>	_headers;
 		std::string									_formated_headers;
 
+		void										_formatHeaders();
+
 	public:
 
 		HeaderResponse(int status, const std::string& description) {(void) status;(void) description;}
@@ -154,5 +157,15 @@ class	DynamicReponse : public HeaderResponse
 
 	virtual int		writeResponse(std::queue<char*>& outQueue) {(void)outQueue;}
 };
+
+
+template <typename T>
+  std::string itostr ( T num )
+  {
+     std::ostringstream ss;
+     ss << num;
+     return ss.str();
+  }
+
 
 #endif

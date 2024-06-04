@@ -113,7 +113,7 @@ class	Client : public IObject
 		/// @brief
 		/// @param buffer null terminated buffer
 		/// @return ```< 0```
-		int					parseRequest(const char* buffer);
+		int					parseRequest(const char* buffer, int nread);
 
 		int					getHeaderStatus() const;
 		int					getBodyStatus() const;

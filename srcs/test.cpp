@@ -4,6 +4,9 @@
 #include <ctime>
 #include <unistd.h>
 #include<sys/time.h>
+#include<queue>
+#include<iterator>
+#include <map>
 // int	pruneScheme(std::string &uri)
 // {
 // 	size_t	n = uri.find("://", 0);
@@ -116,21 +119,24 @@
 // 	prunePath(path);
 // }
 
+#include <sstream>
+
+template <typename T>
+  std::string NumberToString ( T Number )
+  {
+     std::ostringstream ss;
+     ss << Number;
+     return ss.str();
+  }
+
+static std::map<int, std::string> ResponseLine{{100, "Continue"}, {200, "OK"}, {201, "Created"}, {204, "No Content"}, \
+{300, "Multiple Choices"}, {301, "Move Permanently"}, {302, "Found"}, {307, "Temporary Redirect"}, \
+{308, "Permanent Redirect"}, {400, "Bad Request"}, {401, "Unauthorized"}, {403, "Forbidden"}, {404, "Not Found"}, \
+{405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
+{415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
+{505, "HTTP Version Not Supported"}};
+
 int	main()
 {
-	struct timeval	first;
-	struct timeval	sec;
-
-	long long	x;
-	long long	y;
-
-	gettimeofday(&first, NULL);
-	usleep(5000);
-	gettimeofday(&sec, NULL);
-
-	x = first.tv_sec * 1000 + first.tv_usec / 1000;
-	y = sec.tv_sec * 1000 + sec.tv_usec / 1000;
-
-	std::cout << y - x << "\n";
-
+	std::cout << ResponseLine[301];
 }
