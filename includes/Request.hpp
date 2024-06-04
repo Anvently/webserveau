@@ -37,6 +37,7 @@ typedef struct URI
 {
 	std::string	path;
 	std::string	root;
+	std::string	filename;
 	std::string	extension;
 	std::string	query;
 }	URI;
@@ -49,7 +50,7 @@ typedef struct ResHints {
 	bool								alreadyExist;
 	bool								unlink;
 	std::string							verboseError;
-	int									status; 
+	int									status;
 	Location*							locationRules;
 	CGIConfig*							cgiRules;
 	int									type; //CGI/dir/static
@@ -84,7 +85,7 @@ class	Request
 		std::string							_uri;
 		int									_method;
 		int									_status;
-	
+
 		int									_header_size;
 
 		std::string							_line;

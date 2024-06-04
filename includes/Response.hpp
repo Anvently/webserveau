@@ -6,6 +6,8 @@
 #include <map>
 #include <fstream>
 #include <Request.hpp>
+#include <queue>
+#include <iterator>
 
 // 1xx indicates an informational message only
 // 2xx indicates success of some kind
@@ -33,8 +35,10 @@
 #define RES_INTERNAL_ERROR 500
 #define RES_NOT_IMPLEMENTED 501
 
+
+
 /*
-Response hints: 
+Response hints:
 	- final path
 	- was the ressource already existing ?
 	- redirection location
@@ -43,7 +47,7 @@ Response hints:
 
 */
 
-/** @brief 
+/** @brief
 
 Error response
 
@@ -59,6 +63,7 @@ class	AResponse
 
 		virtual ~AResponse() = 0;
 		virtual int			writeResponse(std::queue<char*>& outQueue) = 0;
+		static AResponse	*genResponse(ResHints &hints);
 
 };
 
@@ -67,6 +72,7 @@ class	SingleLineResponse : public AResponse
 	private:
 
 		SingleLineResponse(void);
+		std::string	_response;
 
 	public:
 
@@ -82,6 +88,7 @@ class	HeaderResponse : public AResponse
 
 		HeaderResponse(void) {}
 		std::map<std::string, std::string, i_less>	_headers;
+		std::string									_formated_headers;
 
 	public:
 
@@ -89,6 +96,8 @@ class	HeaderResponse : public AResponse
 		~HeaderResponse(void) {}
 
 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
+		void	addHeader(std::string const &key, std::string const &value);
+		void	addUniversalHeaders();
 };
 
 class	FileResponse : public AResponse, public HeaderResponse
