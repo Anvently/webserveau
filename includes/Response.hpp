@@ -63,7 +63,7 @@ class	AResponse
 	public:
 
 		virtual ~AResponse() = 0;
-		virtual int			writeResponse(std::queue<char*>& outQueue) = 0;
+		virtual int			writeResponse(std::queue<std::string>& outQueue) = 0;
 		static AResponse	*genResponse(ResHints &hints);
 
 };
@@ -80,7 +80,7 @@ class	SingleLineResponse : public AResponse
 		~SingleLineResponse(void);
 		SingleLineResponse(int status, const std::string& description);
 
-		virtual int		writeResponse(std::queue<char*>& outQueue);
+		virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
 
 class	HeaderResponse : public AResponse
@@ -98,7 +98,7 @@ class	HeaderResponse : public AResponse
 		HeaderResponse(int status, const std::string& description);
 		~HeaderResponse(void) {}
 
-		virtual int		writeResponse(std::queue<char*>& outQueue);
+		virtual int		writeResponse(std::queue<std::string>& outQueue);
 		void	addHeader(std::string const &key, std::string const &value);
 		void	addUniversalHeaders();
 };
@@ -107,17 +107,17 @@ class	FileResponse : public HeaderResponse
 {
 	private:
 
-		FileResponse(/* args */);
+		FileResponse();
 
-		std::ifstream*							_ifstream;
+		std::ifstream							_ifstream;
 		std::string								_path;
 
 	public:
 
-		FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
+		FileResponse(const std::string& infile, int status, const std::string &description);
 		~FileResponse();
 
-		virtual int		writeResponse(std::queue<char*>& outQueue);
+		virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
 
 // class	CGIResponse : public AResponse, public HeaderResponse
@@ -155,7 +155,7 @@ class	DynamicReponse : public HeaderResponse
 		// DynamicReponse(bodyGenerator_func, const std::string&);
 		~DynamicReponse();
 
-	virtual int		writeResponse(std::queue<char*>& outQueue);
+	virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
 
 

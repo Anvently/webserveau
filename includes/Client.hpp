@@ -90,7 +90,7 @@ class	Client : public IObject
 
 	public:
 
-		std::queue<char*>	_outBuffers;
+		std::queue<std::string>	_outBuffers;
 		CGIProcess*			_cgiProcess;
 
 		Client(const Client &Copy);
