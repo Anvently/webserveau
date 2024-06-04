@@ -45,6 +45,7 @@ struct CGIConfig
 	std::string					exec; //example '/bin/bash'
 	std::string					root;
 	int							methods; //GET-POST-DELETE
+	std::string					extension;
 
 	bool						operator==(const CGIConfig&) const;
 };
@@ -84,12 +85,11 @@ class	Host {
 		void				printProperties(std::ostream& os) const;
 
 		int					checkRedirection(Request& request) const;
-		static inline int	assertRequestType(const Request&);
 		int					checkDirRessource(Request& request) const;
 		int					checkLocationRules(Request& request) const;
 		int					checkCGIRules(Request& request) const;
 		int					checkRessourceExistence(Request& request) const;
-		static bool			checkRessourcePath(const std::string& path, int type = 0);
+		static int			checkRessourcePath(const std::string& path, int type = 0);
 
 		template <typename T>
 		const T				getMapObjectByKey(const typename std::map<std::string, T>&, const std::string& key) const;
@@ -131,6 +131,7 @@ class	Host {
 
 		int								checkRequest(Request& request) const;
 
+		int								matchRequest(Request&) const;
 };
 
 std::ostream&	operator<<(std::ostream& os, const Host& host);

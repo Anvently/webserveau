@@ -22,7 +22,7 @@ enum {none, chuncked, mesured};
 enum {GET, POST, DELETE};
 enum {COMPLETE, ONGOING, NEW};
 enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
-enum {REQ_TYPE_CGI = 1, REQ_TYPE_STATIC, REQ_TYPE_DIR};
+enum {REQ_TYPE_NO_MATCH = 0, REQ_TYPE_CGI, REQ_TYPE_STATIC, REQ_TYPE_DIR};
 
 static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
 #define METHOD_NBR 3
@@ -33,12 +33,19 @@ bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
 int	getMethodIndex(const std::string& method);
 
+/// @note localhost:8080/server1/imgs/index.php/mer/ocean.png
+/// /server1/imgs/*
+/// *.php*
+
 typedef struct URI
 {
 	std::string	path;
 	std::string	root;
+	std::string	pathInfo;
 	std::string	extension;
 	std::string	query;
+
+	URI(const URI&);
 }	URI;
 
 class Location;
@@ -53,9 +60,12 @@ typedef struct ResHints {
 	const Location*						locationRules;
 	const CGIConfig*					cgiRules;
 	std::vector<std::string>*			redirList;
-	// int									requestType; //CGI/dir/static
 	std::map<std::string, std::string>	headers;
-};
+
+	ResHints(void);
+	ResHints(const ResHints&);
+} ResHints;
+
 
 struct i_less {
 	static inline char	lowercase(char c) {
@@ -142,8 +152,9 @@ class	Request
 		void	printHeaders();
 		void	setBodyMaxSize(int size);
 
-		int		parseURI(const std::string& uri);
+		int		parseURI(const std::string& default_uri);
 		int		parseURI();
+		void	extractPathInfo(const std::string& extension);
 		int		checkPath();
 		void	prunePath();
 		std::string	getFilename();
