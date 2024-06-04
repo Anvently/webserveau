@@ -624,4 +624,14 @@ int	Request::parseURI()
 	return (0);
 }
 
-
+void	Request::extractPathInfo(const std::string& extension) {
+	size_t	idx = _parsedUri.path.rfind(extension);
+	_parsedUri.pathInfo = _parsedUri.path.substr(idx + extension.length());
+	_parsedUri.path = _parsedUri.path.substr(0, idx + extension.length());
+	idx = _parsedUri.path.find_last_of('/');
+	if (idx == std::string::npos)
+		_parsedUri.root = "/";
+	else
+		_parsedUri.root = _parsedUri.path.substr(0, idx + 1);
+	_parsedUri.extension = extension;
+}
