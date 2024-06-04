@@ -3,8 +3,10 @@
 static const	std::string	dummyString = "";
 
 Request::Request() \
-	: _method(-1), _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
-		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), _chunked_status(0), _trailer_status(0), _trailer_size(0), _resHints{}, _final_status(ONGOING)
+	: _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
+		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), \
+		_chunked_status(0), _trailer_status(0), _trailer_size(0), _resHints(), \
+		_final_status(ONGOING), _method(-1)
 {
 
 }
@@ -451,18 +453,6 @@ int	Request::getError() const
 	return (this->_resHints.status);
 }
 
-int	Request::getMethod() const {
-	return (this->_method);
-}
-
-const URI&	Request::getUri() const {
-	return (this->_parsedUri);
-}
-
-URI&	Request::getUri() {
-	return (this->_parsedUri);
-}
-
 void	Request::setBodyMaxSize(int size)
 {
 	_body_max_size = size;
@@ -512,15 +502,6 @@ void	Request::setStatus(int status)
 {
 	this->_final_status = status;
 }
-
-int	Request::getType() const {
-	return (this->_resHints.type);
-}
-
-void	Request::setType(int type) {
-	_resHints.type = type;
-}
-
 
 int	pruneScheme(std::string &uri)
 {
@@ -609,6 +590,11 @@ void	Request::prunePath()
 		_parsedUri.extension = "";
 	else
 		_parsedUri.extension = _parsedUri.path.substr(idx);
+}
+
+int	Request::parseURI(const std::string& suffix) {
+	_uri += suffix;
+	return (parseURI());
 }
 
 int	Request::parseURI()

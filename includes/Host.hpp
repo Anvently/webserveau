@@ -83,11 +83,12 @@ class	Host {
 
 		void				printProperties(std::ostream& os) const;
 
-		int					checkRedirection(const Location& location, const Request& request) const;
-		static inline int	assertRequestType(const Location*, const CGIConfig*, const Request&);
-		int					checkDirRessource(const Location& location, Request& request) const;
-		int					checkLocationRules(const Location& location, const Request& request) const;
-		int					checkCGIRules(const CGIConfig& cgi, const Request& request) const;
+		int					checkRedirection(Request& request) const;
+		static inline int	assertRequestType(const Request&);
+		int					checkDirRessource(Request& request) const;
+		int					checkLocationRules(Request& request) const;
+		int					checkCGIRules(Request& request) const;
+		int					checkRessourceExistence(Request& request) const;
 		static bool			checkRessourcePath(const std::string& path, int type = 0);
 
 		template <typename T>
@@ -111,8 +112,10 @@ class	Host {
 		int								getMaxSize() const;
 		const std::string&				getAddr() const;
 		Client							*getClientByFd(int fd) const;
-		const Location*					getLocation(std::string const &path) const; //return the "/" loc if no match
-		const CGIConfig*				getCGIConfig(std::string const &path) const;
+		const Location*					getLocation(std::string const &uri) const; //return the "/" loc if no match
+		const CGIConfig*				getCGIConfig(std::string const &uri) const;
+		const Location*					matchLocation(std::string const &uri) const; //return the "/" loc if no match
+		const CGIConfig*				matchCGIConfig(std::string const &uri) const;
 		const std::vector<std::string>&	getServerNames(void) const;
 		std::list<Client*>::const_iterator	getClientListBegin(void) const;
 		std::list<Client*>::const_iterator	getClientListEnd(void) const;
