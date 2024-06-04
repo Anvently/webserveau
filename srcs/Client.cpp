@@ -4,6 +4,7 @@
 #include <ctime>
 #include <arpa/inet.h>
 #include <ILogger.hpp>
+#include <CGIProcess.hpp>
 #include <IControl.hpp>
 
 std::list<Client>	Client::_clientList;
@@ -220,6 +221,14 @@ int	Client::parseRequest(const char* bufferIn, int n_read) {
 	// }
 }
 
+long long	getDuration(struct timeval time)
+{
+	struct timeval	now;
+	gettimeofday(&now, NULL);
+
+	return (now.tv_sec * 1000 + now.tv_usec / 1000 - time.tv_sec * 1000 - time.tv_usec / 1000);
+}
+
 std::ostream&	operator<<(std::ostream& os, const Client& client) {
 	os << "		->  fd: " << client._socket.fd << std::endl;
 	os << "		ip/port: " << client._addressStr << ':' << client._port << std::endl;
@@ -293,15 +302,6 @@ void	Client::deleteBodyFile()
 		_bodyStream = NULL;
 	}
 	unlink(_bodyFileName.c_str());
-}
-
-
-long long	getDuration(struct timeval time)
-{
-	struct timeval	now;
-	gettimeofday(&now, NULL);
-
-	return (now.tv_sec * 1000 + now.tv_usec / 1000 - time.tv_sec * 1000 - time.tv_usec / 1000);
 }
 
 void	Client::checkTO()

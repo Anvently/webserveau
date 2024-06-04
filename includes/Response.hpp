@@ -77,7 +77,7 @@ class	SingleLineResponse : public AResponse
 
 	public:
 
-		~SingleLineResponse(void);
+		virtual ~SingleLineResponse(void);
 		SingleLineResponse(int status, const std::string& description);
 
 		virtual int		writeResponse(std::queue<char*>& outQueue);
@@ -87,7 +87,7 @@ class	HeaderResponse : public AResponse
 {
 	protected:
 
-		HeaderResponse(void) {}
+		HeaderResponse(void);
 		std::map<std::string, std::string, i_less>	_headers;
 		std::string									_formated_headers;
 
@@ -96,7 +96,7 @@ class	HeaderResponse : public AResponse
 	public:
 
 		HeaderResponse(int status, const std::string& description);
-		~HeaderResponse(void) {}
+		virtual ~HeaderResponse(void);
 
 		virtual int		writeResponse(std::queue<char*>& outQueue);
 		void	addHeader(std::string const &key, std::string const &value);
@@ -115,7 +115,7 @@ class	FileResponse : public HeaderResponse
 	public:
 
 		FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
-		~FileResponse();
+		virtual ~FileResponse();
 
 		virtual int		writeResponse(std::queue<char*>& outQueue);
 };
@@ -151,11 +151,11 @@ class	DynamicReponse : public HeaderResponse
 
 		// typedef	void (*bodyGenerator_func)(DynamicReponse&, const std::string);
 
-		DynamicReponse(int status, const Request& request);
+		DynamicReponse(int status, const Request& request) {}
 		// DynamicReponse(bodyGenerator_func, const std::string&);
-		~DynamicReponse();
+		virtual ~DynamicReponse() {}
 
-	virtual int		writeResponse(std::queue<char*>& outQueue);
+	virtual int		writeResponse(std::queue<char*>& outQueue) {}
 };
 
 

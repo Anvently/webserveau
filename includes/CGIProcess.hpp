@@ -14,11 +14,11 @@ class CGIProcess {
 		/// @brief
 		/// @return ```0``` if not finished, ```> 0``` if finished, ```< 0```
 		/// if error.
-		int	checkEnd();
+		int	checkEnd() {return (0);}
 
 		/// @brief Add potential header to resHints, change the status
 		/// @param 
 		/// @return Identify document type
-		int	parseHeaders(Request&);
+		int	parseHeaders(Request&) {return (0);}
 
 };

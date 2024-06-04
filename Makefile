@@ -14,7 +14,8 @@ OBJS_FOLDER	=	.objs/
 OBJS_TFOLDER	= .objs_test/
 
 SRCS_FILES	=	main.cpp ILogger.cpp IParseConfig.cpp Host.cpp ListenServer.cpp \
-				format.cpp Request.cpp Client.cpp IControl.cpp
+				format.cpp Request.cpp Client.cpp IControl.cpp Response.cpp \
+				CGIProcess.cpp
 
 SRCS_FTEST	= 	mainLouis.cpp Request.cpp format.cpp
 

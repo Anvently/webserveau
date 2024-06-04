@@ -553,9 +553,7 @@ std::string	extractPath(std::string &uri)
 
 int	Request::checkPath()
 {
-	int	level = 0;
 	size_t	idx = 0;
-	size_t	idxx = 0;
 	std::string	subpath;
 	std::vector<std::string> v;
 

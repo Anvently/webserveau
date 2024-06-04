@@ -15,6 +15,7 @@ Host::Host(void): _body_max_size(INT_MAX)
 
 Host&	Host::operator=(Host& rhs) {
 	(void) rhs;
+	LOGE("Undefined assigment operator for host class");
 	return (*this);
 }
 
@@ -23,7 +24,7 @@ Host::Host(const Host& copy) : _addr(copy._addr), _port(copy._port), \
 	_server_names(copy._server_names), _locationMap(copy._locationMap), \
 	_cgiMap(copy._cgiMap), _clients(copy._clients) {}
 
-Location::Location(void) : dir_listing(false), upload(false), methods(GET) {}
+Location::Location(void) : methods(GET), dir_listing(false), upload(false), redir(0) {}
 
 Location::Location(const Location& copy) : root(copy.root), methods(copy.methods), dir_listing(copy.dir_listing), \
 	default_uri(copy.default_uri), upload(copy.upload), upload_root(copy.upload_root), \
@@ -419,16 +420,16 @@ int	Host::checkRessourceExistence(Request& request) const {
 
 	if (request._type == REQ_TYPE_CGI) {
 		path = request._resHints.cgiRules->root + request._parsedUri.path;
-		res = checkRessourcePath(path, REQ_TYPE_CGI) == true, REQ_TYPE_CGI;
+		res = checkRessourcePath(path, REQ_TYPE_CGI);
 	} else {
 		if (request._method == POST) {
 			path = (request._resHints.locationRules->upload_root != "" ? \
 							request._resHints.locationRules->upload_root : \
 							request._resHints.locationRules->root);
-			res = checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR) == true;
+			res = checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR);
 		} else {
 			path = request._resHints.locationRules->root + request._parsedUri.path;
-			res = checkRessourcePath(path, request._type) == true;
+			res = checkRessourcePath(path, request._type);
 		}
 	}
 	request._resHints.status = res;
@@ -447,7 +448,7 @@ int	Host::checkRessourceExistence(Request& request) const {
 int	Host::checkRequest(Request& request) const {
 	int	res = 0;
 
-	if (res = matchRequest(request))
+	if ((res = matchRequest(request)))
 		return (res);
 	if (request._resHints.locationRules && (res = checkRedirection(request)))
 		return (res);
@@ -459,7 +460,7 @@ int	Host::checkRequest(Request& request) const {
 		return (res);
 	if (request._type == REQ_TYPE_CGI && (res = checkCGIRules(request)))
 		return (res);
-	if (res = checkRessourceExistence(request))
+	if ((res = checkRessourceExistence(request)))
 		return (res);
 	return (res);
 }

@@ -7,12 +7,14 @@ static	std::string	days[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 static	std::string	months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", };
 
 
-static std::map<int, std::string> ResponseLine{{100, "Continue"}, {200, "OK"}, {201, "Created"}, {204, "No Content"}, \
-{300, "Multiple Choices"}, {301, "Move Permanently"}, {302, "Found"}, {307, "Temporary Redirect"}, \
-{308, "Permanent Redirect"}, {400, "Bad Request"}, {401, "Unauthorized"}, {403, "Forbidden"}, {404, "Not Found"}, \
-{405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
-{415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
-{505, "HTTP Version Not Supported"}};
+static std::map<int, std::string> ResponseLine;
+// {{100, "Continue"}, {200, "OK"}, {201, "Created"}, {204, "No Content"}, \
+// {300, "Multiple Choices"}, {301, "Move Permanently"}, {302, "Found"}, {307, "Temporary Redirect"}, \
+// {308, "Permanent Redirect"}, {400, "Bad Request"}, {401, "Unauthorized"}, {403, "Forbidden"}, {404, "Not Found"}, \
+// {405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
+// {415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
+// {505, "HTTP Version Not Supported"}};
+
 
 SingleLineResponse::SingleLineResponse(int status, const std::string& description)
 {
@@ -37,6 +39,8 @@ int	SingleLineResponse::writeResponse(std::queue<char*>& outQueue)
 	}
 	return (0);
 }
+
+SingleLineResponse::~SingleLineResponse(void) {}
 HeaderResponse::HeaderResponse(int status, const std::string& description)
 {
 	_status = status;
@@ -53,6 +57,10 @@ std::string	getTime()
 	std::string	time(str);
 	return (time);
 }
+
+HeaderResponse::HeaderResponse(void) {}
+
+HeaderResponse::~HeaderResponse(void) {}
 
 void	HeaderResponse::addUniversalHeaders()
 {
@@ -94,3 +102,18 @@ int	HeaderResponse::writeResponse(std::queue<char*>& outQueue)
 	}
 	return (0);
 }
+
+AResponse*	AResponse::genResponse(ResHints& hints) {
+	(void)hints;
+	return (NULL);
+}
+
+FileResponse::FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers) {
+	(void) infile;
+	(void) headers;
+}
+
+FileResponse::~FileResponse(void) {}
+
+int	FileResponse::writeResponse(std::queue<char*>& outQueue) {}
+

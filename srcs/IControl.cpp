@@ -155,10 +155,10 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 	int	res = 0;
 
 	if ((event->events & EPOLLIN) && client.getMode() == CLIENT_MODE_READ) {
-		if (res = IControl::handleClientIn(client)) {
+		if ((res = IControl::handleClientIn(client))) {
 			if (res > 0)
 				generateResponse(client, res);
-			else if (res = generateCGIProcess(client))
+			else if ((res = generateCGIProcess(client)))
 				generateResponse(client, RES_INTERNAL_ERROR);
 			client.setMode(CLIENT_MODE_WRITE);
 		}
@@ -167,7 +167,7 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 		if (client._cgiProcess)
 			handleCGIProcess(client);
 		if (client.getResponse()) {
-			if (res = handleClientOut(client)) {
+			if ((res = handleClientOut(client))) {
 				if (res > 0) {
 					client.clear();
 					client.setMode(CLIENT_MODE_READ);
@@ -215,6 +215,7 @@ int	IControl::handleClientOut(Client& client) {
 
 int	IControl::handleClientHup(Client& client) {
 	client.terminate();
+	return (0);
 }
 
 /// @brief 
@@ -330,7 +331,7 @@ extractPathInfo(URI&, extension) {
 
 **/
 int	IControl::handleRequestHeaders(Client& client, Request& request) {
-	int	res = 0, type = 0;
+	int	res = 0;
 
 	client.setBodyStatus(BODY_STATUS_NONE);
 	if ((res = assignHost(client, request)))
@@ -445,6 +446,10 @@ void	IControl::generateResponse(Client& client, int status)
 	client.getResponse()->writeResponse(client._outBuffers);
 }
 
+int IControl::generateCGIProcess(Client& client) {
+	(void)client;
+	return (0);
+}
 
 /**
 
@@ -455,7 +460,7 @@ switch (status)
 			break;
 
 		case RES_OK: //For Static/dir GET or CGI operation
-			/*
+			
 				If cgi
 					- file path
 					- cgiConfig

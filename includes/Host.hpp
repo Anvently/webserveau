@@ -152,7 +152,7 @@ T*	Host::getObjectMatch(const typename std::map<std::string, T*>& map, const std
 
 	for (typename std::map<std::string, T*>::const_iterator it = map.begin(); it != map.end(); it++)
 	{
-		if (isBetterMatch(uri, it->first, (bestMatch ? &bestMatch->first : NULL)))
+		if (isUriMatch(uri, it->first, (bestMatch ? &bestMatch->first : NULL)))
 			bestMatch = &*it;
 	}
 	if (bestMatch)
