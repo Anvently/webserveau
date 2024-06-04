@@ -18,9 +18,11 @@
 #define CRLF "\r\n"
 #define SP " "
 
+
+
 enum {none, chuncked, mesured};
 enum {GET, POST, DELETE};
-enum {COMPLETE, ONGOING, NEW};
+enum {TERM, ONGOING, NEW};
 enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
 enum {REQ_TYPE_CGI = 1, REQ_TYPE_STATIC, REQ_TYPE_DIR};
 
@@ -51,8 +53,6 @@ typedef struct ResHints {
 	bool								unlink;
 	std::string							verboseError;
 	int									status;
-	Location*							locationRules;
-	CGIConfig*							cgiRules;
 	int									type; //CGI/dir/static
 	int									status;
 	const Location*						locationRules;

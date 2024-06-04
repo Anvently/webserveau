@@ -297,7 +297,7 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 				request._resHints.alreadyExist = false;
 				request._resHints.status = RES_CREATED;
 				break;
-			
+
 			case FILE_EXIST:
 				request._resHints.alreadyExist = true;
 				request._resHints.status = RES_OK;
@@ -337,8 +337,7 @@ int	IControl::handleClientIn(Client& client)
 	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL ERROR
 
-	buffer_c[n_read] = 0;
-	res = client.parseRequest(buffer_c);
+	res = client.parseRequest(buffer_c, n_read);
 	if (res < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
 			res = handleRequestHeaders(client, *client.getRequest());

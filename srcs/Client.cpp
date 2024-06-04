@@ -167,8 +167,8 @@ void	Client::clearBuffer()
 	this->_buffer.clear();
 }
 
-int	Client::parseRequest(const char* bufferIn) {
-	std::string	fullBuffer = _buffer + bufferIn;
+int	Client::parseRequest(const char* bufferIn, int n_read) {
+	std::string	fullBuffer = _buffer + std::string(bufferIn, n_read);
 	Request*	request = getRequest();
 	int			res = 0;
 
