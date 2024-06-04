@@ -32,7 +32,8 @@ Location::Location(const Location& copy) : root(copy.root), methods(copy.methods
 
 CGIConfig::CGIConfig(void) : methods(GET) {}
 
-CGIConfig::CGIConfig(const CGIConfig& copy) : exec(copy.exec), root(copy.root), methods(copy.methods)
+CGIConfig::CGIConfig(const CGIConfig& copy) : exec(copy.exec), root(copy.root), \
+methods(copy.methods), extension(copy.extension)
 {}
 
 bool	CGIConfig::operator==(const CGIConfig& rhs) const {
@@ -309,24 +310,45 @@ int	Host::checkRedirection(Request& request) const
 	return (0);
 }
 
-inline int	Host::assertRequestType(const Request& request)
+/// @brief Try to match the request to location/cgi rules and to a type
+/// using its ```uri``` structure. Uri is parsed again using to determine
+/// ```pathinfo``` in case of CGI. Return ```RES_NOT_FOUND``` if error (```resHints```
+/// is updated).
+/// @param request 
+/// @return 
+int	Host::matchRequest(Request& request) const
 {
-	if (request._resHints.cgiRules)
-		return (REQ_TYPE_CGI);
+	request._resHints.locationRules = matchLocation(request._parsedUri.path);
+	request._resHints.cgiRules = matchCGIConfig(request._parsedUri.path);
+	if (request._resHints.locationRules == NULL && request._resHints.cgiRules == NULL) {
+		request._resHints.status = RES_NOT_FOUND;
+		request._type = REQ_TYPE_NO_MATCH;
+		return (RES_NOT_FOUND);
+	}
+	else if (request._resHints.cgiRules) {
+		request._type = REQ_TYPE_CGI;
+		request.extractPathInfo(request._resHints.cgiRules->extension);
+		if (request._parsedUri.pathInfo.find('/') != std::string::npos)
+			request._resHints.locationRules = matchLocation(request._parsedUri.path);
+	}
 	else if (request._parsedUri.extension == "/")
-		return (REQ_TYPE_DIR);
+		request._type = REQ_TYPE_DIR;
 	else
-		return (REQ_TYPE_STATIC);
+		request._type = REQ_TYPE_STATIC;
+	return (0);
 }
 
 /// Should be called if the ressource was a directory.
-/// Switch path to index file if given by host and return ```0```.
+/// Switch path to index file if given by host. Request is then
+/// matched again to determine its final type.
 /// Return error if dir_listing is not allowed, if methods is not ```GET```
 int	Host::checkDirRessource(Request& request) const
 {
 	const Location& location = *request._resHints.locationRules;
 	if (location.default_uri != "") {
 		request.parseURI(location.default_uri);
+		if (matchRequest(request))
+			return (RES_NOT_FOUND);
 		return (0);
 	} else if (location.dir_listing == true) {
 		if (request._method != GET) {
@@ -377,41 +399,39 @@ int	Host::checkCGIRules(Request& request) const
 /// @param type Can be provided to make additionnal check regarding file type
 /// ```REQ_TYPE_DIR``` vs ```REQ_TYPE_CGI||REQ_TYPE_STATIC```.
 /// @return 
-bool	Host::checkRessourcePath(const std::string& path, int type)
+int	Host::checkRessourcePath(const std::string& path, int type)
 {
 	struct stat	f_stat;
 
 	if (stat(path.c_str(), &f_stat))
-		return (false);
+		return (RES_NOT_FOUND);
 	else if (type != REQ_TYPE_DIR && S_ISREG(f_stat.st_mode) == false)
-		return (false);
+		return (RES_FORBIDDEN);
 	else if (type == REQ_TYPE_DIR && S_ISDIR(f_stat.st_mode) == false)
-		return (false);
-	return (true);
+		return (RES_NOT_FOUND);
+	return (0);
 }
 
 int	Host::checkRessourceExistence(Request& request) const {
 	std::string	path;
+	int			res;
 
 	if (request._type == REQ_TYPE_CGI) {
 		path = request._resHints.cgiRules->root + request._parsedUri.path;
-		if (checkRessourcePath(path, REQ_TYPE_CGI) == true)
-			return (0);
+		res = checkRessourcePath(path, REQ_TYPE_CGI) == true, REQ_TYPE_CGI;
 	} else {
 		if (request._method == POST) {
 			path = (request._resHints.locationRules->upload_root != "" ? \
 							request._resHints.locationRules->upload_root : \
 							request._resHints.locationRules->root);
-			if (checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR) == true)
-				return (0);
+			res = checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR) == true;
 		} else {
 			path = request._resHints.locationRules->root + request._parsedUri.path;
-			if (checkRessourcePath(path, request._type) == true)
-				return (0);
+			res = checkRessourcePath(path, request._type) == true;
 		}
 	}
-	request._resHints.status = RES_NOT_FOUND;
-	return (RES_NOT_FOUND);
+	request._resHints.status = res;
+	return (res);
 }
 
 /** @brief Check request validity from an host perspective.
@@ -426,21 +446,13 @@ int	Host::checkRessourceExistence(Request& request) const {
 int	Host::checkRequest(Request& request) const {
 	int	res = 0;
 
-	request._resHints.locationRules = matchLocation(request._parsedUri.path);
-	request._resHints.cgiRules = matchCGIConfig(request._parsedUri.path);
-
-	if (request._resHints.locationRules == NULL && request._resHints.cgiRules == NULL) {
-		request._resHints.status = RES_NOT_FOUND;
-		return (RES_NOT_FOUND);
-	}
+	if (res = matchRequest(request))
+		return (res);
 	if (request._resHints.locationRules && (res = checkRedirection(request)))
 		return (res);
-	request._type = assertRequestType(request);
 	if (request._type == REQ_TYPE_DIR) { //If folder
 		if ((res = checkDirRessource(request)))
 			return (res);
-		request._resHints.cgiRules = matchCGIConfig(request._parsedUri.path);
-		request._type = assertRequestType(request);
 	}
 	if (request._resHints.locationRules && (res = checkLocationRules(request)))
 		return (res);

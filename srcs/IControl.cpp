@@ -245,16 +245,25 @@ int	IControl::checkBodyLength(Client& client, Request& request)
 					- resume body parsing as CGI
 	@return ```status``` of the response, or ```100``` for continue response
 
+localhost:80/dir1/subdir3/subdir.dir/index.php/file
+parseuri->getpath
+/dir1/subdir3/subdir.dir/index.php/file
+
+
+extractPathInfo(URI&, extension) {
+
+}
+
 **/
 int	IControl::handleRequestHeaders(Client& client, Request& request) {
 	int	res = 0, type = 0;
 
 	client.setBodyStatus(BODY_STATUS_NONE);
+	if ((res = assignHost(client, request)))
+		return (res);
 	if ((res = request.parseURI()))
 		return (res);
 	if ((res = checkForbiddenHeaders(request)))
-		return (res);
-	if ((res = assignHost(client, request)))
 		return (res);
 	if ((res = checkBodyLength(client, request)))
 		return (res);

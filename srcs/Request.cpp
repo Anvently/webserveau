@@ -2,21 +2,33 @@
 
 static const	std::string	dummyString = "";
 
+URI::URI(const URI& copy) : path(copy.path), root(copy.root), pathInfo(copy.pathInfo), \
+	extension(copy.extension), query(copy.query) {}
+
+ResHints::ResHints(void) : alreadyExist(false), unlink(false), status(0), locationRules(NULL), \
+	cgiRules(NULL) {}
+
+ResHints::ResHints(const ResHints& copy) : path(copy.path), alreadyExist(copy.alreadyExist), \
+	unlink(copy.unlink), verboseError(copy.verboseError), status(copy.status), locationRules(copy.locationRules), \
+	cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers) {}
+
 Request::Request() \
 	: _status(NEW), _header_size(0), _body_max_size(0), _len(0), \
 		_content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0), \
-		_chunked_status(0), _trailer_status(0), _trailer_size(0), _resHints(), \
-		_final_status(ONGOING), _method(-1)
-{
-
-}
+		_chunked_status(0), _trailer_status(0), _trailer_size(0), \
+		_final_status(ONGOING), _type(0), _method(-1) {}
 
 Request::Request(const Request& copy) \
-	: _method(copy._method), _status(copy._status), \
-		 _header_size(copy._header_size), _body_max_size(copy._body_max_size), _len(copy._len),  _content_length(copy._content_length), \
-		 _chunked(copy._chunked), _b_status(copy._b_status), \
-		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), _trailer_status(copy._trailer_status), \
-		_trailer_size(copy._trailer_size), _resHints(copy._resHints),_final_status(copy._final_status)
+	: _headers(copy._headers), _formated_headers(copy._formated_headers),
+		_uri(copy._uri), _status(copy._status), \
+		_header_size(copy._header_size), _line(copy._line), _hostname(copy._hostname), \
+		_body_max_size(copy._body_max_size), \
+		_len(copy._len),  _content_length(copy._content_length), \
+		_chunked(copy._chunked), _b_status(copy._b_status), \
+		_chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status), \
+		_trailer_status(copy._trailer_status), _trailer_size(copy._trailer_size), \
+		_final_status(copy._final_status), _type (copy._type), \
+		_method(copy._method), _parsedUri(copy._parsedUri), _resHints(copy._resHints) \
 {
 
 }
