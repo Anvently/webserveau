@@ -90,7 +90,7 @@ class IControl
 		static int	handleCommandPrompt(epoll_event* event);
 
 		static void	generateResponse(Client& client, int status = 0);
-
+		static int	generateCGIProcess(Client& client);
 
 };
 

@@ -44,6 +44,7 @@ struct ClientSocket
 	socklen_t		addrSize;
 };
 
+class	CGIProcess;
 
 class	Client : public IObject
 {
@@ -78,7 +79,6 @@ class	Client : public IObject
 		// May want something more versatile
 		// (If CGI, it would be linked to a pipe
 		// If static, it would be linked to an ifstream)
-		std::queue<char*>	_outBuffers;
 
 		void	clearBuffers(void);
 
@@ -89,6 +89,9 @@ class	Client : public IObject
 
 
 	public:
+
+		std::queue<char*>	_outBuffers;
+		CGIProcess*			_cgiProcess;
 
 		Client(const Client &Copy);
 		virtual ~Client();
@@ -106,7 +109,6 @@ class	Client : public IObject
 		int					getRequestStatus() const; //returns 1 if request has been fully received
 		int					getResponseStatus() const; // returns 1 if response is ready to send
 		Request*			getRequest(); // returns the current not complete request or allocate a new one
-		Request				*getFrontRequest(); // return the oldest request
 		AResponse*			getResponse() const; // returns the current not complete response
 
 		static void			checkTO();
@@ -122,7 +124,6 @@ class	Client : public IObject
 		void				setMode(int mode);
 		void				setHeaderStatus(int);
 		void				setBodyStatus(int);
-		void				setBodyMaxSize(int);
 		// void				setBodyStream(std::ofstream*);
 		void				setBodyFile(const std::string&);
 		void				stashBuffer(std::string &buffer);
@@ -135,6 +136,8 @@ class	Client : public IObject
 
 		void				shutdownConnection(void);
 		void				deleteFile();
+		void				deleteCGIProcess();
+		void				clear(void);
 
 };
 

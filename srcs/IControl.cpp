@@ -3,6 +3,7 @@
 #include <sstream>
 #include <IParseConfig.hpp>
 #include <Response.hpp>
+#include <CGIProcess.hpp>
 
 int	IControl::_epollfd = -1;
 
@@ -155,25 +156,43 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 
 	if ((event->events & EPOLLIN) && client.getMode() == CLIENT_MODE_READ) {
 		if (res = IControl::handleClientIn(client)) {
-			generateResponse(client, res);
+			if (res > 0)
+				generateResponse(client, res);
+			else if (res = generateCGIProcess(client))
+				generateResponse(client, RES_INTERNAL_ERROR);
 			client.setMode(CLIENT_MODE_WRITE);
 		}
 	}
-	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE)
-		return (0);
+	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
+		if (client._cgiProcess && (res = client._cgiProcess->checkEnd())) {
+			if (res > 0)
+				generateResponse(client);
+			else if (res < 0)
+				generateResponse(client, RES_INTERNAL_ERROR);
+			else
+				return (0);
+			client.deleteCGIProcess();
+		}
+		if (client.getResponse()) {
+			if (handleClientOut(client)) {
+				client.clear();
+				client.setMode(CLIENT_MODE_READ);
+			}
+		}
+	}
 	return (0);
 }
 
 
-int	AssignHost(Client *client)
-{
-	std::string	hostname;
-	if (client->getFrontRequest()->getHostName(hostname))
-		return (1);
-	client->setHost(hostname);
-	client->getFrontRequest()->setBodyMaxSize(client->getHost()->getMaxSize());
-	return(0);
-}
+// int	AssignHost(Client *client)
+// {
+// 	std::string	hostname;
+// 	if (client->getRequest()->getHostName(hostname))
+// 		return (1);
+// 	client->setHost(hostname);
+// 	client->getFrontRequest()->setBodyMaxSize(client->getHost()->getMaxSize());
+// 	return(0);
+// }
 
 /**
 @brief check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
@@ -225,7 +244,7 @@ int	IControl::checkBodyLength(Client& client, Request& request)
 	if (bodyLength != -1 || request.getHeader("transfer-encoding") == "chunked")
 	{
 		client.setBodyStatus(BODY_STATUS_ONGOING);
-		client.setBodyMaxSize(client.getHost()->getMaxSize());
+		request.setBodyMaxSize(client.getHost()->getMaxSize());
 	}
 	return (0);
 }
@@ -368,10 +387,20 @@ int	IControl::handleClientIn(Client& client)
 ///				-
 void	IControl::generateResponse(Client& client, int status)
 {
+	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
 		return ; //Not sure
 
-	switch (status)
+	if (status)
+		request._resHints.status = status;
+	client.setResponse(AResponse::genResponse(client.getRequest()->_resHints));
+	client.getResponse()->writeResponse(client._outBuffers);
+}
+
+
+/**
+
+switch (status)
 	{
 		case RES_CONTINUE:
 			client.setResponse(new SingleLineResponse(100, "Continue"));
@@ -387,7 +416,7 @@ void	IControl::generateResponse(Client& client, int status)
 					- locationRule
 				If static
 					- file path
-			*/
+			
 			break;
 
 		case RES_CREATED: //Need path
@@ -467,4 +496,4 @@ void	IControl::generateResponse(Client& client, int status)
 			LOGE("Unknow status: %d", status);
 			break;
 	}
-}
+**/
