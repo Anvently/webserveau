@@ -73,7 +73,7 @@ class	Client : public IObject
 		int					_bodyStatus;
 		int					_mode;
 		std::string			_buffer;
-		std::string			_fileName;
+		std::string			_bodyFileName;
 		std::ofstream*		_bodyStream;
 
 		// May want something more versatile
@@ -109,7 +109,7 @@ class	Client : public IObject
 		int					getRequestStatus() const; //returns 1 if request has been fully received
 		int					getResponseStatus() const; // returns 1 if response is ready to send
 		Request*			getRequest(); // returns the current not complete request or allocate a new one
-		AResponse*			getResponse() const; // returns the current not complete response
+		AResponse*			getResponse(); // returns the current not complete response
 
 		static void			checkTO();
 		/// @brief
@@ -135,9 +135,10 @@ class	Client : public IObject
 		void				setResponse(AResponse*);
 
 		void				shutdownConnection(void);
-		void				deleteFile();
+		void				deleteBodyFile();
 		void				deleteCGIProcess();
 		void				clear(void);
+		void				terminate();
 
 };
 

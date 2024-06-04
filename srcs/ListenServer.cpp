@@ -171,6 +171,13 @@ void	ListenServer::removeHost(Host* host) {
 		removeServer(it->_ip, it->_port);
 }
 
+/// @brief Remove a client pointer from the list of orphan and/or connected clients.
+/// @param client 
+void	ListenServer::removeClient(Client* client) {
+	_orphanClients.remove(client);
+	_connectedClients.remove(client);
+}
+
 /// @brief Unregister the host names from ```_hostMap```, delete the host.
 /// Remove server if the host is the last one the server was refering to.
 /// @param host

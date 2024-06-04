@@ -164,25 +164,80 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 		}
 	}
 	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
-		if (client._cgiProcess && (res = client._cgiProcess->checkEnd())) {
-			if (res > 0)
-				generateResponse(client);
-			else if (res < 0)
-				generateResponse(client, RES_INTERNAL_ERROR);
-			else
-				return (0);
-			client.deleteCGIProcess();
-		}
+		if (client._cgiProcess)
+			handleCGIProcess(client);
 		if (client.getResponse()) {
-			if (handleClientOut(client)) {
-				client.clear();
-				client.setMode(CLIENT_MODE_READ);
+			if (res = handleClientOut(client)) {
+				if (res > 0) {
+					client.clear();
+					client.setMode(CLIENT_MODE_READ);
+					return (0);
+				} 
+				client.terminate();
 			}
 		}
-	}
+	} else if ((event->events & EPOLLHUP) || client.getMode() == CLIENT_MODE_ERROR)
+		handleClientHup(client);
 	return (0);
 }
 
+int	IControl::handleClientIn(Client& client)
+{
+	char	buffer_c[BUFFER_SIZE + 1];
+	int		n_read, res = 0;
+
+	if (client.getMode() != CLIENT_MODE_READ)
+		return (0);
+	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
+		return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
+
+	res = client.parseRequest(buffer_c, n_read);
+	if (res < 0) { //Status changed
+		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
+			res = handleRequestHeaders(client, *client.getRequest());
+			defineBodyParsing(client, *client.getRequest());
+		}
+		if (res == 0 && client.getBodyStatus() != BODY_STATUS_ONGOING)
+			res = handleRequestBodyDone(*client.getRequest());
+	}
+	return (res);
+}
+
+/// @brief 
+/// @param client 
+/// @return ```0``` if response if not sent yet, ```> 0``` if response sent
+/// and connection is to be kept alive, ```< 0``` if connection is to be closed. 
+int	IControl::handleClientOut(Client& client) {
+	(void) client;
+	client.getResponse()->writeResponse(client._outBuffers);
+	return (0);
+}
+
+int	IControl::handleClientHup(Client& client) {
+	client.terminate();
+}
+
+/// @brief 
+/// @param client 
+/// @return 
+int	IControl::handleCGIProcess(Client& client) {
+	int	res = client._cgiProcess->checkEnd();
+	if (res == 0)
+		return (0);
+	if (res < 0)
+		generateResponse(client, RES_INTERNAL_ERROR);
+	else if (res > 0) {
+		res = client._cgiProcess->parseHeaders(*client.getRequest());
+		if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
+			generateResponse(client);
+		else if (res == CGI_RES_LOCAL_REDIRECT) {
+			handleRequestHeaders(client, *client.getRequest());
+			generateResponse(client);
+		}
+	}
+	client.deleteCGIProcess();
+	return (0);
+}
 
 // int	AssignHost(Client *client)
 // {
@@ -338,8 +393,10 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 		request._resHints.path = filePath;
 		client.setBodyFile(filePath);
 	}
-	else
+	else {
 		client.setBodyFile("");
+	}
+	request._resHints.headers["content-type"] = request.getHeader("content-type");
 	return (0);
 }
 
@@ -355,28 +412,6 @@ int	IControl::handleRequestBodyDone(Request& request)
 	return (RES_OK);
 }
 
-int	IControl::handleClientIn(Client& client)
-{
-	char	buffer_c[BUFFER_SIZE + 1];
-	int		n_read, res = 0;
-
-	if (client.getMode() != CLIENT_MODE_READ)
-		return (0);
-	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
-		return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
-
-	res = client.parseRequest(buffer_c, n_read);
-	if (res < 0) { //Status changed
-		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
-			res = handleRequestHeaders(client, *client.getRequest());
-			defineBodyParsing(client, *client.getRequest());
-		}
-		if (res == 0 && client.getBodyStatus() != BODY_STATUS_ONGOING)
-			res = handleRequestBodyDone(*client.getRequest());
-	}
-	return (res);
-}
-
 /// @brief Generate an appropriate response type from the given
 /// status.
 /// @param client
@@ -387,13 +422,26 @@ int	IControl::handleClientIn(Client& client)
 ///				-
 void	IControl::generateResponse(Client& client, int status)
 {
+	AResponse*	response = NULL;
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
 		return ; //Not sure
 
 	if (status)
 		request._resHints.status = status;
-	client.setResponse(AResponse::genResponse(client.getRequest()->_resHints));
+	if (request._resHints.status)
+	LOGI("Generating response status %d", request._resHints.status);
+	request._resHints.type = request._type;
+	try
+	{
+		response = AResponse::genResponse(client.getRequest()->_resHints);
+	}
+	catch(const std::exception& e)
+	{
+		generateResponse(client, RES_INTERNAL_ERROR);
+		return ;
+	}
+	client.setResponse(response);
 	client.getResponse()->writeResponse(client._outBuffers);
 }
 

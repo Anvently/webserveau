@@ -406,6 +406,8 @@ void	IParseConfig::handleCGIConfigToken(std::stringstream& istream,  const std::
 		parseAllowedMethods(istream, cgi.methods);
 	else if (token == "exec")
 		parsePath(istream, cgi.exec);
+	else if (token == "identifier")
+		parseExtension(istream, cgi.extension);
 	else
 		throw (UnknownTokenException(token));
 }
@@ -530,6 +532,15 @@ void	IParseConfig::parsePath(std::istream& istream, std::string& dest, const cha
 {
 	if (getNextWord(istream, dest)) {
 		LOGE("%s is missing", id);
+		return;
+	}
+
+}
+
+void	IParseConfig::parseExtension(std::istream& istream, std::string& dest)
+{
+	if (getNextWord(istream, dest)) {
+		LOGE("extension is missing");
 		return;
 	}
 

@@ -55,6 +55,7 @@ class IParseConfig
 
 		static void				parsePort(std::istream& istream, Host& host);
 		static void				parseServerName(std::istream& istream, Host& host);
+		static void				parseExtension(std::istream& istream, std::string& dest);
 		static void				parseBodyMaxSize(std::istream& istream, Host& host);
 		static void				parseAllowedMethods(std::istream& istream, int& methods);
 		static void				parseRedirection(std::istream& istream, Location& location);

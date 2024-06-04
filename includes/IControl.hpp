@@ -22,7 +22,6 @@ class IControl
 
 		static int	handleListenEvent(epoll_event* event);
 		static int	handleClientEvent(epoll_event* event, Client&);
-		static int	handleCGIEvent(epoll_event* event);
 
 		static int	handleClientIn(Client&);
 		static int	handleClientOut(Client&);
@@ -73,6 +72,7 @@ class IControl
 		static int	assignHost(Client& client, Request& request);
 		static int	checkBodyLength(Client& client, Request& request);
 
+		static int	handleCGIProcess(Client& client);
 
 		static void	handleKillCommand(std::deque<std::string>& words);
 		static void	handlePrintCommand(std::deque<std::string>& words);

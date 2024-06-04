@@ -7,11 +7,12 @@ URI::URI(void) {}
 URI::URI(const URI& copy) : path(copy.path), root(copy.root), pathInfo(copy.pathInfo), \
 	extension(copy.extension), query(copy.query) {}
 
-ResHints::ResHints(void) : alreadyExist(false), unlink(false), status(0), locationRules(NULL), \
-	cgiRules(NULL) {}
+ResHints::ResHints(void) : alreadyExist(false), unlink(false), status(0), type(0), \
+	locationRules(NULL), cgiRules(NULL) {}
 
 ResHints::ResHints(const ResHints& copy) : path(copy.path), alreadyExist(copy.alreadyExist), \
-	unlink(copy.unlink), verboseError(copy.verboseError), status(copy.status), locationRules(copy.locationRules), \
+	unlink(copy.unlink), verboseError(copy.verboseError), status(copy.status), \
+	type(copy.type), locationRules(copy.locationRules), \
 	cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers) {}
 
 Request::Request() \

@@ -35,7 +35,7 @@ Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._ad
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
 	 _lastInteraction(copy._lastInteraction), \
 	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
-	_fileName(copy._fileName), _bodyStream(copy._bodyStream)
+	_bodyFileName(copy._bodyFileName), _bodyStream(copy._bodyStream)
 {
 	this->_request = NULL;
 	this->_response = NULL;
@@ -269,7 +269,7 @@ void	Client::setMode(int mode) {
 
 const std::string&	Client::getBodyFile() const
 {
-	return (this->_fileName);
+	return (this->_bodyFileName);
 }
 
 void	Client::setBodyFile(const std::string& path)
@@ -280,7 +280,7 @@ void	Client::setBodyFile(const std::string& path)
 		_bodyStream = NULL;
 }
 
-AResponse*	Client::getResponse() const {
+AResponse*	Client::getResponse() {
 	return (this->_response);
 }
 
@@ -288,11 +288,13 @@ void	Client::setResponse(AResponse* response) {
 	this->_response = response;
 }
 
-void	Client::deleteFile()
+void	Client::deleteBodyFile()
 {
-	if (_bodyStream)
-		_bodyStream->close();
-	unlink(_fileName.c_str());
+	if (_bodyStream) {
+		delete _bodyStream;
+		_bodyStream = NULL;
+	}
+	unlink(_bodyFileName.c_str());
 }
 
 
@@ -306,10 +308,9 @@ long long	getDuration(struct timeval time)
 
 void	Client::checkTO()
 {
-
 	for (std::list<Client>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
 	{
-		if (getDuration(it->_lastInteraction) > CLIENT_TIME_OUT)
+		if (it->getMode() == CLIENT_MODE_READ && getDuration(it->_lastInteraction) > CLIENT_TIME_OUT)
 		{
 			it->setMode(CLIENT_MODE_WRITE);
 			it->_request->setStatus(COMPLETE);
@@ -322,4 +323,33 @@ void	Client::checkTO()
 void	Client::updateLastInteraction()
 {
 	gettimeofday(&_lastInteraction, NULL);
+}
+
+void	Client::deleteCGIProcess() {
+	if (_cgiProcess) {
+		delete _cgiProcess;
+		_cgiProcess = NULL;
+	}
+	deleteBodyFile();
+}
+
+void	Client::clear() {
+	if (_request) {
+		delete _request;
+		_request = NULL;
+	}
+	if (_response) {
+		delete _response;
+		_response = NULL;
+	}
+	deleteBodyFile();
+}
+
+void	Client::terminate(void) {
+	clear();
+	if (_host) {
+		_host->removeClient(this);
+	}
+	_listenServer.removeClient(this);
+	Client::deleteClient(this);
 }
