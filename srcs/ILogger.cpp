@@ -351,7 +351,7 @@ void	ILogger::printLogConfig(void)
 	{
 		std::cout << "	- " << it->first << "\n		";
 		ILogger::LogStream::LogStreamEntry*	entry = _logStream.getStreamEntry(**it->second);
-		std::cout << (entry->levels[0] ? " | ERROR" : "");
+		std::cout << (entry->levels[0] ? " | CLIENT_MODE_ERROR" : "");
 		std::cout << (entry->levels[1] ? " | WARNING" : "");	
 		std::cout << (entry->levels[2] ? " | INFO" : "");
 		std::cout << (entry->levels[3] ? " | DEBUG" : "");

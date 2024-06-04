@@ -35,7 +35,7 @@
 #define BODY_STATUS_DONE 2
 
 
-enum {READ, WRITE, ERROR};
+enum {CLIENT_MODE_READ, CLIENT_MODE_WRITE, CLIENT_MODE_ERROR};
 
 struct ClientSocket
 {

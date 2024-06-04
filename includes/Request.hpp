@@ -45,11 +45,12 @@ typedef struct URI
 	std::string	extension;
 	std::string	query;
 
+	URI(void);
 	URI(const URI&);
 }	URI;
 
-class Location;
-class CGIConfig;
+struct Location;
+struct CGIConfig;
 
 typedef struct ResHints {
 	std::string							path;
@@ -57,13 +58,9 @@ typedef struct ResHints {
 	bool								unlink;
 	std::string							verboseError;
 	int									status;
-	Location*							locationRules;
-	CGIConfig*							cgiRules;
-	int									type; //CGI/dir/static
-	int									status;
 	const Location*						locationRules;
 	const CGIConfig*					cgiRules;
-	std::vector<std::string>*			redirList;
+	const std::vector<std::string>*		redirList;
 	std::map<std::string, std::string>	headers;
 
 	ResHints(void);

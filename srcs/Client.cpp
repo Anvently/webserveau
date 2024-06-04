@@ -20,7 +20,7 @@ Client::~Client(void) {
 
 Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	: _socket(socket), _host(NULL), _listenServer(listenServer), _headerStatus(HEADER_STATUS_ONGOING), \
-	_bodyStatus(BODY_STATUS_NONE), _mode(READ)
+	_bodyStatus(BODY_STATUS_NONE), _mode(CLIENT_MODE_READ)
 {
 	_port = 0;
 	gettimeofday(&_lastInteraction, NULL);
@@ -200,7 +200,7 @@ int	Client::parseRequest(const char* bufferIn) {
 	// 	// {
 	// 	// 	req_ptr->_fillError(400, "Host header missing or invalid");
 	// 	// 	req_ptr->setStatus(COMPLETE);
-	// 	// 	client->setStatus(ERROR);
+	// 	// 	client->setStatus(CLIENT_MODE_ERROR);
 	// 	// 	fullBuffer.clear();
 	// 	// 	break ;
 	// 	// }
@@ -211,7 +211,7 @@ int	Client::parseRequest(const char* bufferIn) {
 	// 		break ;
 	// 	}
 	// }
-	// if (request->getStatus() == COMPLETE && _status != ERROR)
+	// if (request->getStatus() == COMPLETE && _status != CLIENT_MODE_ERROR)
 	// {
 	// 	stashBuffer(fullBuffer);
 	// 	req_ptr = client->getRequest();
@@ -309,7 +309,7 @@ void	Client::checkTO()
 	{
 		if (getDuration(it->_lastInteraction) > CLIENT_TIME_OUT)
 		{
-			it->setMode(WRITE);
+			it->setMode(CLIENT_MODE_WRITE);
 			it->_request->setStatus(COMPLETE);
 			it->_request->_fillError(408, "");
 			IControl::generateResponse(*it, 408);

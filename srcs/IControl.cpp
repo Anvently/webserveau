@@ -153,13 +153,13 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 {
 	int	res = 0;
 
-	if ((event->events & EPOLLIN) && client.getMode() == READ) {
+	if ((event->events & EPOLLIN) && client.getMode() == CLIENT_MODE_READ) {
 		if (res = IControl::handleClientIn(client)) {
 			generateResponse(client, res);
-			client.setMode(WRITE);
+			client.setMode(CLIENT_MODE_WRITE);
 		}
 	}
-	else if ((event->events & EPOLLOUT) && client.getMode() == WRITE)
+	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE)
 		return (0);
 	return (0);
 }
@@ -341,10 +341,10 @@ int	IControl::handleClientIn(Client& client)
 	char	buffer_c[BUFFER_SIZE + 1];
 	int		n_read, res = 0;
 
-	if (client.getMode() != READ)
+	if (client.getMode() != CLIENT_MODE_READ)
 		return (0);
 	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
-		return (-1); //NEED TO REMOVE THIS CLIENT FATAL ERROR
+		return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
 
 	buffer_c[n_read] = 0;
 	res = client.parseRequest(buffer_c);

@@ -92,15 +92,15 @@ class	HeaderResponse : public AResponse
 
 	public:
 
-		HeaderResponse(int status, const std::string& description) {}
+		HeaderResponse(int status, const std::string& description) {(void) status;(void) description;}
 		~HeaderResponse(void) {}
 
-		virtual int		writeResponse(std::queue<char*>& outQueue) {}
+		virtual int		writeResponse(std::queue<char*>& outQueue) {(void)outQueue;}
 		void	addHeader(std::string const &key, std::string const &value);
 		void	addUniversalHeaders();
 };
 
-class	FileResponse : public AResponse, public HeaderResponse
+class	FileResponse : public HeaderResponse
 {
 	private:
 
@@ -112,10 +112,9 @@ class	FileResponse : public AResponse, public HeaderResponse
 	public:
 
 		FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
-		FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers);
 		~FileResponse();
 
-		virtual int		writeResponse(std::queue<char*>& outQueue) {}
+		virtual int		writeResponse(std::queue<char*>& outQueue) {(void)outQueue;}
 };
 
 // class	CGIResponse : public AResponse, public HeaderResponse
@@ -136,7 +135,7 @@ class	FileResponse : public AResponse, public HeaderResponse
 // 		virtual int		writeResponse(std::queue<char*>& outQueue) {}
 // };
 
-class	DynamicReponse : public AResponse, public HeaderResponse
+class	DynamicReponse : public HeaderResponse
 {
 
 	private:
@@ -153,7 +152,7 @@ class	DynamicReponse : public AResponse, public HeaderResponse
 		// DynamicReponse(bodyGenerator_func, const std::string&);
 		~DynamicReponse();
 
-	virtual int		writeResponse(std::queue<char*>& outQueue) {}
+	virtual int		writeResponse(std::queue<char*>& outQueue) {(void)outQueue;}
 };
 
 #endif

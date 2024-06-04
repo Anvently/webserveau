@@ -2,6 +2,8 @@
 
 static const	std::string	dummyString = "";
 
+URI::URI(void) {}
+
 URI::URI(const URI& copy) : path(copy.path), root(copy.root), pathInfo(copy.pathInfo), \
 	extension(copy.extension), query(copy.query) {}
 
@@ -596,7 +598,6 @@ std::string	Request::getFilename()
 void	Request::prunePath()
 {
 	std::string	filename = getFilename();
-	_parsedUri.filename = filename;
 	size_t	idx = filename.find_last_of(".");
 	if (idx == std::string::npos)
 		_parsedUri.extension = "";

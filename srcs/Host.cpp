@@ -307,6 +307,7 @@ int	Host::checkRedirection(Request& request) const
 			LOGE("Invalid or unsupported redirection status (%d)", location.redir);
 			break;
 	}
+	request._resHints.redirList = &location.addr_redir;
 	return (0);
 }
 

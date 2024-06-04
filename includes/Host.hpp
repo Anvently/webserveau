@@ -15,7 +15,7 @@
 class IParseConfig;
 class Client;
 
-struct Location
+typedef struct Location
 {
 	Location(void);
 	Location(const Location&);
@@ -33,11 +33,11 @@ struct Location
 	std::vector<std::string>	addr_redir;
 
 	bool						operator==(const Location&) const;
-};
+} Location;
 
 std::ostream&	operator<<(std::ostream& os, const Location& location);
 
-struct CGIConfig
+typedef struct CGIConfig
 {
 	CGIConfig(void);
 	CGIConfig(const CGIConfig&);
@@ -48,7 +48,7 @@ struct CGIConfig
 	std::string					extension;
 
 	bool						operator==(const CGIConfig&) const;
-};
+} CGIConfig;
 
 std::ostream&	operator<<(std::ostream& os, const CGIConfig& CGIConfig);
 
@@ -138,7 +138,7 @@ std::ostream&	operator<<(std::ostream& os, const Host& host);
 
 template <typename T>
 const T	Host::getMapObjectByKey(const typename std::map<std::string, T>& map, const std::string& key) const {
-	std::map<std::string, T>::const_iterator	pos = map.find(key);
+	typename std::map<std::string, T>::const_iterator	pos = map.find(key);
 	if (pos == map.end())
 		return (NULL);
 	return (pos->second);

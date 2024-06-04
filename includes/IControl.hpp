@@ -50,17 +50,17 @@ class IControl
 						- genereate CONTINUE RESPONSE
 					- else if body
 						- resume body parsing as CGI
-			- WHILE (CONTINUE RESPONSE NOT SENT) && !NOT ERROR
+			- WHILE (CONTINUE RESPONSE NOT SENT) && !NOT CLIENT_MODE_ERROR
 				- return
 				- if body
 					- resume body parsing with given config
-						- switch to READ
-			- if BODY READY && !ERROR
+						- switch to CLIENT_MODE_READ
+			- if BODY READY && !CLIENT_MODE_ERROR
 				- generate response
 					- CGI
 					- dir_listing
 					- STATIC page
-					- switch to WRITE
+					- switch to CLIENT_MODE_WRITE
 			- while (response NOT READY)
 				- wait
 			- send response
