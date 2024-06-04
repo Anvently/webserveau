@@ -374,7 +374,7 @@ int	Host::checkDirRessource(Request& request) const
 /// @return 
 int	Host::checkLocationRules(Request& request) const
 {
-	if ((request._resHints.locationRules->methods & request._method) == 0) {
+	if ((request._resHints.locationRules->methods & (1 << request._method)) == 0) {
 		request._resHints.status = RES_METHOD_NOT_ALLOWED;
 		return (RES_METHOD_NOT_ALLOWED);
 	}
@@ -393,7 +393,7 @@ int	Host::checkLocationRules(Request& request) const
 /// @return 
 int	Host::checkCGIRules(Request& request) const
 {
-	if ((request._resHints.cgiRules->methods & request._method) == 0) {
+	if ((request._resHints.cgiRules->methods & (1 << request._method)) == 0) {
 		request._resHints.status = RES_METHOD_NOT_ALLOWED;
 		return (RES_METHOD_NOT_ALLOWED);
 	}
@@ -434,6 +434,7 @@ int	Host::checkRessourceExistence(Request& request) const {
 			res = checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR);
 		} else {
 			path = request._resHints.locationRules->root + request._parsedUri.path;
+			LOGD("path = %ss", &path);
 			res = checkRessourcePath(path, request._type);
 		}
 	}
@@ -461,11 +462,14 @@ int	Host::checkRequest(Request& request) const {
 		if ((res = checkDirRessource(request)))
 			return (res);
 	}
+	LOGD("%Lo", request._resHints.locationRules);
 	if (request._resHints.locationRules && (res = checkLocationRules(request)))
 		return (res);
 	if (request._type == REQ_TYPE_CGI && (res = checkCGIRules(request)))
 		return (res);
+	LOGD("checking existence");
 	if ((res = checkRessourceExistence(request)))
 		return (res);
+	LOGD("exist");
 	return (res);
 }

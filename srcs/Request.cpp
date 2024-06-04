@@ -1,4 +1,5 @@
 #include <Request.hpp>
+#include <ILogger.hpp>
 
 static const	std::string	dummyString = "";
 
@@ -533,22 +534,25 @@ int	pruneScheme(std::string &uri)
 int	pruneDelim(std::string &uri, std::string delim)
 {
 	size_t	idx = uri.find(delim, 0);
-	if (idx != std::string::npos)
+	if (idx != std::string::npos && idx + 1 != uri.length()) //!modified 
 		uri.erase(0, idx + delim.size());
 	return (0);
 }
 
 std::string	extractPath(std::string &uri)
 {
+	std::string	path;
+
 	size_t	idx = uri.find("?", 0);
 	if (idx != std::string::npos)
 	{
-		std::string	path = uri.substr(0, idx);
+		path = uri.substr(0, idx);
 		uri.erase(0, idx + 1);
 		return (path);
 	}
-	else
-		return (uri);
+	path = uri; //!also modified
+	uri.clear();
+	return (path);
 }
 
 int	Request::checkPath()
@@ -590,7 +594,10 @@ std::string	Request::getFilename()
 		return ("./");
 	}
 	size_t	idx = _parsedUri.path.find_last_of("/");
-	_parsedUri.root = _parsedUri.path.substr(0, idx);
+	if (idx == 0 || idx == std::string::npos) //!modified
+		_parsedUri.root = "/";
+	else
+		_parsedUri.root = _parsedUri.path.substr(0, idx);
 	return (_parsedUri.path.substr(idx + 1));
 }
 
@@ -620,6 +627,8 @@ int	Request::parseURI()
 	if (checkPath())
 		return _fillError(400, "too many ../ in uri");
 	prunePath();
+	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss|",
+		&_parsedUri.path, &_parsedUri.root, &_parsedUri.extension, &_parsedUri.query);
 	return (0);
 }
 
@@ -633,4 +642,7 @@ void	Request::extractPathInfo(const std::string& extension) {
 	else
 		_parsedUri.root = _parsedUri.path.substr(0, idx + 1);
 	_parsedUri.extension = extension;
+	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss| pathinfo = |%ss|",
+		&_parsedUri.path, &_parsedUri.root, &_parsedUri.extension, &_parsedUri.query,
+		&_parsedUri.pathInfo);
 }

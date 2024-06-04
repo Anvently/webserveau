@@ -73,7 +73,7 @@ typedef struct ResHints {
 
 struct i_less {
 	static inline char	lowercase(char c) {
-		if (c >= 'A' || c <= 'Z')
+		if (c >= 'A' && c <= 'Z')
 			return (c + ('a' - 'A'));
 		return (c);
 	};

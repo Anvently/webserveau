@@ -4,6 +4,25 @@
 #include <algorithm>
 #include <iostream>
 
+struct i_less {
+	static inline char	lowercase(char c) {
+		if (c >= 'A' && c <= 'Z')
+			return (c + ('a' - 'A'));
+		return (c);
+	};
+	static inline int	stricmp(const char* s1, const char* s2) {
+		while (*s1 && (lowercase(*s1) == lowercase(*s2)))
+		{
+			s1++;
+			s2++;
+		}
+		return ((unsigned char) *s1 - (unsigned char) *s2);
+	};
+	bool operator() (const std::string& lhs, const std::string& rhs) const {
+		return stricmp(lhs.c_str(), rhs.c_str()) < 0;
+	}
+};
+
 /// @brief Compare a token formed expression including ```*``` symbol with an uri.
 /// @param location 
 /// @param uri 
@@ -127,13 +146,13 @@ bool	isBetterMatch(const std::string& uriRef, const std::string& expressionA, co
 			return (true);
 		else {
 			int	posA = uri.rfind(*itA), posB = uri.rfind(*itB);
-			std::cout << "Uri = " << uri << std::endl;
-			std::cout << "A = " << *itA << std::endl;
-			std::cout << "B = " << *itB << std::endl;
-			std::cout << "A ends at = " << posA + itA->length() << std::endl;
-			std::cout << "B ends at = " << posB + itB->length() << std::endl;
+			// std::cout << "Uri = " << uri << std::endl;
+			// std::cout << "A = " << *itA << std::endl;
+			// std::cout << "B = " << *itB << std::endl;
+			// std::cout << "A ends at = " << posA + itA->length() << std::endl;
+			// std::cout << "B ends at = " << posB + itB->length() << std::endl;
 			int	diff = (posA + itA->length()) - (posB + itB->length());
-			std::cout << "Diff = " << diff << std::endl;
+			// std::cout << "Diff = " << diff << std::endl;
 			if (diff > 0)
 				return (true);
 			else if (diff < 0)
@@ -164,10 +183,10 @@ T*	getObjectMatch(const typename std::map<std::string, T*>& map, const std::stri
 
 	for (typename std::map<std::string, T*>::const_iterator it = map.begin(); it != map.end(); it++)
 	{
-		std::cout << "checking match " << it->first << std::endl;
+		// std::cout << "checking match " << it->first << std::endl;
 		if (isBetterMatch(uri, it->first, (bestMatch ? &bestMatch->first : NULL))) {
 			bestMatch = &*it;
-			std::cout << "new best match is " << bestMatch->first << std::endl;
+			// std::cout << "new best match is " << bestMatch->first << std::endl;
 		}
 	}
 	if (bestMatch)
@@ -176,9 +195,25 @@ T*	getObjectMatch(const typename std::map<std::string, T*>& map, const std::stri
 
 }
 
-int	main(void) {
-	std::string	uri = "root/imgs/root/serv/test/imgs/img1.png";
+inline char	lowercase(char c) {
+		if (c >= 'A' && c <= 'Z')
+			return (c + ('a' - 'A'));
+		return (c);
+	};
 
+inline int	s_stricmp(const char* s1, const char* s2) {
+		while (*s1 && (lowercase(*s1) == lowercase(*s2)))
+		{
+			s1++;
+			s2++;
+		}
+		return ((unsigned char) *s1 - (unsigned char) *s2);
+	};
+
+int	main(void) {
+	std::string	uri = "";
+
+	Location	loc0("loc0");
 	Location	loc1("loc1");
 	Location	loc2("loc2");
 	Location	loc3("loc3");
@@ -193,6 +228,7 @@ int	main(void) {
 	Location	loc12("loc12");
 	Location	loc13("loc13");
 	std::map<std::string, Location*>	locMap;
+	locMap["*"] = &loc0;
 	locMap["*/root/*/tes*"] = &loc12;
 	locMap["*/test/*"] = &loc11	;
 	locMap["*/imgs/*"] = &loc10;
@@ -211,5 +247,11 @@ int	main(void) {
 		std::cout << "best match is " << bestMatch->_name << std::endl;
 	else
 		std::cout << "no best match\n";
+
+	// std::map<std::string, std::string, i_less>	maptest;
+	// maptest["Host"] = "pouet";
+	// std::cout << "Host = " << maptest["Host"] << std::endl;
+	// std::cout << "host = " << maptest["host"] << std::endl;
+	// std::cout << "host == Host ? " << s_stricmp("host", "Host") << std::endl;
 	return (0);
 }

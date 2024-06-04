@@ -256,9 +256,9 @@ int	IControl::handleCGIProcess(Client& client) {
 int	IControl::checkForbiddenHeaders(Request& request) {
 	if (request.getHeader("accept-ranges") != "") {
 		request._resHints.verboseError = "accept-range header not implemented";
-	} else if (request.getHeader("content-encoding") != "identity") {
+	} else if (request.checkHeader("content-encoding") && request.getHeader("content-encoding") != "identity") {
 		request._resHints.verboseError = "identity is the only value supported for content-encoding";
-	} else if (request.getHeader("transfer-encoding") != "chunked") {
+	} else if (request.checkHeader("transfer-encoding") && request.getHeader("transfer-encoding") != "chunked") {
 		request._resHints.verboseError = "chunked is the only value supported for transfer-encoding";
 	}
 	else
@@ -336,6 +336,7 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 	client.setBodyStatus(BODY_STATUS_NONE);
 	if ((res = assignHost(client, request)))
 		return (res);
+	LOGD("%H", client.getHost());
 	if ((res = request.parseURI()))
 		return (res);
 	if ((res = checkForbiddenHeaders(request)))
@@ -431,7 +432,8 @@ void	IControl::generateResponse(Client& client, int status)
 	if (status)
 		request._resHints.status = status;
 	if (request._resHints.status)
-	LOGI("Generating response status %d", request._resHints.status);
+	LOGI("Generating response status %d | verbose = %ss",
+		request._resHints.status, &request._resHints.verboseError);
 	request._resHints.type = request._type;
 	try
 	{
@@ -442,8 +444,10 @@ void	IControl::generateResponse(Client& client, int status)
 		generateResponse(client, RES_INTERNAL_ERROR);
 		return ;
 	}
+	if (response)
+		response->writeResponse(client._outBuffers);
 	client.setResponse(response);
-	client.getResponse()->writeResponse(client._outBuffers);
+	
 }
 
 int IControl::generateCGIProcess(Client& client) {
