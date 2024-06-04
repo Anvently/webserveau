@@ -136,7 +136,18 @@ static std::map<int, std::string> ResponseLine{{100, "Continue"}, {200, "OK"}, {
 {415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
 {505, "HTTP Version Not Supported"}};
 
+
+#include<fstream>
+
 int	main()
 {
-	std::cout << ResponseLine[301];
+	std::fstream fstr;
+  fstr.open("a.out", std::ios::binary | std::ios::in);
+  if (!fstr.is_open())
+    std::cout << "Could not open \n";
+  char  str[20];
+  fstr.read(str, 20);
+  std::cout << fstr.gcount();
+
+
 }

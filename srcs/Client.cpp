@@ -17,6 +17,7 @@ Client::~Client(void) {
 		delete(_response);
 	if (_bodyStream)
 		_bodyStream->close();
+	// !!!! bodystream allocated
 }
 
 Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
@@ -30,6 +31,7 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	_bodyStream = NULL;
 }
 
+//!!! bodystream copy not allocated is it ok ?
 Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._addressStr), \
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
 	 _lastInteraction(copy._lastInteraction), \

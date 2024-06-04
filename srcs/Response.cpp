@@ -23,7 +23,7 @@ SingleLineResponse::SingleLineResponse(int status, const std::string& descriptio
 	_response = "HTTP/1.1 100 Continue\r\n";
 }
 
-int	SingleLineResponse::writeResponse(std::queue<char*>& outQueue)
+int	SingleLineResponse::writeResponse(std::queue<std::string>& outQueue)
 {
 	char	*str;
 	std::string	portion;
@@ -31,11 +31,9 @@ int	SingleLineResponse::writeResponse(std::queue<char*>& outQueue)
 	while(!_response.empty())
 	{
 		portion = _response.substr(0, HEADER_MAX_SIZE);
-		str = new char[portion.size() + 1];
-		std::copy(portion.begin(), portion.end(), str);
-		str[portion.size()] = 0;
-		outQueue.push(str);
+		outQueue.push(portion);
 		_response.erase(0, portion.size());
+		portion.clear();
 	}
 	return (0);
 }
@@ -85,7 +83,7 @@ void	HeaderResponse::_formatHeaders()
 	_formated_headers += "\r\n";
 }
 
-int	HeaderResponse::writeResponse(std::queue<char*>& outQueue)
+int	HeaderResponse::writeResponse(std::queue<std::string>& outQueue)
 {
 	char	*str;
 	std::string	portion;
@@ -94,11 +92,9 @@ int	HeaderResponse::writeResponse(std::queue<char*>& outQueue)
 	while(!_formated_headers.empty())
 	{
 		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
-		str = new char[portion.size() + 1];
-		std::copy(portion.begin(), portion.end(), str);
-		str[portion.size()] = 0;
-		outQueue.push(str);
+		outQueue.push(portion);
 		_formated_headers.erase(0, portion.size());
+		portion.clear();
 	}
 	return (0);
 }
@@ -108,12 +104,21 @@ AResponse*	AResponse::genResponse(ResHints& hints) {
 	return (NULL);
 }
 
-FileResponse::FileResponse(const std::string& infile, const std::map<std::string, std::string>* headers) {
-	(void) infile;
-	(void) headers;
-}
-
 FileResponse::~FileResponse(void) {}
 
-int	FileResponse::writeResponse(std::queue<char*>& outQueue) {}
 
+FileResponse::FileResponse(const std::string& infile, int status, const std::string &description): HeaderResponse(status, description)
+{
+	_path = infile;
+	_ifstream.open(_path, std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
+}
+
+FileResponse::~FileResponse()
+{
+
+}
+
+int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
+{
+	
+}
