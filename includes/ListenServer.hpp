@@ -72,8 +72,10 @@ class ListenServer : public IObject
 		static std::list<ListenServer>::const_iterator	getServerListEnd(void);
 		static int	getNbrServer(void);
 
+
 		int			removeHost(const std::string& serverName);
 		Host*		findHost(const std::string& serverName);
+		void		removeClient(Client*);
 
 		void		assignHost(Host* host);
 		void		unassignHost(Host* host);

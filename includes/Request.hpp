@@ -60,6 +60,7 @@ typedef struct ResHints {
 	bool								unlink;
 	std::string							verboseError;
 	int									status;
+	int									type;
 	const Location*						locationRules;
 	const CGIConfig*					cgiRules;
 	const std::vector<std::string>*		redirList;
