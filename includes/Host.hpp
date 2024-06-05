@@ -66,17 +66,18 @@ class	Host {
 		// friend class	IParseConfig;
 
 		static std::list<Host>				_hostList;
-		static std::vector<Location>		_locations;
-		static std::vector<CGIConfig>		_cgis;
+		static std::list<Location>			_locations;
+		static std::list<CGIConfig>			_cgis;
 
 		std::string							_addr;
-		std::string							_port;
+		std::set<std::string>				_ports;
 		int									_body_max_size;
 		std::string							_dir_errors;
 		std::vector<std::string>			_server_names;
 		std::map<std::string, Location*>	_locationMap;
 		std::map<std::string, CGIConfig*>	_cgiMap;
 		std::list<Client*>					_clients; //<fd, Client> ?
+		std::set<ListenServer*>				_listenServers;
 		// a log file per Host ?
 
 		void				addCGIConfig(const std::deque<std::string>& names, CGIConfig& cgiConfig);
@@ -108,7 +109,13 @@ class	Host {
 		static void							removeHost(Host* host);
 		static std::list<Host>::iterator	findHost(Host* host);
 
-		const std::string&				getPort() const;
+		static void							printLocationsDebug(void);
+
+		void							addListenServer(ListenServer*);
+		void							removeListenServer(ListenServer*);
+
+		const std::set<std::string>&	getPorts() const;
+		const std::set<ListenServer*>&	getListenServers() const;
 		int								getMaxSize() const;
 		const std::string&				getAddr() const;
 		Client							*getClientByFd(int fd) const;
@@ -144,6 +151,7 @@ const T	Host::getMapObjectByKey(const typename std::map<std::string, T>& map, co
 	return (pos->second);
 }
 
+#include <ILogger.hpp>
 bool	isUriMatch(const std::string& uriRef, const std::string& expression, const std::string* previousMatch);
 
 template <typename T>

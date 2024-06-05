@@ -161,7 +161,6 @@ class	Request
 		void	extractPathInfo(const std::string& extension);
 		int		checkPath();
 		void	prunePath();
-		std::string	getFilename();
 		void	splitVar(std::string &str);
 
 		//DEBUG

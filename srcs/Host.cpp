@@ -5,8 +5,8 @@
 #include <limits.h>
 
 std::list<Host>			Host::_hostList;
-std::vector<CGIConfig>	Host::_cgis;
-std::vector<Location>	Host::_locations;
+std::list<CGIConfig>	Host::_cgis;
+std::list<Location>		Host::_locations;
 
 Host::~Host(void) {}
 
@@ -19,7 +19,7 @@ Host&	Host::operator=(Host& rhs) {
 	return (*this);
 }
 
-Host::Host(const Host& copy) : _addr(copy._addr), _port(copy._port), \
+Host::Host(const Host& copy) : _addr(copy._addr), _ports(copy._ports), \
 	_body_max_size(copy._body_max_size), _dir_errors(copy._dir_errors), \
 	_server_names(copy._server_names), _locationMap(copy._locationMap), \
 	_cgiMap(copy._cgiMap), _clients(copy._clients) {}
@@ -80,7 +80,7 @@ std::list<Host>::iterator	Host::findHost(Host* host)
 /// @param host
 void	Host::addHost(Host& host) {
 	Host& newHost = *_hostList.insert(_hostList.end(), host);
-	ListenServer::addHost(&newHost);
+	ListenServer::registerHost(&newHost);
 }
 
 void	Host::removeHost(Host* host) {
@@ -92,8 +92,22 @@ void	Host::removeHost(Host* host) {
 		_hostList.erase(pos);
 }
 
-const std::string&	Host::getPort(void) const {
-	return (this->_port);
+void	Host::addListenServer(ListenServer* server) {
+	if (server)
+		_listenServers.insert(server);
+}
+
+void	Host::removeListenServer(ListenServer* server) {
+	if (server)
+		_listenServers.erase(server);
+}
+
+const std::set<std::string>&	Host::getPorts(void) const {
+	return (this->_ports);
+}
+
+const std::set<ListenServer*>&	Host::getListenServers(void) const {
+	return (this->_listenServers);
 }
 
 int	Host::getMaxSize(void) const {
@@ -166,22 +180,22 @@ void	Host::shutdown(void) {
 
 void	Host::addCGIConfig(const std::deque<std::string>& names, CGIConfig& cgiConfig)
 {
-	std::vector<CGIConfig>::iterator pos;
+	std::list<CGIConfig>::iterator pos;
 
 	pos = std::find(_cgis.begin(), _cgis.end(), cgiConfig);
 	if (pos == _cgis.end())
-		_cgis.insert(pos, cgiConfig);
+		pos = _cgis.insert(pos, cgiConfig);
 	for (std::deque<std::string>::const_iterator it = names.begin(); it != names.end(); it++)
 		_cgiMap[*it] = &*pos;
 }
 
 void	Host::addLocation(const std::deque<std::string>& names, Location& location)
 {
-	std::vector<Location>::iterator pos;
+	std::list<Location>::iterator pos;
 
 	pos = std::find(_locations.begin(), _locations.end(), location);
 	if (pos == _locations.end())
-		_locations.insert(pos, location);
+		pos = _locations.insert(pos, location);
 	for (std::deque<std::string>::const_iterator it = names.begin(); it != names.end(); it++)
 		_locationMap[*it] = &*pos;
 }
@@ -193,8 +207,8 @@ void	Host::printProperties(std::ostream& os) const
 		it != _server_names.end(); it++)
 		os << " " << *it;
 	os << std::endl;
-	os << "	Max body size : " << _body_max_size << std::endl;
-	os << "	Error dir : " << _dir_errors << std::endl;
+	os << "		Max body size : " << _body_max_size << std::endl;
+	os << "		Error dir : " << _dir_errors << std::endl;
 
 }
 
@@ -264,6 +278,7 @@ std::ostream&	operator<<(std::ostream& os, const CGIConfig& CGIConfig)
 {
 	os << "			->  root: " << CGIConfig.root << std::endl;
 	os << "			exec_path: " << CGIConfig.exec << std::endl;
+	os << "			identifier: " << CGIConfig.extension << std::endl;
 	os << "			allowed methods: ";
 	for (int i = 0; i < METHOD_NBR; i++)
 		os << ((CGIConfig.methods & (1 << i)) ? METHOD_STR[i] : "");
@@ -422,7 +437,6 @@ int	Host::checkRessourcePath(const std::string& path, int type)
 int	Host::checkRessourceExistence(Request& request) const {
 	std::string	path;
 	int			res;
-
 	if (request._type == REQ_TYPE_CGI) {
 		path = request._resHints.cgiRules->root + request._parsedUri.path;
 		res = checkRessourcePath(path, REQ_TYPE_CGI);
@@ -434,7 +448,6 @@ int	Host::checkRessourceExistence(Request& request) const {
 			res = checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR);
 		} else {
 			path = request._resHints.locationRules->root + request._parsedUri.path;
-			LOGD("path = %ss", &path);
 			res = checkRessourcePath(path, request._type);
 		}
 	}
@@ -462,14 +475,11 @@ int	Host::checkRequest(Request& request) const {
 		if ((res = checkDirRessource(request)))
 			return (res);
 	}
-	LOGD("%Lo", request._resHints.locationRules);
 	if (request._resHints.locationRules && (res = checkLocationRules(request)))
 		return (res);
 	if (request._type == REQ_TYPE_CGI && (res = checkCGIRules(request)))
 		return (res);
-	LOGD("checking existence");
 	if ((res = checkRessourceExistence(request)))
 		return (res);
-	LOGD("exist");
 	return (res);
 }

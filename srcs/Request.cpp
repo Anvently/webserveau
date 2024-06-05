@@ -586,29 +586,25 @@ int	Request::checkPath()
 	return (0);
 }
 
-std::string	Request::getFilename()
+void	Request::prunePath()
 {
-	if (_parsedUri.path.empty() || _parsedUri.path[_parsedUri.path.length() - 1] == '/')
-	{
+	std::string	filename;
+	if (_parsedUri.path.empty() || _parsedUri.path[_parsedUri.path.length() - 1] == '/') {
 		_parsedUri.root = _parsedUri.path;
-		return ("./");
+		_parsedUri.extension = "/";
+		return;
 	}
 	size_t	idx = _parsedUri.path.find_last_of("/");
 	if (idx == 0 || idx == std::string::npos) //!modified
 		_parsedUri.root = "/";
 	else
-		_parsedUri.root = _parsedUri.path.substr(0, idx);
-	return (_parsedUri.path.substr(idx + 1));
-}
-
-void	Request::prunePath()
-{
-	std::string	filename = getFilename();
-	size_t	idx = filename.find_last_of(".");
+		_parsedUri.root = _parsedUri.path.substr(0, idx + 1);
+	filename = _parsedUri.path.substr(idx + 1);
+	idx = filename.rfind('.');
 	if (idx == std::string::npos)
 		_parsedUri.extension = "";
 	else
-		_parsedUri.extension = _parsedUri.path.substr(idx);
+		_parsedUri.extension = filename.substr(idx);
 }
 
 int	Request::parseURI(const std::string& suffix) {

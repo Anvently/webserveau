@@ -60,8 +60,12 @@ class ListenServer : public IObject
 		static std::list<ListenServer>::iterator	findServer(const std::string& hostAddr, const std::string& hostPort);
 		static bool	serverExist(const std::string& hostAddr, const std::string& hostPort);
 
-		static int	addHost(Host* host);
-		static void	removeHost(Host* host);
+		static int	registerHost(Host* host);
+		static int	registerHost(Host*, const std::string& port);
+		static void	unregisterHost(Host* host);
+		static void	unregisterHost(Host*, const std::set<ListenServer*> serverSet);
+		static void	unregisterHost(Host*, const std::string& port);
+		static void	unregisterHost(Host*, std::list<ListenServer>::iterator serverPos);
 
 		static int	startServers(int epollfd);
 		static void	closeServers(void);

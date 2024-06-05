@@ -103,6 +103,8 @@ int	IControl::parseCommandPrompt(std::deque<std::string>& words) {
 		handlePrintCommand(words);
 	else if (words[0] == "client_nbr")
 		LOGV("Nbr of clients = %d", Client::getTotalNbrClient());
+	else if (words[0] == "clear")
+		system("clear");
 	else
 		LOGV("Invalid command");
 	return (0);
