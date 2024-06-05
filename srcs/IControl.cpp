@@ -46,8 +46,11 @@ int	IControl::handleCommandPrompt(epoll_event* event) {
 
 void	IControl::handleKillCommand(std::deque<std::string>& words)
 {
-	if (words.size() < 2)
-		LOGV("Invalid number of argument.");
+	if (words.size() < 2 || words.size() > 4)
+		LOGV("Invalid number of argument.\n"\
+			"	- kill all\n"\
+			"	- kill [server_ip] [port]\n"\
+			"	- kill [server_ip] [port] [host]");
 	else if (words[1] == "all")
 		ListenServer::removeServers();
 	else if (words.size() == 3) {
@@ -64,8 +67,6 @@ void	IControl::handleKillCommand(std::deque<std::string>& words)
 		else
 			LOGV("Invalid server");
 	}
-	else
-			LOGV("Invalid number of argument.");
 }
 
 void	IControl::handlePrintCommand(std::deque<std::string>& words)

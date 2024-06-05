@@ -68,6 +68,7 @@ int	ListenServer::registerHost(Host* host, const std::string& port) {
 	std::list<ListenServer>::iterator	it = findServer(host->getAddr(), port);
 	if (it != _serverList.end()) {
 		it->assignHost(host);
+		host->addListenServer(&*it);
 	}
 	else
 	{
@@ -163,7 +164,7 @@ int	ListenServer::removeHost(const std::string& serverName) {
 	std::map<std::string, Host*>::iterator	it = _hostMap.find(serverName);
 	if (_hostMap.end() == it)
 		return (1);
-	unregisterHost(it->second);
+	unregisterHost(it->second, this->_port);
 	return (0);
 }
 
