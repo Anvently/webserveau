@@ -20,9 +20,13 @@ TODO
 
 	- IParseConfig :
 		- check root and lcoation path => don't start with / but ends with /
-		- implement standalone wildcard ?
-			- chain location rules
+		- servername must not appears twice
 		- handle an host belonging to multiple listenServer 
+			- need to add hostName to multiple listenServer
+			- when removing an host
+				- removes it from all its server
+			- when removing a listenServer
+				- for each host, if it doesn't point to a listenServer anymore, delete it
 
 
 	- Parsing headers

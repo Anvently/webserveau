@@ -40,25 +40,43 @@ void	ListenServer::assignHost(Host *host)
 	{
 		if (_hostMap.find(*it) == _hostMap.end())
 			_hostMap[*it] = host;
-
 	}
+	this->_nbrHost++;
 }
 
-// either assign the host to an existing ListenServer or create a new server with a socket
-int	ListenServer::addHost(Host *host)
+/// @brief for each listen port of the host, either assign the host
+/// to existing ListenServer(s) or create a new server with a socket
+/// @return ```1``` if at least one server failed to launch
+int	ListenServer::registerHost(Host *host)
 {
-	std::list<ListenServer>::iterator	it = findServer(host->getAddr(), host->getPort());
+	int res = 0;
+
+	for (std::set<std::string>::const_iterator it = host->getPorts().begin();
+			it != host->getPorts().end(); it++) {
+		if (registerHost(host, *it))
+			res = 1;
+	}
+	return (1);
+}
+
+/// @brief Either assign the host to a listenServer if one is already linked
+/// to ```port```, or create a new listenServer and add the host to it.
+/// @param host 
+/// @param port 
+/// @return 
+int	ListenServer::registerHost(Host* host, const std::string& port) {
+	std::list<ListenServer>::iterator	it = findServer(host->getAddr(), port);
 	if (it != _serverList.end()) {
 		it->assignHost(host);
-		it->_nbrHost++;
+		host->addListenServer(&*it);
 	}
 	else
 	{
-		ListenServer	*new_server = addServer(host->getAddr(), host->getPort());
+		ListenServer	*new_server = addServer(host->getAddr(), port);
 		if (new_server == NULL)
 			return (1);
 		new_server->assignHost(host);
-		new_server->_nbrHost++;
+		host->addListenServer(new_server);
 	}
 	return (0);
 }
@@ -146,7 +164,7 @@ int	ListenServer::removeHost(const std::string& serverName) {
 	std::map<std::string, Host*>::iterator	it = _hostMap.find(serverName);
 	if (_hostMap.end() == it)
 		return (1);
-	removeHost(it->second);
+	unregisterHost(it->second, this->_port);
 	return (0);
 }
 
@@ -157,18 +175,43 @@ Host*	ListenServer::findHost(const std::string& serverName) {
 	return (it->second);
 }
 
-/// @brief Remove the host from the listen server it belongs to if any.
-/// After the deletion, if the listen server doesn't refer to any host anymore,
+/// @brief Remove the host from the listen server(s) it belongs to if any.
+/// After the deletion, if a listen server doesn't refer to any host anymore,
 /// it is terminated and deleted.
 /// @param host
-void	ListenServer::removeHost(Host* host) {
-	std::list<ListenServer>::iterator it = findServer(host->getAddr(), host->getPort());
-	if (it == _serverList.end())
+void	ListenServer::unregisterHost(Host* host) {
+	unregisterHost(host, host->getListenServers());
+}
+
+/// Given a list of valid ListenServer pointer, unregister to host from all the server
+/// of this list, resulting empty servers are removed.
+void	ListenServer::unregisterHost(Host* host, const std::set<ListenServer*> serverSet) {
+	for (std::set<ListenServer*>::const_iterator it = serverSet.begin(); it != serverSet.end();) {
+		unregisterHost(host, (*it++)->_port);
+	}
+}
+
+/// @brief Given a port and host address, remove the host from the listenServer
+/// associated with this port.
+/// @param host 
+/// @param port 
+void	ListenServer::unregisterHost(Host* host, const std::string& port) {
+	std::list<ListenServer>::iterator it = findServer(host->getAddr(), port);
+	unregisterHost(host, it);
+}
+
+/// @brief Given a port and host address, remove the host from the listenServer
+/// associated with this port.
+/// @param host 
+/// @param port 
+void	ListenServer::unregisterHost(Host* host, std::list<ListenServer>::iterator serverPos) {
+	if (serverPos == _serverList.end())
 		return;
-	it->unassignHost(host);
-	it->_nbrHost--;
-	if (it->_hostMap.size() == 0)
-		removeServer(it->_ip, it->_port);
+	serverPos->unassignHost(host);
+	if (serverPos->_hostMap.size() == 0)
+		removeServer(serverPos);
+	if (host->getListenServers().size() == 0)
+		Host::removeHost(host);
 }
 
 /// @brief Remove a client pointer from the list of orphan and/or connected clients.
@@ -178,7 +221,7 @@ void	ListenServer::removeClient(Client* client) {
 	_connectedClients.remove(client);
 }
 
-/// @brief Unregister the host names from ```_hostMap```, delete the host.
+/// @brief Unregister the host names from ```_hostMap```.
 /// Remove server if the host is the last one the server was refering to.
 /// @param host
 void	ListenServer::unassignHost(Host* host) {
@@ -196,8 +239,10 @@ void	ListenServer::unassignHost(Host* host) {
 		if (mapIt != _hostMap.end())
 			_hostMap.erase(mapIt);
 	}
+	this->_nbrHost--;
+	host->removeListenServer(this);
 	LOGI("Host (%ss) was unassigned from %ss:%ss", &host->getServerNames().at(0), &this->_ip, &this->_port);
-	Host::removeHost(host);
+	// Host::removeHost(host);
 }
 
 // add the socket to the epoll interest list with a pointer to ListenServer in event.data. Then tells the socket to listen.
