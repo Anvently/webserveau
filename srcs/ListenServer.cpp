@@ -104,7 +104,7 @@ std::list<ListenServer>::iterator	ListenServer::findServer(const std::string& ho
 ListenServer*	ListenServer::addServer(const std::string& hostAddr, const std::string& hostPort)
 {
 	int				new_socket = 0, val = 1;
-	struct	addrinfo *res, hints;
+	struct	addrinfo *res = NULL, hints;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_family = AF_UNSPEC;
@@ -212,6 +212,23 @@ void	ListenServer::unregisterHost(Host* host, std::list<ListenServer>::iterator 
 		removeServer(serverPos);
 	if (host->getListenServers().size() == 0)
 		Host::removeHost(host);
+}
+
+/// @brief Check if the servernames are already present in the listen server
+/// associated with given adress and listening ports
+/// @param host 
+/// @return ```false``` if there is a conflict
+bool	ListenServer::checkServerNames(const std::string& hostAddr, const std::set<std::string>& ports, const std::vector<std::string>& serverNames) {
+	for (std::set<std::string>::const_iterator itPort = ports.begin(); itPort != ports.end(); itPort++) {
+		std::list<ListenServer>::iterator serverPos = findServer(hostAddr, *itPort);
+		if (serverPos == _serverList.end())
+			continue;
+		for (std::vector<std::string>::const_iterator itName = serverNames.begin(); itName != serverNames.end(); itName++) {
+			if (serverPos->findHost(*itName) != NULL)
+				return (false);
+		}
+	}
+	return (true);
 }
 
 /// @brief Remove a client pointer from the list of orphan and/or connected clients.

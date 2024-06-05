@@ -21,50 +21,14 @@ TODO
 	- IParseConfig :
 		- check root and lcoation path => don't start with / but ends with /
 		- servername must not appears twice
-		- handle an host belonging to multiple listenServer 
-			- need to add hostName to multiple listenServer
-			- when removing an host
-				- removes it from all its server
-			- when removing a listenServer
-				- for each host, if it doesn't point to a listenServer anymore, delete it
 
 
 	- Parsing headers
 		- Verifiy : 
-			- content-Encoding
 			- cookies ?
-
-	- IControl
-		- Body parsing handling from IControl
-		- parsing URL method
-		- checking host configuration/authorizations
-		- (dir listing??)
-			- stack on the go
+		- check unknown methods ?
+		- check headers defining response behaviour :
+			- connection: keep-alive
 
 	- Mimetype static class
 	- errors static class
-
-	- response implemtatntation
-		- ERRORS
-		- CGIREsponsese
-		- STaticRespomnse
-
-Body parsing: function taking ostream* ?
-
-	- if error
-		=> close connection
-	- if GET/(DELETE?)
-		=> parse but ignored (compare with content-length)
-			- if chunck, until EOC
-	- CGI
-		=> POST
-			- /tmp/
-	- Static upload
-		=> check server rules
-		=> if text-plain
-			- check url for path
-		=> if multiform/part
-			- special parsing;
-				- tmp file that is parsed afterward
-
-

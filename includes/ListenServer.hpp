@@ -20,6 +20,7 @@
 #include <string.h>
 #include <map>
 #include <IObject.hpp>
+#include <vector>
 
 class Client;
 class Host;
@@ -71,6 +72,8 @@ class ListenServer : public IObject
 		static void	closeServers(void);
 		static void	removeServer(const std::string& hostAddr, const std::string& hostPort);
 		static void	removeServers(void);
+
+		static bool	checkServerNames(const std::string& hostAddr, const std::set<std::string>& ports, const std::vector<std::string>& serverNames);
 
 		static std::list<ListenServer>::const_iterator	getServerListBegin(void);
 		static std::list<ListenServer>::const_iterator	getServerListEnd(void);

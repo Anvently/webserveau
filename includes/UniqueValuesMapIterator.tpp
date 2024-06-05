@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <list>
+#include <algorithm>
 
 template <typename Key, typename Value>
 class UniqueValuesMapIterator_const
@@ -11,12 +12,12 @@ class UniqueValuesMapIterator_const
 
 	private:
 
+		UniqueValuesMapIterator_const(void) : _baseIt(), _uniqueValues() {}
 		typename std::map<Key, Value>::const_iterator	_baseIt;
-		std::list<Value>						_uniqueValues;
+		std::set<Value>									_uniqueValues;
 
 	public:
 
-		UniqueValuesMapIterator_const(void) : _baseIt(), _uniqueValues() {}
 		UniqueValuesMapIterator_const(typename std::map<Key, Value>::const_iterator it) \
 			: _baseIt(it), _uniqueValues() {}
 		UniqueValuesMapIterator_const(const UniqueValuesMapIterator_const& copy) : \
@@ -27,7 +28,7 @@ class UniqueValuesMapIterator_const
 		}
 		UniqueValuesMapIterator_const&	operator=(const typename std::map<Key, Value>::const_iterator& copy) {
 			_baseIt = copy;
-			_uniqueValues = std::set<Value>(0);
+			_uniqueValues.clear();
 		}
 		const typename std::pair<const Key, Value>&	operator*(void) const {
 			return (*_baseIt);
@@ -49,14 +50,16 @@ class UniqueValuesMapIterator_const
 		}
 		UniqueValuesMapIterator_const&	operator++(void) {
 			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
-			while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end())
+			do {
 				++_baseIt;
+			} while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
 			return (*this);
 		};
 		UniqueValuesMapIterator_const&	operator--(void) {
 			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
-			while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end())
+			do {
 				--_baseIt;
+			} while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
 			return (*this);
 		};
 		UniqueValuesMapIterator_const	operator++(int) {
@@ -77,12 +80,12 @@ class UniqueValuesMapIterator
 
 	private:
 
+		UniqueValuesMapIterator(void) : _baseIt(), _uniqueValues(){}
 		typename std::map<Key, Value>::iterator	_baseIt;
-		std::list<Value>						_uniqueValues;
+		std::set<Value>						_uniqueValues;
 
 	public:
 
-		UniqueValuesMapIterator(void) : _baseIt(), _uniqueValues(){}
 		UniqueValuesMapIterator(typename std::map<Key, Value>::iterator it) \
 			: _baseIt(it), _uniqueValues() {}
 		UniqueValuesMapIterator(const UniqueValuesMapIterator& copy) : \
@@ -93,7 +96,7 @@ class UniqueValuesMapIterator
 		}
 		UniqueValuesMapIterator&	operator=(const typename std::map<Key, Value>::iterator& copy) {
 			_baseIt = copy;
-			_uniqueValues = std::set<Value>(0);
+			_uniqueValues.clear();
 		}
 		typename std::pair<const Key, Value>&	operator*(void) const {
 			return (*_baseIt);
@@ -115,15 +118,16 @@ class UniqueValuesMapIterator
 		}
 		UniqueValuesMapIterator&	operator++(void) {
 			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
-			
-			while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end())
+			do {
 				++_baseIt;
+			} while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
 			return (*this);
 		};
 		UniqueValuesMapIterator&	operator--(void) {
 			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
-			while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end())
+			do {
 				--_baseIt;
+			} while (std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
 			return (*this);
 		};
 		UniqueValuesMapIterator	operator++(int) {

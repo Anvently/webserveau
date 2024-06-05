@@ -68,25 +68,30 @@ int	main(void)
 	struct epoll_event	events[EPOLL_EVENT_MAX_SIZE];
 
 	initLogs();
-
-	epollfd = epoll_create(1);
-	if (epollfd < 0) {
-		LOGE("Fatal error : could not create epoll");
-		return (cleanExit(1));
-	}
-	IParseConfig::parseConfigFile("conf/template.conf");
-	IControl::_epollfd = epollfd;
-	if (IControl::registerCommandPrompt())
-		return (cleanExit(1));
-	ListenServer::startServers(epollfd);
-	LOGI("Servers have started");
-	while (ListenServer::getNbrServer()) {
-		nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
-		if (nbr_events) {
-			if (IControl::handleEpoll(events, nbr_events) < 0)
-				break;
+	try {
+		epollfd = epoll_create(1);
+		if (epollfd < 0) {
+			LOGE("Fatal error : could not create epoll");
+			return (cleanExit(1));
 		}
-		Client::checkTO();
+		IParseConfig::parseConfigFile("conf/template.conf");
+		IControl::_epollfd = epollfd;
+		if (IControl::registerCommandPrompt())
+			return (cleanExit(1));
+		ListenServer::startServers(epollfd);
+		LOGI("Servers have started");
+		while (ListenServer::getNbrServer()) {
+			nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
+			if (nbr_events) {
+				if (IControl::handleEpoll(events, nbr_events) < 0)
+					break;
+			}
+			Client::checkTO();
+		}
+		return (cleanExit(0));
 	}
-	return (cleanExit(0));
+	catch (const std::exception& e) {
+		LOGE("%s", e.what());
+		return (cleanExit(1));
+	}
 }

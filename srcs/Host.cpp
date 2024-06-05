@@ -10,8 +10,7 @@ std::list<Location>		Host::_locations;
 
 Host::~Host(void) {}
 
-Host::Host(void): _body_max_size(INT_MAX)
-{}
+Host::Host(void): _addr(DFT_VALUE_ADDR), _body_max_size(DFT_VALUE_MAX_BODY_SIZE) {}
 
 Host&	Host::operator=(Host& rhs) {
 	(void) rhs;
@@ -22,9 +21,9 @@ Host&	Host::operator=(Host& rhs) {
 Host::Host(const Host& copy) : _addr(copy._addr), _ports(copy._ports), \
 	_body_max_size(copy._body_max_size), _dir_errors(copy._dir_errors), \
 	_server_names(copy._server_names), _locationMap(copy._locationMap), \
-	_cgiMap(copy._cgiMap), _clients(copy._clients) {}
+	_cgiMap(copy._cgiMap), _clients(copy._clients), _listenServers(copy._listenServers) {}
 
-Location::Location(void) : methods(GET), dir_listing(false), upload(false), redir(0) {}
+Location::Location(void) : methods(DFT_VALUE_METHOD), dir_listing(false), upload(false), redir(0) {}
 
 Location::Location(const Location& copy) : root(copy.root), methods(copy.methods), dir_listing(copy.dir_listing), \
 	default_uri(copy.default_uri), upload(copy.upload), upload_root(copy.upload_root), \
@@ -159,6 +158,10 @@ bool	Host::checkServerName(const std::string& name) const {
 	if (pos == _server_names.end())
 		return (false);
 	return (true);
+}
+
+const std::string&	Host::getDirErrorPages(void) const {
+	return (this->_dir_errors);
 }
 
 void	Host::removeClient(Client* client) {

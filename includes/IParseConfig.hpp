@@ -49,6 +49,8 @@ class IParseConfig
 		static void				handleCGIConfigToken(std::stringstream& istream,  const std::string& token, void* CGIConfigPtr);
 		static void				handleLocationToken(std::stringstream& istream, const std::string& token, void* locationPtr);
 
+		static void				checkHost(Host& host);
+
 		static void				parseHost(std::istream& istream);
 		static void				parseLocation(std::stringstream& istream, Host& host);
 		static void				parseCGIConfig(std::stringstream& istream, Host& host);
@@ -59,7 +61,7 @@ class IParseConfig
 		static void				parseBodyMaxSize(std::istream& istream, Host& host);
 		static void				parseAllowedMethods(std::istream& istream, int& methods);
 		static void				parseRedirection(std::istream& istream, Location& location);
-		static void				parsePath(std::istream& istream, std::string& dest, const char* id = NULL);
+		static void				parsePath(std::istream& istream, std::string& dest, const char* id = NULL, char restrictEnd = 0);
 		static void				parseBoolean(std::istream& istream, bool& dest, const char* id = NULL);
 		static void				parseUri(std::istream& istream, std::string& dest, const char* id = NULL);
 		
@@ -141,6 +143,48 @@ class IParseConfig
 			public:
 				virtual const char*	what(void) const throw() {
 					return ("missing opening brace `{'");
+				}
+		};
+
+		class InvalidPortException : public IParseConfigException {
+			public:
+				virtual const char*	what(void) const throw() {
+					return ("invalid port");
+				}
+		};
+
+		class InvalidMaxBodySizeException : public IParseConfigException {
+			public:
+				virtual const char*	what(void) const throw() {
+					return ("invalid max body size");
+				}
+		};
+
+		class InvalidMethodException : public IParseConfigException {
+			public:
+				virtual const char*	what(void) const throw() {
+					return ("invalid method");
+				}
+		};
+
+		class InvalidBooleanException : public IParseConfigException {
+			public:
+				virtual const char*	what(void) const throw() {
+					return ("invalid boolean");
+				}
+		};
+
+		class InvalidRedirectionException : public IParseConfigException {
+			public:
+				virtual const char*	what(void) const throw() {
+					return ("invalid redirection status");
+				}
+		};
+
+		class DuplicateServerNameException : public IParseConfigException {
+			public:
+				virtual const char*	what(void) const throw() {
+					return ("an host with an identical server_name is already listening to this port");
 				}
 		};
 

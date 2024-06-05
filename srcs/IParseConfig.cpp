@@ -7,7 +7,7 @@ std::ifstream IParseConfig::_fileStream;
 std::string IParseConfig::_lineBuffer;
 int IParseConfig::_lineNbr = 1;
 int IParseConfig::_lineNbrEndOfBlock = 1;
-std::string IParseConfig::default_error_pages = "errors_default/";
+std::string IParseConfig::default_error_pages;
 
 bool IParseConfig::checkFilePath(const char *path)
 {
@@ -234,6 +234,7 @@ void IParseConfig::parseHost(std::istream &istream)
 	try
 	{
 		parseBlock(hostStream, &host, handleHostToken);
+		checkHost(host);
 		Host::addHost(host);
 	}
 	catch (IParseConfigException &e)
@@ -364,9 +365,11 @@ int IParseConfig::parseConfigFile(const char *path)
 		std::string tmp;
 		_fileStream.clear();
 		std::getline(_fileStream, tmp);
-		LOGE("parsing host at line %d : %s\n -> %sl", std::max(_lineNbr, _lineNbrEndOfBlock), e.what(), &tmp);
+		LOGE("parsing config file at line %d : %s\n -> %sl", std::max(_lineNbr, _lineNbrEndOfBlock), e.what(), &tmp);
 		return (1);
 	}
+	if (IParseConfig::default_error_pages == "")
+		throw (MissingTokenException("default_error_pages"));
 	return (0);
 }
 
@@ -374,7 +377,7 @@ void IParseConfig::handleConfigToken(const std::string &token)
 {
 	if (token == "server")
 		parseHost(_fileStream);
-	else if (token == "error_pages")
+	else if (token == "default_error_pages")
 	{
 		IParseConfig::default_error_pages.clear();
 		parsePath(_fileStream, IParseConfig::default_error_pages, "default error page location");
@@ -409,7 +412,7 @@ void IParseConfig::handleCGIConfigToken(std::stringstream &istream, const std::s
 {
 	CGIConfig &cgi = *(CGIConfig *)CGIConfigPtr;
 	if (token == "root")
-		parsePath(istream, cgi.root);
+		parsePath(istream, cgi.root, "root", '/');
 	else if (token == "methods")
 		parseAllowedMethods(istream, cgi.methods);
 	else if (token == "exec")
@@ -424,7 +427,7 @@ void IParseConfig::handleLocationToken(std::stringstream &istream, const std::st
 {
 	Location &location = *(Location *)locationPtr;
 	if (token == "root")
-		parsePath(istream, location.root);
+		parsePath(istream, location.root, "root", '/');
 	else if (token == "methods")
 		parseAllowedMethods(istream, location.methods);
 	else if (token == "dir_listing")
@@ -434,11 +437,29 @@ void IParseConfig::handleLocationToken(std::stringstream &istream, const std::st
 	else if (token == "default_uri")
 		parseUri(istream, location.default_uri);
 	else if (token == "upload_root")
-		parsePath(istream, location.upload_root);
+		parsePath(istream, location.upload_root, "upload_root", '/');
 	else if (token == "return")
 		parseRedirection(istream, location);
 	else
 		throw(UnknownTokenException(token));
+}
+
+/// @brief Check if host meets the requirment in terms of specified
+/// value, throw exceptions if a value is missing.
+/// @param host 
+void	IParseConfig::checkHost(Host& host) {
+	if (host.getAddr() == "")
+		throw (MissingTokenException("host address"));
+	if (host.getPorts().size() == 0)
+		throw (MissingTokenException("listen"));
+	if (host.getDirErrorPages() == "")
+		throw (MissingTokenException("error_pages"));
+	if (host.getServerNames().size() == 0)
+		throw (MissingTokenException("server_name"));
+	if (host.getLocation("*") == NULL)
+		throw (MissingTokenException("host default location `*`"));
+	if (ListenServer::checkServerNames(host._addr, host._ports, host._server_names) == false)
+		throw (DuplicateServerNameException());
 }
 
 void IParseConfig::parsePorts(std::istream &istream, Host &host)
@@ -448,14 +469,11 @@ void IParseConfig::parsePorts(std::istream &istream, Host &host)
 
 	parseValues(istream, ports);
 	if (ports.size() == 0)
-	{
-		LOGE("Port missing");
-		return;
-	}
+		throw (MissingTokenException("port"));
 	for (std::vector<std::string>::const_iterator it = ports.begin(); it != ports.end(); it++) {
 		if (getInt(*it, 10, dummy))
-			LOGE("Invalid port");
-			host._ports.insert(*it);
+			throw (InvalidPortException());
+		host._ports.insert(*it);
 	}
 	
 }
@@ -464,38 +482,23 @@ void IParseConfig::parseHostName(std::istream &istream, Host &host)
 {
 	std::string word;
 	if (getNextWord(istream, host._addr))
-	{
-		LOGE("Host missing");
-		return;
-	}
+		throw (MissingTokenException("host"));
 }
 
 void IParseConfig::parseServerName(std::istream &istream, Host &host)
 {
 	parseValues(istream, host._server_names);
 	if (host._server_names.size() == 0)
-	{
-		LOGE("Server name missing");
-		return;
-	}
-	// else
-	// {
-	// 	LOGI("Server names :");
-	// 	for (std::vector<std::string>::iterator it = host._server_names.begin(); it != host._server_names.end(); it++)
-	// 		LOGI("	- %ss", &*it);
-	// }
+		throw (MissingTokenException("server_name"));
 }
 
 void IParseConfig::parseBodyMaxSize(std::istream &istream, Host &host)
 {
 	std::string word;
 	if (getNextWord(istream, word))
-	{
-		LOGE("Max body size missing");
-		return;
-	}
+		throw (MissingTokenException("body_max_size"));
 	if (getInt(word, 10, host._body_max_size))
-		LOGE("Invalid max body size");
+		throw (InvalidMaxBodySizeException());
 }
 
 void IParseConfig::parseAllowedMethods(std::istream &istream, int &dest)
@@ -503,18 +506,12 @@ void IParseConfig::parseAllowedMethods(std::istream &istream, int &dest)
 	std::deque<std::string> methods;
 	parseValues(istream, methods);
 	if (methods.size() == 0)
-	{
-		LOGE("Method missing");
-		return;
-	}
+		throw (MissingTokenException("method"));
 	for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
 	{
 		int index = getMethodIndex(*it);
 		if (index < 0)
-		{
-			LOGE("Invalid method");
-			return;
-		}
+			throw (InvalidMethodException());
 		dest |= (1 << index);
 	}
 	// LOGI("Allowed methods :");
@@ -528,12 +525,12 @@ void IParseConfig::parseRedirection(std::istream &istream, Location &location)
 	std::deque<std::string> values;
 
 	parseValues(istream, values);
-	if (values.size() == 0)
-		LOGE("Empty redirection");
-	else if (values.size() != 2)
-		LOGE("Incorrect number of values for redirection");
-	else if (getInt(values.at(0), 10, redirectionStatus))
-		LOGE("Invalid redirection code");
+	if (values.size() < 2)
+		throw (MissingTokenException("redirection values"));
+	else if (getInt(values.at(0), 10, redirectionStatus)
+		|| redirectionStatus < 300 || redirectionStatus > 307
+		|| (redirectionStatus > 303 && redirectionStatus < 307))
+		throw (InvalidRedirectionException());
 	else
 	{
 		location.redir = redirectionStatus;
@@ -546,45 +543,35 @@ void IParseConfig::parseRedirection(std::istream &istream, Location &location)
 /// @param istream
 /// @param dest
 /// @param id
-void IParseConfig::parsePath(std::istream &istream, std::string &dest, const char *id)
+void IParseConfig::parsePath(std::istream &istream, std::string &dest, const char *id, char restrictEnd)
 {
 	if (getNextWord(istream, dest))
-	{
-		LOGE("%s is missing", id);
-		return;
-	}
+		throw (MissingTokenException(std::string(id)));
+	if (restrictEnd && dest.length() && dest[dest.length() - 1] != restrictEnd)
+		dest += restrictEnd;
 }
 
 void IParseConfig::parseExtension(std::istream &istream, std::string &dest)
 {
 	if (getNextWord(istream, dest))
-	{
-		LOGE("extension is missing");
-		return;
-	}
+		throw (MissingTokenException(std::string("identifier is missing")));
 }
 
 void IParseConfig::parseBoolean(std::istream &istream, bool &dest, const char *id)
 {
 	std::string word;
 	if (getNextWord(istream, word))
-	{
-		LOGE("%s is missing", id);
-		return;
-	}
+		throw (MissingTokenException(std::string(id)));
 	if (word == "on")
 		dest = true;
 	else if (word == "off")
 		dest = false;
 	else
-		LOGE("invalid value for %s", id);
+		throw (InvalidBooleanException());
 }
 
 void IParseConfig::parseUri(std::istream &istream, std::string &dest, const char *id)
 {
 	if (getNextWord(istream, dest))
-	{
-		LOGE("%s is missing", id);
-		return;
-	}
+		throw (MissingTokenException(std::string(id)));
 }

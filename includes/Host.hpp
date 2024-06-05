@@ -15,6 +15,11 @@
 class IParseConfig;
 class Client;
 
+#define DFT_VALUE_ADDR "localhost"
+#define DFT_VALUE_PORT "8080"
+#define DFT_VALUE_MAX_BODY_SIZE INT32_MAX
+#define DFT_VALUE_METHOD (1 << GET)
+
 typedef struct Location
 {
 	Location(void);
@@ -126,6 +131,7 @@ class	Host {
 		const std::vector<std::string>&	getServerNames(void) const;
 		std::list<Client*>::const_iterator	getClientListBegin(void) const;
 		std::list<Client*>::const_iterator	getClientListEnd(void) const;
+		const std::string&				getDirErrorPages(void) const;
 		bool							checkServerName(std::string const &name) const; // check if the name refers to a server_name
 
 		void							removeClient(Client*); //remove the Client associated with fd
