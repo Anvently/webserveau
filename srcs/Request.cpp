@@ -21,7 +21,7 @@ Request::Request()
 	  _content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0),
 	  _chunked_status(0), _trailer_status(0), _trailer_size(0),
 	  _final_status(ONGOING), _type(0), _method(-1) {}
-
+	
 Request::Request(const Request &copy)
 	: _headers(copy._headers), _formated_headers(copy._formated_headers),
 	  _uri(copy._uri), _status(copy._status),
@@ -38,6 +38,7 @@ Request::Request(const Request &copy)
 
 Request::~Request()
 {
+
 }
 
 void Request::trimSpace()
@@ -65,7 +66,7 @@ int Request::_fillError(int error, std::string const &verbose)
 
 void Request::addHeader(std::string const &name, std::string const &value)
 {
-	if (this->_headers[name] != "")
+	if (getHeader(name) != "")
 		this->_headers[name] += " ,";
 	this->_headers[name] += value;
 }
@@ -95,7 +96,6 @@ int Request::getLine(std::string &buffer)
 		return (1);
 	}
 	this->_line += buffer.substr(0, idx);
-	LOGD("line = %ss", &this->_line);
 	buffer = buffer.substr(idx + 2, std::string::npos);
 	return (0);
 }
@@ -217,10 +217,11 @@ int Request::parseHeaders(std::string &buffer)
 		while (this->_line[0] == 32 || this->_line[0] == 9)
 			this->_line.erase(0, 1);
 		header_value = this->_line;
-		if (this->_headers[header_name] != "")
-			this->_headers[header_name] += ", ";
-		this->_headers[header_name] += header_value;
-		this->_line = "";
+		if (getHeader(header_name) != "")
+			this->_headers[header_name] += ", " + header_value;
+		else
+			this->_headers[header_name] = header_value;
+		this->_line.clear();
 	}
 	this->_header_size -= buffer.size();
 	return (this->_checkSizes());
@@ -426,7 +427,7 @@ int Request::parseTrailerHeaders(std::string &buffer)
 			return (this->_fillError(431, "The " + header_name + " header was too large"));
 		this->trimSpace();
 		header_value = this->_line;
-		if (this->_headers[header_name] != "")
+		if (getHeader(header_name) != "")
 			this->_headers[header_name] += ", ";
 		this->_headers[header_name] += header_value;
 		this->_line = "";

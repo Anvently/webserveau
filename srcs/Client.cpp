@@ -36,14 +36,11 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 
 //!!! bodystream copy not allocated is it ok ?
 Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._addressStr), \
-	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), \
-	 _lastInteraction(copy._lastInteraction), \
+	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), _request(copy._request), \
+	_response(copy._response), _lastInteraction(copy._lastInteraction), \
 	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
 	_bodyFileName(copy._bodyFileName), _bodyStream(copy._bodyStream)
-{
-	this->_request = NULL;
-	this->_response = NULL;
-}
+{}
 
 int	Client::getTotalNbrClient(void) {
 	return (_clientList.size());
@@ -274,7 +271,7 @@ int	Client::getMode() const
 }
 
 void	Client::setMode(int mode) {
-	this->_mode = mode;
+	this->_mode = mode;	
 }
 
 const std::string&	Client::getBodyFile() const
