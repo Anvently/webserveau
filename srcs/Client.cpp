@@ -315,6 +315,8 @@ void	Client::checkTO()
 			it->_request->_fillError(408, "");
 			IControl::generateResponse(*it, 408);
 		}
+		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess
+		//if client has pid check the children time out
 	}
 }
 

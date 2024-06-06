@@ -7,117 +7,8 @@
 #include<queue>
 #include<iterator>
 #include <map>
-// int	pruneScheme(std::string &uri)
-// {
-// 	size_t	n = uri.find("://", 0);
-// 	if (n != std::string::npos)
-// 	{
-// 		if (uri.substr(0, n + 3) != "http://")
-// 			return (1);
-// 		uri.erase(0, n + 3);
-// 	}
-// 	return (0);
-// }
-
-// int	pruneDelim(std::string &uri, std::string delim)
-// {
-// 	size_t	idx = uri.find(delim, 0);
-// 	if (idx != std::string::npos)
-// 		uri.erase(0, idx + delim.size());
-// 	return (0);
-// }
-
-// std::string	extractPath(std::string &uri)
-// {
-// 	size_t	idx = uri.find("?", 0);
-// 	if (idx != std::string::npos)
-// 	{
-// 		std::string	path = uri.substr(0, idx);
-// 		uri.erase(0, idx + 1);
-// 		return (path);
-// 	}
-// 	else
-// 		return (uri);
-// }
-
-// int	checkPath(std::string &path)
-// {
-// 	int	level = 0;
-// 	size_t	idx = 0;
-// 	size_t	idxx = 0;
-// 	std::string	subpath;
-// 	std::vector<std::string> v;
-
-// 	while ((idx = path.find("//", 0)) != std::string::npos)
-// 		path.erase(idx, 1);
-// 	while ((idx = path.find("/./", 0)) != std::string::npos)
-// 		path.erase(idx, 2);
-// 	idx = 0;
-// 	while((idx = path.find("/", 0)) != std::string::npos)
-// 	{
-// 		subpath = path.substr(0, idx);
-// 		path.erase(0, idx + 1);
-// 		if (subpath == ".." && v.size() == 0)
-// 			return (1);
-// 		else if (subpath == ".." && v.size())
-// 			v.pop_back();
-// 		else
-// 			v.push_back(subpath);
-// 		subpath.clear();
-// 	}
-// 	v.push_back(path);
-// 	path.clear();
-// 	for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); it++)
-// 		path+= "/" + *it;
-// 	path.erase(0,1);
-// 	return (0);
-// }
-
-// std::string	getFilename(std::string path)
-// {
-// 	std::string	root;
-// 	if (path.empty() || path.back() == '/')
-// 	{
-// 		root = path;
-// 		std::cout << "ROOT is = " << root << std::endl;
-// 		return ("./");
-// 	}
-// 	size_t	idx = path.find_last_of("/");
-// 	root = path.substr(0, idx +1);
-// 	std::cout << "ROOT is = " << root << std::endl;
-// 	return (path.substr(idx + 1));
-// }
-
-// void	prunePath(std::string &path)
-// {
-// 	std::string	filename = getFilename(path);
-// 	std::cout << "\n filename = " << filename << "\n\n";
-// 	std::string extension;
-// 	size_t	idx = filename.find_last_of(".");
-// 	if (idx == std::string::npos)
-// 		extension = "";
-// 	else
-// 		extension = filename.substr(idx);
-// 	std::cout << "EXTENSION = " << extension << std::endl;
-// }
-
-
-// int	main()
-// {
-// 	std::string uri = "/dir1/index.php?var1=%25s&var2=%A3we";
-// 	std::string	path;
-// 	pruneScheme(uri);
-// 	std::cout << uri << std::endl << "\n";
-// 	pruneDelim(uri, "@");
-// 	std::cout << uri << std::endl << "\n";
-// 	pruneDelim(uri, "/");
-// 	path = extractPath(uri);
-// 	std::cout << "\n path = " << path << std::endl << "\n";
-// 	std::cout << "\n query = " << uri << "\n\n";
-// 	std::cout << checkPath(path) << "\n";
-// 	std::cout << path << std::endl << "\n";
-// 	prunePath(path);
-// }
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include <sstream>
 
@@ -139,19 +30,56 @@ static std::map<int, std::string> ResponseLine{{100, "Continue"}, {200, "OK"}, {
 
 #include<fstream>
 
+std::string _line;
+int _index = 0;
+
+int getLine(std::string &buffer)
+{
+    size_t  idx = buffer.find("\r\n", 0);
+    if (idx == std::string::npos)
+        return (0);
+    _line = buffer.substr(0, idx);
+    _index += idx + 2;
+    buffer = buffer.substr(idx + 2, std::string::npos);
+    return (1);
+}
+
+int extract_header()
+{
+  std::cout << _line << std::endl;
+  return (0);
+}
+
 int	main()
 {
-	int key = 410;
-  std::string value;
+	std::string output = "Content-Type: text/html\r\nStatus: 302\r\nLocation: http://ailleus.com:80/pasla/labas\r\n\r\nBody of size 15";
+  int fd = open("../cgi_output", O_TRUNC | O_WRONLY);
+  write(fd, output.c_str(), output.size());
+  close(fd);
+  char            *c_buffer = new char[124];
+  std::fstream  fstr("../cgi_output");
+  fstr.read(c_buffer, 124);
+  std::string     buffer(c_buffer, fstr.gcount());
+  fstr.close();
+  while(getLine(buffer))
+    {
+        if (_line.empty())
+            break;
+        if (extract_header())
+        {
+            return (0);
+        }
+    }
+    std::cout << "\nBuffer is at then end: " << buffer << " of size: " << buffer.size();
+    struct stat stats;
+    stat("../cgi_output", &stats);
+    std::cout << "\nstats of file:" <<  stats.st_size;
+    std::cout << "\nindex is: " << _index;
 
-  try{
-    value = ResponseLine.at(key);
-  }
-  catch(std::out_of_range &e)
-  {
-    value = "Out of range";
-  }
-  std::cout << value << "\n";
-
+    fstr.open("../cgi_output");
+    fstr.seekg(85);
+    std::string out;
+    fstr >> out;
+    std::cout << out;
 
 }
