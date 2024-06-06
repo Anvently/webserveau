@@ -57,6 +57,8 @@ struct CGIConfig;
 typedef struct ResHints {
 	std::string							path;
 	std::string							scriptPath;
+	std::string							bodyFileName;
+	std::string							cgiOutput;
 	bool								alreadyExist;
 	bool								unlink;
 	bool								hasBody;

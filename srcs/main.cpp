@@ -6,6 +6,7 @@
 #include <IControl.hpp>
 #include <IParseConfig.hpp>
 #include <IControl.hpp>
+#include <CGIProcess.hpp>
 
 #define EPOLL_EVENT_MAX_SIZE 100
 
@@ -55,14 +56,9 @@ static void	initLogs(void)
 	ILogger::printLogConfig();
 }
 
-static int	cleanExit(int code) {
-	if (ListenServer::getNbrServer())
-		ListenServer::removeServers();
-	ILogger::clearFiles();
-	return(code);
-}
 
-int	main(void)
+
+int	main(int argc, char **argv, char **env)
 {
 	int	epollfd = 0, nbr_events;
 	struct epoll_event	events[EPOLL_EVENT_MAX_SIZE];
@@ -72,12 +68,13 @@ int	main(void)
 		epollfd = epoll_create(1);
 		if (epollfd < 0) {
 			LOGE("Fatal error : could not create epoll");
-			return (cleanExit(1));
+			return (IControl::cleanExit(1));
 		}
 		IParseConfig::parseConfigFile("conf/template.conf");
+		CGIProcess::_env = env;
 		IControl::_epollfd = epollfd;
 		if (IControl::registerCommandPrompt())
-			return (cleanExit(1));
+			return (IControl::cleanExit(1));
 		ListenServer::startServers(epollfd);
 		LOGI("Servers have started");
 		while (ListenServer::getNbrServer()) {
@@ -88,10 +85,10 @@ int	main(void)
 			}
 			Client::checkTO();
 		}
-		return (cleanExit(0));
+		return (IControl::cleanExit(0));
 	}
 	catch (const std::exception& e) {
 		LOGE("%s", e.what());
-		return (cleanExit(1));
+		return (IControl::cleanExit(1));
 	}
 }

@@ -4,6 +4,7 @@
 #include <Request.hpp>
 #include <sys/time.h>
 #include <ctime>
+#include <IControl.hpp>
 
 int CGIProcess::parseHeaders(Request &request)
 {
@@ -111,6 +112,7 @@ int CGIProcess::execCGI(Request &request)
 {
     int pid;
     gettimeofday(&_fork_time, NULL);
+    request._resHints.cgiOutput = generate_name(request._resHints.path);
     pid = fork();
     if (pid == 0)
     {
@@ -127,9 +129,76 @@ int CGIProcess::execCGI(Request &request)
 
 void    CGIProcess::_launchCGI(Request &request)
 {
-    (void) request;
-    // set ENV variables with headers
-    //dup stdout into tmp file
-    //exec CGI
-    // exit nicely in case of error
+    int fd_out = open(request._resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
+    int fd_in;
+    if (!request._resHints.bodyFileName.empty())
+    {
+        fd_in = open(request._resHints.bodyFileName.c_str(), O_RDONLY);
+        dup2(fd_in, STDIN_FILENO);
+    }
+    dup2(fd_out, STDOUT_FILENO);
+    _setVariables(request);
+    //setup env variables
+    //dup stdin into the body input file ?
+    //exec CGI => script path in hints
+    throw(CGIProcess::child_exit_exception());
 }
+
+int CGIProcess::getStatus()
+{
+    return (_status);
+}
+
+int CGIProcess::getPID()
+{
+    return (_pid);
+}
+
+const char* CGIProcess::child_exit_exception::what() const throw() {
+
+    return ("Script failed");
+}
+
+void    CGIProcess::_setVariables(Request &request)
+{
+    setenv("REQUEST_METHOD", METHOD_STR[request._method].c_str(), 1);
+    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1); // which version to use ?
+    setenv("QUERY_STRING", request._parsedUri.query.c_str(), 1);
+    setenv("PATH_INFO", request._parsedUri.pathInfo.c_str(), 1);
+    setenv("SCRIPT_NAME", request._parsedUri.path.c_str(), 1);
+    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+    setenv("SERVER_NAME", request.getHeader("Host").c_str(), 1);
+}
+
+
+/*
+CGI ENV variables:
+
+CONTENT_TYPE -> if the input includes a body this is the content-type of the request
+GATEWAY_INTERFACE -> CGI/1.1
+PATH_INFO -> the path following the cgi in the uri
+PATH_TRANSLATED -> example http://host:port/path/to/script.cgi/path/info
+                    -> path info = /path/info
+                    ->path_translated = /root/path/info
+        IF path_info = NULL => path_translated=NULL
+
+QUERY STRING -> the query string, if not query set it as ""
+
+REMOTE_ADDR = the IP of the client ????
+REMOTE_HOST = domain name of the client
+
+REQUEST_METHOD -> get, post, delete (case sensitive)
+SCRIPT_NAME -> should identify the cgi script
+SERVER_NAME -> name of the server host dealing with the request (==Host: header)\
+SERVER_PORT -> ...
+SERVER_PROTOCOL -> HTTP/1.1
+
+
+
+
+
+
+
+
+
+*/

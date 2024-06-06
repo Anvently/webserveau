@@ -52,34 +52,6 @@ int extract_header()
 
 int	main()
 {
-	std::string output = "Content-Type: text/html\r\nStatus: 302\r\nLocation: http://ailleus.com:80/pasla/labas\r\n\r\nBody of size 15";
-  int fd = open("../cgi_output", O_TRUNC | O_WRONLY);
-  write(fd, output.c_str(), output.size());
-  close(fd);
-  char            *c_buffer = new char[124];
-  std::fstream  fstr("../cgi_output");
-  fstr.read(c_buffer, 124);
-  std::string     buffer(c_buffer, fstr.gcount());
-  fstr.close();
-  while(getLine(buffer))
-    {
-        if (_line.empty())
-            break;
-        if (extract_header())
-        {
-            return (0);
-        }
-    }
-    std::cout << "\nBuffer is at then end: " << buffer << " of size: " << buffer.size();
-    struct stat stats;
-    stat("../cgi_output", &stats);
-    std::cout << "\nstats of file:" <<  stats.st_size;
-    std::cout << "\nindex is: " << _index;
-
-    fstr.open("../cgi_output");
-    fstr.seekg(85);
-    std::string out;
-    fstr >> out;
-    std::cout << out;
+	
 
 }

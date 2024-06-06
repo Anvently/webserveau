@@ -2,6 +2,7 @@
 #include <string>
 #include <iterator>
 #include <map>
+#include <stdlib.h>
 
 class Request;
 typedef struct ResHints ResHints;
@@ -27,9 +28,11 @@ class CGIProcess {
 		int		_inspectHeaders(ResHints &hints);
 		int		_retrieveHeader(std::string key, std::string &value);
 		void	_launchCGI(Request &request);
+		void	_setVariables(Request &request);
 
 	public:
 
+		static char**						_env;
 		/// @brief
 		/// @return ```0``` if not finished, ```> 0``` if finished, ```< 0```
 		/// if error.
@@ -40,5 +43,15 @@ class CGIProcess {
 		/// @return Identify document type
 		int	parseHeaders(Request& request);
 		int	execCGI(Request& request);
+		int	getStatus();
+		int	getPID();
+		struct timeval	getForkTime();
+
+		class	child_exit_exception: public std::exception
+		{
+			public:
+				child_exit_exception();
+				const char* what() const throw();
+		};
 
 };
