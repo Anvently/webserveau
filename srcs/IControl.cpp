@@ -484,6 +484,7 @@ void	IControl::generateResponse(Client& client, int status)
 	}
 	catch(const std::exception& e)
 	{
+		LOGD("PING");
 		generateResponse(client, RES_INTERNAL_ERROR);
 		return ;
 	}
@@ -491,9 +492,7 @@ void	IControl::generateResponse(Client& client, int status)
 		response->writeResponse(client._outBuffers);
 	client.setResponse(response);
 	client.setMode(CLIENT_MODE_WRITE); //temporary
-
 	client.terminate(); //! tempory
-
 }
 
 int IControl::generateCGIProcess(Client& client) {

@@ -10,7 +10,6 @@
 std::list<Client>	Client::_clientList;
 
 Client::~Client(void) {
-
 	if (_request)
 		delete(_request);
 	if (_response)

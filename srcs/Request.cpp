@@ -23,7 +23,7 @@ Request::Request()
 	  _final_status(ONGOING), _type(0), _method(-1) {}
 	
 Request::Request(const Request &copy)
-	: _headers(copy._headers), _formated_headers(copy._formated_headers),
+	:  _formated_headers(copy._formated_headers),
 	  _uri(copy._uri), _status(copy._status),
 	  _header_size(copy._header_size), _line(copy._line), _hostname(copy._hostname),
 	  _body_max_size(copy._body_max_size),
@@ -31,7 +31,7 @@ Request::Request(const Request &copy)
 	  _chunked(copy._chunked), _b_status(copy._b_status),
 	  _chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status),
 	  _trailer_status(copy._trailer_status), _trailer_size(copy._trailer_size),
-	  _final_status(copy._final_status), _type(copy._type),
+	  _final_status(copy._final_status), _headers(copy._headers), _type(copy._type),
 	  _method(copy._method), _parsedUri(copy._parsedUri), _resHints(copy._resHints)
 {
 }
@@ -62,13 +62,6 @@ int Request::_fillError(int error, std::string const &verbose)
 	this->_line.clear();
 	this->_final_status = ERROR;
 	return (error);
-}
-
-void Request::addHeader(std::string const &name, std::string const &value)
-{
-	if (getHeader(name) != "")
-		this->_headers[name] += " ,";
-	this->_headers[name] += value;
 }
 
 void Request::formatHeaders()
