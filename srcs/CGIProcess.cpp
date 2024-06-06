@@ -50,3 +50,38 @@ int CGIProcess::_extract_header()
     _line.clear();
     return (0);
 }
+
+int CGIProcess::_retrieveHeader(std::string key, std::string &value)
+{
+    try{
+        value = _cgi_headers.at(key);
+        return (1);
+    }
+    catch(std::out_of_range &e)
+    {
+        return (0);
+    }
+}
+
+
+int CGIProcess::_inspectHeaders()
+{
+    std::string value;
+    if (_retrieveHeader("Location", value))
+    {
+        //discriminate between internal location or client redirection
+
+    }
+    if (_retrieveHeader("Status", value))
+    {
+        //update the status in hints
+    }
+    else{
+        // 200 status
+    }
+    if (_retrieveHeader("Content-Type"))
+    {
+        //update the content type header
+    }
+
+}

@@ -141,13 +141,17 @@ static std::map<int, std::string> ResponseLine{{100, "Continue"}, {200, "OK"}, {
 
 int	main()
 {
-	std::fstream fstr;
-  fstr.open("a.out", std::ios::binary | std::ios::in);
-  if (!fstr.is_open())
-    std::cout << "Could not open \n";
-  char  str[20];
-  fstr.read(str, 20);
-  std::cout << fstr.gcount();
+	int key = 410;
+  std::string value;
+
+  try{
+    value = ResponseLine.at(key);
+  }
+  catch(std::out_of_range &e)
+  {
+    value = "Out of range";
+  }
+  std::cout << value << "\n";
 
 
 }

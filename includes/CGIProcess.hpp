@@ -16,6 +16,8 @@ class CGIProcess {
 
 		int	_getLine(std::string &buffer);
 		int	_extract_header();
+		int	_inspectHeaders();
+		int	_retrieveHeader(std::string key, std::string &value);
 
 	public:
 
@@ -25,7 +27,7 @@ class CGIProcess {
 		int	checkEnd() {return (0);}
 
 		/// @brief Add potential header to resHints, change the status
-		/// @param 
+		/// @param
 		/// @return Identify document type
 		int	parseHeaders(Request&) {return (0);}
 
