@@ -91,6 +91,7 @@ class IControl
 
 		static void	generateResponse(Client& client, int status = 0);
 		static int	generateCGIProcess(Client& client);
+		static int	cleanExit(int code);
 
 };
 

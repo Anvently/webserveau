@@ -175,7 +175,7 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 					client.clear();
 					client.setMode(CLIENT_MODE_READ);
 					return (0);
-				} 
+				}
 				client.terminate();
 			}
 		}
@@ -206,10 +206,10 @@ int	IControl::handleClientIn(Client& client)
 	return (res);
 }
 
-/// @brief 
-/// @param client 
+/// @brief
+/// @param client
 /// @return ```0``` if response if not sent yet, ```> 0``` if response sent
-/// and connection is to be kept alive, ```< 0``` if connection is to be closed. 
+/// and connection is to be kept alive, ```< 0``` if connection is to be closed.
 int	IControl::handleClientOut(Client& client) {
 	(void) client;
 	client.getResponse()->writeResponse(client._outBuffers);
@@ -221,9 +221,9 @@ int	IControl::handleClientHup(Client& client) {
 	return (0);
 }
 
-/// @brief 
-/// @param client 
-/// @return 
+/// @brief
+/// @param client
+/// @return
 int	IControl::handleCGIProcess(Client& client) {
 	int	res = client._cgiProcess->checkEnd();
 	if (res == 0)
@@ -450,13 +450,21 @@ void	IControl::generateResponse(Client& client, int status)
 	if (response)
 		response->writeResponse(client._outBuffers);
 	client.setResponse(response);
-	
+
 }
 
 int IControl::generateCGIProcess(Client& client) {
 	(void)client;
 	return (0);
 }
+
+int	IControl::cleanExit(int code) {
+	if (ListenServer::getNbrServer())
+		ListenServer::removeServers();
+	ILogger::clearFiles();
+	return(code);
+}
+
 
 /**
 
@@ -467,7 +475,7 @@ switch (status)
 			break;
 
 		case RES_OK: //For Static/dir GET or CGI operation
-			
+
 				If cgi
 					- file path
 					- cgiConfig
@@ -476,7 +484,7 @@ switch (status)
 					- locationRule
 				If static
 					- file path
-			
+
 			break;
 
 		case RES_CREATED: //Need path

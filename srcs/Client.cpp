@@ -282,9 +282,17 @@ const std::string&	Client::getBodyFile() const
 void	Client::setBodyFile(const std::string& path)
 {
 	if (path != "")
+	{
 		_bodyStream = new std::ofstream(path.c_str(), std::ios_base::trunc);
+		_bodyFileName = path;
+		this->_request->_resHints.bodyFileName = path;
+	}
 	else
+	{
 		_bodyStream = NULL;
+		_bodyFileName = "";
+		this->_request->_resHints.bodyFileName = path;
+	}
 }
 
 AResponse*	Client::getResponse() {
@@ -315,8 +323,12 @@ void	Client::checkTO()
 			it->_request->_fillError(408, "");
 			IControl::generateResponse(*it, 408);
 		}
-		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess
-		//if client has pid check the children time out
+		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess->getStatus() == CHILD_RUNNING && getDuration(it->_cgiProcess->getForkTime()) > CGI_TIME_OUT)
+		{
+			kill(it->_cgiProcess->getPID(), SIGKILL);
+			it->_request->_fillError(500, "Internal server error");
+			IControl::generateResponse(*it, 500);
+		}
 	}
 }
 

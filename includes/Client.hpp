@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <stdint.h>
 #include <sys/time.h>
+#include <signal.h>
 
 
 // class Request;
@@ -25,6 +26,8 @@
 #ifndef BUFFER_SIZE
 # define BUFFER_SIZE 4096
 #endif
+
+#define CGI_TIME_OUT 30000
 
 #define HEADER_STATUS_ONGOING 0
 #define HEADER_STATUS_READY 1
