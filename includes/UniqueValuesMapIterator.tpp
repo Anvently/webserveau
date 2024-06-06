@@ -17,7 +17,6 @@ class UniqueValuesMapIterator_const
 		std::set<Value>									_uniqueValues;
 
 	public:
-
 		UniqueValuesMapIterator_const(typename std::map<Key, Value>::const_iterator it) \
 			: _baseIt(it), _uniqueValues() {}
 		UniqueValuesMapIterator_const(const UniqueValuesMapIterator_const& copy) : \
@@ -30,6 +29,30 @@ class UniqueValuesMapIterator_const
 			_baseIt = copy;
 			_uniqueValues.clear();
 		}
+		UniqueValuesMapIterator_const&	safePreIncrement(const typename std::map<Key, Value>::const_iterator& end) {
+			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
+			do {
+				++_baseIt;
+			} while (_baseIt != end && std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
+			return (*this);
+		};
+		UniqueValuesMapIterator_const	safePostIncrement(const typename std::map<Key, Value>::const_iterator& end) {
+			UniqueValuesMapIterator_const	tmp(*this);
+			this->safePreIncrement(end);
+			return (tmp);
+		};
+		UniqueValuesMapIterator_const&	safePreDecrement(const typename std::map<Key, Value>::const_iterator& begin) {
+			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
+			do {
+				--_baseIt;
+			} while (_baseIt != begin && std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
+			return (*this);
+		};
+		UniqueValuesMapIterator_const	safePostDecrement(const typename std::map<Key, Value>::const_iterator& begin) {
+			UniqueValuesMapIterator_const	tmp(*this);
+			this->safePreIncrement(begin);
+			return (tmp);
+		};
 		const typename std::pair<const Key, Value>&	operator*(void) const {
 			return (*_baseIt);
 		}
@@ -116,6 +139,30 @@ class UniqueValuesMapIterator
 		bool	operator!=(const typename std::map<Key, Value>::iterator& rhi) const {
 			return (_baseIt != rhi);
 		}
+		UniqueValuesMapIterator&	safePreIncrement(const typename std::map<Key, Value>::iterator& end) {
+			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
+			do {
+				++_baseIt;
+			} while (_baseIt != end && std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
+			return (*this);
+		};
+		UniqueValuesMapIterator	safePostIncrement(const typename std::map<Key, Value>::iterator& end) {
+			UniqueValuesMapIterator	tmp(*this);
+			this->safePreIncrement(end);
+			return (tmp);
+		};
+		UniqueValuesMapIterator&	safePreDecrement(const typename std::map<Key, Value>::iterator& begin) {
+			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
+			do {
+				--_baseIt;
+			} while (_baseIt != begin && std::find(_uniqueValues.begin(), _uniqueValues.end(), _baseIt->second) != _uniqueValues.end());
+			return (*this);
+		};
+		UniqueValuesMapIterator	safePostDecrement(const typename std::map<Key, Value>::iterator& begin) {
+			UniqueValuesMapIterator	tmp(*this);
+			this->safePreIncrement(begin);
+			return (tmp);
+		};
 		UniqueValuesMapIterator&	operator++(void) {
 			_uniqueValues.insert(_uniqueValues.end(), _baseIt->second);
 			do {

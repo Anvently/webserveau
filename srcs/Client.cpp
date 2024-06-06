@@ -15,8 +15,11 @@ Client::~Client(void) {
 		delete(_request);
 	if (_response)
 		delete(_response);
-	if (_bodyStream)
+	if (_bodyStream) {
 		_bodyStream->close();
+		delete _bodyStream;
+	}
+
 	// !!!! bodystream allocated
 }
 
@@ -310,12 +313,16 @@ void	Client::checkTO()
 	{
 		if (it->getMode() == CLIENT_MODE_READ && getDuration(it->_lastInteraction) > CLIENT_TIME_OUT)
 		{
+			if (it->_request == NULL) {
+				it->terminate();
+				return;
+			}
 			it->setMode(CLIENT_MODE_WRITE);
 			it->_request->setStatus(COMPLETE);
 			it->_request->_fillError(408, "");
 			IControl::generateResponse(*it, 408);
 		}
-		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess
+		// else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess
 		//if client has pid check the children time out
 	}
 }
@@ -346,6 +353,7 @@ void	Client::clear() {
 }
 
 void	Client::terminate(void) {
+	LOGD("terminating client");
 	clear();
 	if (_host) {
 		_host->removeClient(this);

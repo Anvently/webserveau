@@ -29,7 +29,7 @@ class Host;
 
 class ListenServer : public IObject
 {
-	private:
+	public:
 
 		ListenServer(void);
 		ListenServer(std::string const &hostAddr, std::string const &hostPort);

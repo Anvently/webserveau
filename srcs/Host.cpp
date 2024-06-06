@@ -441,8 +441,8 @@ int	Host::checkRessourceExistence(Request& request) const {
 	std::string	path;
 	int			res;
 	if (request._type == REQ_TYPE_CGI) {
-		path = request._resHints.cgiRules->root + request._parsedUri.path;
-		res = checkRessourcePath(path, REQ_TYPE_CGI);
+		request._resHints.scriptPath = request._resHints.cgiRules->root + request._parsedUri.path;
+		res = checkRessourcePath(request._resHints.scriptPath, REQ_TYPE_CGI);
 	} else {
 		if (request._method == POST) {
 			path = (request._resHints.locationRules->upload_root != "" ? \
@@ -450,8 +450,8 @@ int	Host::checkRessourceExistence(Request& request) const {
 							request._resHints.locationRules->root);
 			res = checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR);
 		} else {
-			path = request._resHints.locationRules->root + request._parsedUri.path;
-			res = checkRessourcePath(path, request._type);
+			request._resHints.path = request._resHints.locationRules->root + request._parsedUri.path;
+			res = checkRessourcePath(request._resHints.path, request._type);
 		}
 	}
 	request._resHints.status = res;

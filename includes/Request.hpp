@@ -19,7 +19,6 @@
 #define SP " "
 
 
-
 enum {none, chuncked, mesured};
 enum {GET, POST, DELETE};
 enum {TERM, ONGOING, NEW};
@@ -57,6 +56,7 @@ struct CGIConfig;
 
 typedef struct ResHints {
 	std::string							path;
+	std::string							scriptPath;
 	bool								alreadyExist;
 	bool								unlink;
 	bool								hasBody;
@@ -90,7 +90,7 @@ struct i_less {
 		return ((unsigned char) *s1 - (unsigned char) *s2);
 	};
 	bool operator() (const std::string& lhs, const std::string& rhs) const {
-		return stricmp(lhs.c_str(), rhs.c_str()) < 0;
+		return (stricmp(lhs.c_str(), rhs.c_str()) != 0);
 	}
 };
 

@@ -19,23 +19,23 @@
 #define RES_OK 200
 #define RES_CREATED 201
 #define RES_NO_CONTENT 204
-#define RES_MULTIPLE_CHOICE 300
-#define RES_MOVED_PERMANENTLY 301
-#define RES_FOUND 302
-#define RES_SEE_OTHER 303
-#define RES_TEMPORARY_REDIRECT 307
-#define RES_BAD_REQUEST 400
-#define RES_FORBIDDEN 403
-#define RES_NOT_FOUND 404
-#define RES_METHOD_NOT_ALLOWED 405
-#define RES_TIMEOUT 408
-#define RES_LENGTH_REQUIRED 411
-#define RES_REQUEST_ENTITY_TOO_LARGE 413
-#define RES_REQUEST_URI_TOO_LONG 414
-#define RES_EXPECTATION_FAILED 417
-#define RES_INTERNAL_ERROR 500
-#define RES_NOT_IMPLEMENTED 501
-
+#define RES_MULTIPLE_CHOICE 300 //Dynamic
+#define RES_MOVED_PERMANENTLY 301 //Dynamic
+#define RES_FOUND 302 //Dynamic
+#define RES_SEE_OTHER 303 //Dynamic
+#define RES_TEMPORARY_REDIRECT 307 //Dynamic
+#define RES_BAD_REQUEST 400 //Dynamic
+#define RES_FORBIDDEN 403 //full static
+#define RES_NOT_FOUND 404 //full static
+#define RES_METHOD_NOT_ALLOWED 405 //full static
+#define RES_TIMEOUT 408 //full static
+#define RES_LENGTH_REQUIRED 411 //full static
+#define RES_REQUEST_ENTITY_TOO_LARGE 413 //full static
+#define RES_REQUEST_URI_TOO_LONG 414 //full static
+#define RES_EXPECTATION_FAILED 417 //full static
+#define RES_INTERNAL_ERROR 500 //Dynamic
+#define RES_NOT_IMPLEMENTED 501 //Dynamic
+#define RES_HTTP_VERSION_NOT_SUPPORTED 505 //full static
 
 
 /*
