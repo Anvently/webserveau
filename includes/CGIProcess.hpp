@@ -1,12 +1,16 @@
 #include <iostream>
 #include <string>
 #include <iterator>
+#include <map>
 #include <stdlib.h>
 
 class Request;
+typedef struct ResHints ResHints;
 
 enum	CGI_RES_TYPE {CGI_RES_DOC = 0, CGI_RES_LOCAL_REDIRECT, CGI_RES_CLIENT_REDIRECT};
 enum	CHILD_STATUS {CHILD_RUNNING, CHILD_TERM};
+
+
 
 class CGIProcess {
 

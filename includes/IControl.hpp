@@ -67,6 +67,8 @@ class IControl
 		static int	handleRequestHeaders(Client& client, Request& request);
 		static int	defineBodyParsing(Client& client, Request& request);
 		static int	handleRequestBodyDone(Request& request);
+		static void	fillErrorPage(const Host* host, ResHints& request);
+		static void	fillAdditionnalHeaders(Request& request);
 
 		static int	checkForbiddenHeaders(Request& request);
 		static int	assignHost(Client& client, Request& request);

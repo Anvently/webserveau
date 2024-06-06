@@ -24,11 +24,10 @@ TODO
 
 
 	- Parsing headers
+		- add verification about HTTP protocol
 		- Verifiy : 
 			- cookies ?
 		- check unknown methods ?
-		- check headers defining response behaviour :
-			- connection: keep-alive
 
 	- Mimetype static class
 	- errors static class

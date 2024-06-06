@@ -8,7 +8,7 @@
 
 int CGIProcess::parseHeaders(Request &request)
 {
-    std::fstream    fstream(request._resHints.path);
+    std::fstream    fstream(request._resHints.path.c_str());
     char            *c_buffer = new char[HEADER_MAX_SIZE];
     fstream.read(c_buffer, HEADER_MAX_SIZE);
     std::string     buffer(c_buffer, fstream.gcount());
@@ -82,7 +82,7 @@ int CGIProcess::_inspectHeaders(ResHints &hints)
         }
         return (0);
     }
-    else if (_retrieveHeader("Location", value) && value.front() == '/')
+    else if (_retrieveHeader("Location", value) && value[0] == '/')
     {
         hints.redir_type = REDIR_LOCAL;
         hints.path = value;
@@ -124,6 +124,7 @@ int CGIProcess::execCGI(Request &request)
         _status = CHILD_RUNNING;
         return (0);
     }
+    return (0);
 }
 
 void    CGIProcess::_launchCGI(Request &request)

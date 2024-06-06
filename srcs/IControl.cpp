@@ -193,7 +193,10 @@ int	IControl::handleClientIn(Client& client)
 		return (0);
 	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
-
+	if (n_read == 0) {
+		client.terminate();
+		return (0);
+	}
 	res = client.parseRequest(buffer_c, n_read);
 	if (res < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
@@ -269,6 +272,15 @@ int	IControl::checkForbiddenHeaders(Request& request) {
 	request._resHints.status = RES_NOT_IMPLEMENTED;
 	return (RES_NOT_IMPLEMENTED);
 }
+
+/*
+[4] line = GET / HTTP/1.1
+[4] line = Host: localhost:8080
+[3] line = GET / HTTP/1.1
+[3] line = Host: localhost:8080
+
+
+*/
 
 /**
 @brief check if host is given, empty or not, assign correct or first host found.
@@ -417,6 +429,33 @@ int	IControl::handleRequestBodyDone(Request& request)
 	return (RES_OK);
 }
 
+std::string	IntToString(int x, int base);
+
+/// @brief Check if there is an error status that requires to find the
+/// corresponding static error page
+/// @param host
+/// @param request
+void	IControl::fillErrorPage(const Host* host, ResHints& resHints) {
+	if ((resHints.status > 400 && resHints.status < 418)
+		|| resHints.status == 505)  {
+		if (host)
+			resHints.path = host->getDirErrorPages() \
+				+ IntToString(resHints.status, 10) + ".html";
+		else
+			resHints.path =  IParseConfig::default_error_pages \
+				+ IntToString(resHints.status, 10) + ".html";
+	}
+}
+
+/// @brief Add any additionnal header such as ```connection``` if success status
+/// @param request
+void	IControl::fillAdditionnalHeaders(Request& request) {
+	if (request._resHints.status >= 200 && request._resHints.status < 300)
+		request._resHints.headers["connection"] = request.getHeader("connection");
+	else
+		request._resHints.headers["connection"] = "close";
+}
+
 /// @brief Generate an appropriate response type from the given
 /// status.
 /// @param client
@@ -431,7 +470,8 @@ void	IControl::generateResponse(Client& client, int status)
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
 		return ; //Not sure
-
+	fillErrorPage(client.getHost(), request._resHints);
+	fillAdditionnalHeaders(request);
 	if (status)
 		request._resHints.status = status;
 	if (request._resHints.status)
@@ -450,6 +490,8 @@ void	IControl::generateResponse(Client& client, int status)
 	if (response)
 		response->writeResponse(client._outBuffers);
 	client.setResponse(response);
+
+	client.terminate(); //! tempory
 
 }
 

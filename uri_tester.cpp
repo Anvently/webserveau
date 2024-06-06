@@ -195,7 +195,7 @@ T*	getObjectMatch(const typename std::map<std::string, T*>& map, const std::stri
 
 }
 
-inline char	lowercase(char c) {
+inline char	lowercase(unsigned char c) {
 		if (c >= 'A' && c <= 'Z')
 			return (c + ('a' - 'A'));
 		return (c);
@@ -248,10 +248,10 @@ int	main(void) {
 	else
 		std::cout << "no best match\n";
 
-	// std::map<std::string, std::string, i_less>	maptest;
-	// maptest["Host"] = "pouet";
-	// std::cout << "Host = " << maptest["Host"] << std::endl;
-	// std::cout << "host = " << maptest["host"] << std::endl;
-	// std::cout << "host == Host ? " << s_stricmp("host", "Host") << std::endl;
+	std::map<std::string, std::string, i_less>	maptest;
+	maptest["Host"] = "pouet";
+	std::cout << "Host = " << maptest["Host"] << std::endl;
+	std::cout << "host = " << maptest["host"] << std::endl;
+	std::cout << "host == Host ? " << s_stricmp("host", "Host") << std::endl;
 	return (0);
 }
