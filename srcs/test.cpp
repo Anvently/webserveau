@@ -52,6 +52,12 @@ int extract_header()
 
 int	main()
 {
-	
+	int fd = open("../test", O_RDONLY);
+  char  buff[200];
+  int n_read = read(fd, buff, 200);
+  std::string str(buff, n_read);
+  size_t  n = str.find("\r\n", 0);
+  if (n == std::string::npos)
+    std::cout << "No rn found \n";
 
 }

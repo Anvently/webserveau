@@ -131,8 +131,9 @@ int CGIProcess::execCGI(Client &client)
 
 void    CGIProcess::_launchCGI(Client &client)
 {
-    int fd_out = open(client.getRequest()->_resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
-    int fd_in;
+    int     fd_out = open(client.getRequest()->_resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
+    int     fd_in;
+    char    **argv;
     if (!client.getRequest()->_resHints.bodyFileName.empty())
     {
         fd_in = open(client.getRequest()->_resHints.bodyFileName.c_str(), O_RDONLY);
@@ -140,7 +141,6 @@ void    CGIProcess::_launchCGI(Client &client)
     }
     dup2(fd_out, STDOUT_FILENO);
     _setVariables(client);
-    //setup env variables
     //dup stdin into the body input file ?
     //exec CGI => script path in hints
     throw(CGIProcess::child_exit_exception());
@@ -164,6 +164,7 @@ const char* CGIProcess::child_exit_exception::what() const throw() {
 void    CGIProcess::_setVariables(Client &client)
 {
     Request request = *client.getRequest();
+    std::string         str;
 
     setenv("REQUEST_METHOD", METHOD_STR[request._method].c_str(), 1);
     setenv("QUERY_STRING", request._parsedUri.query.c_str(), 1);
@@ -174,18 +175,24 @@ void    CGIProcess::_setVariables(Client &client)
     setenv("REMOTE_ADDR", client.getStrAddr().c_str(), 1);
     setenv("SERVER_PORT", IntToString(client.getAddrPort(), 10).c_str(), 1);
 
-    if (!request._parsedUri.pathInfo().empty())
+    if (!request._parsedUri.pathInfo.empty())
     {
         setenv("PATH_INFO", request._parsedUri.pathInfo.c_str(), 1);
-        setenv("PATH_TRANSLATED", "", 1); //TODODODODODODO
+        str = request._resHints.cgiRules->root + request._parsedUri.pathInfo;
+        setenv("PATH_TRANSLATED", str.c_str() , 1); //TODODODODODODO
     }
     else
     {
         setenv("PATH_INFO", NULL, 1);
         setenv("PATH_TRANSLATED", NULL, 1);
     }
-    setenv("SCRIPT_NAME", request._parsedUri.path.c_str(), 1); //Not sure which variable to use
+    setenv("SCRIPT_NAME", request._resHints.scriptPath.c_str(), 1); //Not sure which variable to use
+    if (request._resHints.hasBody && _retrieveHeader("Content-Type", str))
+        setenv("CONTENT_TYPE", str.c_str(), 1);
+    else
+        unsetenv("CONTENT_TYPE");
 
+    
 }
 
 
