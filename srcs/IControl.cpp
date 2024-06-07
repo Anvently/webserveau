@@ -118,7 +118,7 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 	ListenServer*	ptr_listenS;
 
 	if (nbr_event < 1)
-		return (0);
+		return (-1);
 	for (int i = 0; i < nbr_event; i++)
 	{
 		// LOGD("event => fd = %d | event = %d", events[i].data.fd, events[i].events);
@@ -503,7 +503,7 @@ void	IControl::generateResponse(Client& client, int status)
 		response->writeResponse(client._outBuffers);
 	client.setResponse(response);
 	client.setMode(CLIENT_MODE_WRITE); //temporary
-	// client.terminate(); //! tempory
+	client.terminate(); //! tempory
 }
 
 int IControl::generateCGIProcess(Client& client) {

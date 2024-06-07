@@ -89,7 +89,7 @@ int Request::getLine(std::string &buffer)
 		return (1);
 	}
 	this->_line += buffer.substr(0, idx);
-	buffer = buffer.substr(idx + 2, std::string::npos);
+	buffer = buffer.substr(idx + strlen(CRLF), std::string::npos);
 	return (0);
 }
 
@@ -157,6 +157,7 @@ int Request::parseRequestLine()
 	std::string::size_type idx = 0;
 	std::string::size_type r_idx = 0;
 	std::string version;
+	// LOGD("line = %ss", &_line);
 	nextSpace(idx, this->_line);
 	if ((this->_method = identifyMethod(this->_line.substr(0, idx))) < 0)
 		return (this->_fillError(405, "Method Not Allowd"));
@@ -180,8 +181,8 @@ int Request::parseHeaders(std::string &buffer)
 	this->_header_size += buffer.size();
 	if (this->_status == NEW)
 	{
-		while (!isalpha(buffer[0]))
-			buffer.erase(0, 1);
+		// while (buffer.empty() == false && !isalpha(buffer[0]))
+			// buffer.erase(0, 1);
 		if (this->getLine(buffer))
 			return (this->_checkSizes());
 		if (this->_line.size() > HEADER_MAX_SIZE)
@@ -299,7 +300,7 @@ int Request::getChunkedSize(std::string &buffer)
 	this->_chunked_body_size -= this->_line.size();
 	this->_len = len;
 	this->_line = "";
-	buffer = buffer.substr(idx + 2, std::string::npos);
+	buffer = buffer.substr(idx + strlen(CRLF), std::string::npos);
 	this->_chunked_status = 1;
 	return (0);
 }
@@ -438,7 +439,7 @@ int Request::parseTrailerHeaders(std::string &buffer)
 
 int Request::_checkSizes()
 {
-	if (this->_status == ONGOING)
+	if (this->_status == ONGOING || this->_status == NEW)
 	{
 		if (this->_header_size > HEADER_MAX_BUFFER * HEADER_MAX_SIZE || this->_line.size() > HEADER_MAX_SIZE)
 			return (this->_fillError(431, "Request header too large"));

@@ -1,36 +1,25 @@
-#include <stdio.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/epoll.h>
-#include <netdb.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/epoll.h>
 #include <string.h>
+#include <netdb.h>
 
 #define NBR_CLIENTS 10
-
-#define HTTP_HEADER_200(length) "HTTP/1.1 200 OK\r\n" \
-								"Content-type: text/html\r\n" \
-								"Connection: keep-alive\r\n" \
-								"Content-Length: "length"\r\n\r\n"
-
-#define HTTP_HEADER_301(location) "HTTP/1.1 301 Moved Permanently\r\n" \
-								"Location: "location"\r\n\r\n"
 
 typedef	struct s_client {
 	int				fd;
 	struct sockaddr	addr;
 	socklen_t		addr_size;
 	char			addr_str[32];
-	char			port_str[16];
-	int				nbr_request;
-	char			buffer_out[256];
 }				t_client;
 
 int	error(char *str, t_client* clients, int passive_socket)
@@ -70,16 +59,13 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 int	create_listen_socket(void)
 {
 	int	passive_sock = 0, val = 1;
-	int	geta = 0;
 	struct	addrinfo	*addr, hints;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_PASSIVE; //Suitable for binding a listening socket
 	hints.ai_family = AF_UNSPEC; //getaddrinfo() will return address for any family
 	hints.ai_socktype = SOCK_STREAM;
-	if ((geta = getaddrinfo(NULL, "8080", &hints, &addr)))
-	{
+	if (getaddrinfo("127.0.0.1", "8080", &hints, &addr))
 		return (-1);
-	}
 	passive_sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 	if (passive_sock < 0)
 		return (-1);
@@ -89,7 +75,6 @@ int	create_listen_socket(void)
 		close(passive_sock);
 		return (-1);
 	}
-	freeaddrinfo(addr);
 	return (passive_sock);
 }
 
@@ -111,7 +96,7 @@ int	accept_new_client(t_client*	clients, int epollfd, int passive_sock)
 		error ("accept", clients, passive_sock);
 	get_ip_str(&clients[i].addr, clients[i].addr_str, sizeof(clients[i].addr_str));
 	// inet_ntop(AF_INET, &((struct sockaddr_in *)&clients[i].addr)->sin_addr, clients[i].addr_str, 16);
-	printf("accept was done (fd = %d / %s / %d)\n", clients[i].fd, clients[i].addr_str, htons((((struct sockaddr_in *)clients[i].addr.sa_data)->sin_port)));
+	printf("accept was done (fd = %d / %s)\n", clients[i].fd, clients[i].addr_str);
 	ev.data.fd = clients[i].fd;
 	ev.events = EPOLLIN | EPOLLHUP;// | EPOLLET;
 	// fcntl(client_sock[client_index], F_SETFL , fcntl(client_sock[client_index], F_GETFL, 0) | O_NONBLOCK);
@@ -123,15 +108,6 @@ int	accept_new_client(t_client*	clients, int epollfd, int passive_sock)
 int	connection_close_client(t_client* client)
 {
 	printf("Interruption detected with client (fd %d), %s", client->fd, client->addr_str);
-	close(client->fd);
-	client->fd = -1;
-	return (0);
-}
-
-int	response_301(t_client* client)
-{
-	const char*	res = HTTP_HEADER_301("response2");
-	write(client->fd, res, strlen(res));
 	close(client->fd);
 	client->fd = -1;
 	return (0);
@@ -150,42 +126,7 @@ int	response_200(t_client* client)
 	return (0);
 }
 
-int	response_file(int epollfd, t_client* client)
-{
-	struct epoll_event ev;
-	FILE*				file;
-
-	file = fopen("response", "r");
-	if (file == NULL)
-		return (-1);
-	ev.data.ptr = client->buffer_out;
-	ev.events |= EPOLLIN;
-	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, file->_fileno, &ev)) {
-		perror("error: ");
-		printf("Cannot add file to epoll\n");
-		return (1);
-	}
-	return (0);
-}
-
-// int	response_php(t_client* client)
-// {
-// 	char**	args = {"-r", "echo \"Hello world\\n\""};
-
-
-// 	return (0);
-// }
-\
-int	read_file(int epollfd, int filefd, void* buffer_out)
-{
-	(void) epollfd;
-	(void) filefd;
-	(void) buffer_out;
-	printf("Reading from file\n");
-	return (0);
-}
-
-int	read_client(int epollfd, t_client* client)
+int	read_client(t_client* client)
 {
 	int		nread;
 	char	buffer[1024] = {0} ;
@@ -203,37 +144,17 @@ int	read_client(int epollfd, t_client* client)
 	buffer[nread] = '\0';
 	printf("%d bytes were read from client (fd = %d / %s): %s", nread, client->fd, client->addr_str, buffer);
 	fflush(stdout);
-	response_file(epollfd, client);
-	client->nbr_request++;
+	response_200(client);
 	return(0);
-}
-
-int	write_client(t_client* client, int epollfd)
-{
-	int		nwrite;
-	struct epoll_event ev;
-	
-	if (client->buffer_out[0] == -1) //If nothing left to write
-	{
-		ev.data.fd = client->fd;
-		ev.events = EPOLLIN | EPOLLHUP;
-		epoll_ctl(epollfd, EPOLL_CTL_MOD, client->fd, &ev);
-	}
-	else if (client->buffer_out[0] == '\0')
-		return (0);
-	nwrite = write(client->fd, client->buffer_out, strlen(client->buffer_out));
-	if (nwrite < 0)
-		return (nwrite);
-	return (0);
 }
 
 void	print_clients(t_client* clients)
 {
 	for (int i=0; i < NBR_CLIENTS; i++)
 		if (clients[i].fd >= 0)
-			printf("	- fd %d / %s / %d\n", clients[i].fd, clients[i].addr_str, htons((((struct sockaddr_in *)clients[i].addr.sa_data)->sin_port)));
+			printf("	- fd %d / %s\n", clients[i].fd, clients[i].addr_str);
 }
-
+	
 int	read_stdin(t_client* clients, struct epoll_event* ev)
 {
 	char	buffer[16] = {0};
@@ -246,8 +167,6 @@ int	read_stdin(t_client* clients, struct epoll_event* ev)
 		return (-1);
 	if (strncmp(buffer, "status", 6) == 0)
 		print_clients(clients);
-	if (strncmp(buffer, "exit", 5) == 0)
-		exit(0);
 	return (0);
 }
 
@@ -281,27 +200,24 @@ int	event_loop(t_client* clients, int epollfd, int passive_sock)
 				for (index = 0; index < NBR_CLIENTS && clients[index].fd != events[i].data.fd; index++);
 				if (index == NBR_CLIENTS)
 				{
-					read_file(epollfd, events[i].events, events[i].data.ptr);
-					// printf("event (%u) from unkown client (fd %d)\n", events[i].events, events[i].data.fd);
-					// error(NULL, clients, passive_sock);
+					printf("event (%u) from unkown client (fd %d)\n", events[i].events, events[i].data.fd);
+					error(NULL, clients, passive_sock);
 				}
 				// printf("Client index = %d\n", index);
 				if (events[i].events & EPOLLHUP)
-					connection_close_client(&clients[index]);
+					connection_close_client(&clients[index]);	
 				else if (events[i].events & EPOLLIN)
 				{
-					if (read_client(epollfd, &clients[index]) < 0)
+					if (read_client(&clients[index]) < 0)
 						error("reading from client", clients, passive_sock);
 				}
-				else if (events[i].events & EPOLLOUT)
-				{
-					if (write_client(&clients[index], epollfd) < 0)
-						error("writing from client", clients, passive_sock);
-				}
+					
 			}
 		}
 	}
 }
+
+
 
 int	main(void)
 {

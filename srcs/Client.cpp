@@ -315,7 +315,7 @@ void	Client::deleteBodyStream()
 
 void	Client::checkTO()
 {
-	for (std::list<Client>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
+	for (std::list<Client>::iterator it = _clientList.begin(); it != _clientList.end();)
 	{
 		if (it->getMode() == CLIENT_MODE_READ && getDuration(it->_lastInteraction) > CLIENT_TIME_OUT)
 		{
@@ -326,7 +326,7 @@ void	Client::checkTO()
 			it->setMode(CLIENT_MODE_WRITE);
 			it->_request->setStatus(COMPLETE);
 			it->_request->_fillError(408, "");
-			IControl::generateResponse(*it, 408);
+			IControl::generateResponse(*it++, 408);
 		}
 		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess
 			&& it->_cgiProcess->getStatus() == CHILD_RUNNING
@@ -334,8 +334,10 @@ void	Client::checkTO()
 		{
 			kill(it->_cgiProcess->getPID(), SIGKILL);
 			it->_request->_fillError(500, "Internal server error");
-			IControl::generateResponse(*it, 500);
+			IControl::generateResponse(*it++, 500);
 		}
+		else
+			it++;
 	}
 }
 
