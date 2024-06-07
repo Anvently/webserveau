@@ -54,9 +54,11 @@ typedef struct URI
 struct Location;
 struct CGIConfig;
 
+//http:localhost:80/cgi-bin/script.php/images/pic.jpg
+//path translated = root + pathinfo
 typedef struct ResHints {
-	std::string							path;
-	std::string							scriptPath;
+	std::string							path; // /cgi-bin/script.php
+	std::string							scriptPath; // root + path
 	std::string							bodyFileName;
 	std::string							cgiOutput;
 	bool								alreadyExist;
