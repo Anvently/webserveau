@@ -44,7 +44,7 @@ int	ListenServer::registerHost(Host *host)
 		if (registerHost(host, *it))
 			res = 1;
 	}
-	return (1);
+	return (res);
 }
 
 /// @brief Either assign the host to a listenServer if one is already linked

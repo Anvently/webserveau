@@ -9,13 +9,14 @@ static	std::string	months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", 
 
 
 static std::map<int, std::string> ResponseLine;
+/*
 // {{100, "Continue"}, {200, "OK"}, {201, "Created"}, {204, "No Content"}, \
 // {300, "Multiple Choices"}, {301, "Move Permanently"}, {302, "Found"}, {307, "Temporary Redirect"}, \
 // {308, "Permanent Redirect"}, {400, "Bad Request"}, {401, "Unauthorized"}, {403, "Forbidden"}, {404, "Not Found"}, \
 // {405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
 // {415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
 // {505, "HTTP Version Not Supported"}};
-
+*/
 
 SingleLineResponse::SingleLineResponse(int status, const std::string& description)
 {

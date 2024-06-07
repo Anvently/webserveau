@@ -341,7 +341,7 @@ int Request::_parseChunked(std::string &buffer, std::ofstream *filestream)
 int Request::parseBody(std::string &buffer, std::ofstream *filestream)
 {
 	if (this->_b_status == TERM || buffer.empty())
-		return (0);
+		return (-1);
 	if (this->_b_status == NEW)
 	{
 		// if (this->getLenInfo() || this->_b_status == COMPLETE)
@@ -359,6 +359,14 @@ int Request::parseBody(std::string &buffer, std::ofstream *filestream)
 int Request::getStatus(void) const
 {
 	return (this->_final_status);
+}
+
+void	Request::setContentLength(int value) {
+	_content_length = value;
+}
+
+void	Request::setChunked(bool value) {
+	_chunked = value;
 }
 
 void Request::printRequest() const
@@ -464,13 +472,14 @@ void Request::setBodyMaxSize(int size)
 
 int Request::parseInput(std::string &buffer, std::ofstream *filestream)
 {
+	int	res = 0;
 	if (this->_final_status > TRAILER || buffer.empty())
 		return (0);
-	if (this->parseBody(buffer, filestream))
-		return (getError());
-	if (this->parseTrailerHeaders(buffer))
-		return (getError());
-	return (0);
+	if ((res = this->parseBody(buffer, filestream)))
+		return (res);
+	if ((res = this->parseTrailerHeaders(buffer)))
+		return (res);
+	return (res);
 }
 
 bool Request::checkHeader(const std::string &key) const

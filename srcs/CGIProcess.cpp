@@ -174,15 +174,17 @@ void    CGIProcess::_setVariables(Client &client)
     setenv("REMOTE_ADDR", client.getStrAddr().c_str(), 1);
     setenv("SERVER_PORT", IntToString(client.getAddrPort(), 10).c_str(), 1);
 
-    if (!request._parsedUri.pathInfo().empty())
+    if (!request._parsedUri.pathInfo.empty())
     {
         setenv("PATH_INFO", request._parsedUri.pathInfo.c_str(), 1);
         setenv("PATH_TRANSLATED", "", 1); //TODODODODODODO
     }
     else
     {
-        setenv("PATH_INFO", NULL, 1);
-        setenv("PATH_TRANSLATED", NULL, 1);
+        unsetenv("PATH_INFO");
+        unsetenv("PATH_TRANSLATED");
+        // setenv("PATH_INFO", NULL, 1);
+        // setenv("PATH_TRANSLATED", NULL, 1);
     }
     setenv("SCRIPT_NAME", request._parsedUri.path.c_str(), 1); //Not sure which variable to use
 

@@ -202,8 +202,9 @@ int	IControl::handleClientIn(Client& client)
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
 			res = handleRequestHeaders(client, *client.getRequest());
 			defineBodyParsing(client, *client.getRequest());
+			res = client.parseRequest("", 0);
 		}
-		if (res == 0 && client.getBodyStatus() != BODY_STATUS_ONGOING)
+		if (res <= 0 && client.getBodyStatus() != BODY_STATUS_ONGOING)
 			res = handleRequestBodyDone(*client.getRequest());
 	}
 	return (res);
@@ -311,9 +312,13 @@ int	IControl::checkBodyLength(Client& client, Request& request)
 			request._resHints.status = RES_REQUEST_ENTITY_TOO_LARGE;
 			return (RES_REQUEST_ENTITY_TOO_LARGE);
 		}
+		else if (bodyLength > 0)
+			request.setContentLength(bodyLength);
 	}
-	if (bodyLength != -1 || request.getHeader("transfer-encoding") == "chunked")
+	if (bodyLength > 0 || request.getHeader("transfer-encoding") == "chunked")
 	{
+		if (request.getHeader("transfer-encoding") == "chunked")
+			request.setChunked(true);
 		client.setBodyStatus(BODY_STATUS_ONGOING);
 		request.setBodyMaxSize(client.getHost()->getMaxSize());
 	}
@@ -417,6 +422,8 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 	return (0);
 }
 
+// int	IControl::parseBodyB
+
 int	IControl::handleRequestBodyDone(Request& request)
 {
 	if (request._type == REQ_TYPE_STATIC) {
@@ -492,7 +499,7 @@ void	IControl::generateResponse(Client& client, int status)
 		response->writeResponse(client._outBuffers);
 	client.setResponse(response);
 	client.setMode(CLIENT_MODE_WRITE); //temporary
-	client.terminate(); //! tempory
+	// client.terminate(); //! tempory
 }
 
 int IControl::generateCGIProcess(Client& client) {

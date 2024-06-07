@@ -4,6 +4,7 @@
 #include <map>
 #include <stdlib.h>
 
+class Client;
 class Request;
 typedef struct ResHints ResHints;
 
