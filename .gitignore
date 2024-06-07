@@ -3,3 +3,7 @@ a.out
 *.o
 .objs/
 *.out
+tmp/*
+logs/*
+tmp/
+logs/

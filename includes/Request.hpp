@@ -77,6 +77,7 @@ typedef struct ResHints {
 } ResHints;
 
 
+
 struct i_less {
 	static inline char	lowercase(char c) {
 		if (c >= 'A' && c <= 'Z')
@@ -89,10 +90,10 @@ struct i_less {
 			s1++;
 			s2++;
 		}
-		return ((unsigned char) *s1 - (unsigned char) *s2);
+		return (((unsigned char) lowercase(*s1)) - ((unsigned char) lowercase(*s2)));
 	};
 	bool operator() (const std::string& lhs, const std::string& rhs) const {
-		return (stricmp(lhs.c_str(), rhs.c_str()) != 0);
+		return ((stricmp(lhs.c_str(), rhs.c_str()) < 0));
 	}
 };
 
@@ -100,7 +101,6 @@ class	Request
 {
 	private:
 
-		std::map<std::string, std::string, i_less>	_headers;
 		std::string							_formated_headers;
 		std::string							_uri;
 		int									_status;
@@ -132,6 +132,7 @@ class	Request
 		Request(const Request& copy);
 		~Request();
 
+		std::map<std::string, std::string, i_less>	_headers;
 		int									_type;
 		int									_method;
 		URI									_parsedUri;

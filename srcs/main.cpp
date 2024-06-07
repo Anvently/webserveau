@@ -58,7 +58,7 @@ static void	initLogs(void)
 
 
 
-int	main(int argc, char **argv, char **env)
+int	main(int, char **, char **env)
 {
 	int	epollfd = 0, nbr_events;
 	struct epoll_event	events[EPOLL_EVENT_MAX_SIZE];

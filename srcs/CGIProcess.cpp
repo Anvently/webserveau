@@ -6,6 +6,8 @@
 #include <ctime>
 #include <IControl.hpp>
 
+char**  CGIProcess::_env;
+
 int CGIProcess::parseHeaders(Request &request)
 {
     std::fstream    fstream(request._resHints.path.c_str());

@@ -45,12 +45,12 @@ class CGIProcess {
 		int	execCGI(Client &client);
 		int	getStatus();
 		int	getPID();
-		struct timeval	getForkTime();
+		struct timeval	getForkTime() {return (_fork_time);}
 
 		class	child_exit_exception: public std::exception
 		{
 			public:
-				child_exit_exception();
+				child_exit_exception() {}
 				const char* what() const throw();
 		};
 

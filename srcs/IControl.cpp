@@ -163,7 +163,7 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 				generateResponse(client, res);
 			else if ((res = generateCGIProcess(client)))
 				generateResponse(client, RES_INTERNAL_ERROR);
-			client.setMode(CLIENT_MODE_WRITE);
+			// client.setMode(CLIENT_MODE_WRITE);
 		}
 	}
 	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
@@ -484,15 +484,15 @@ void	IControl::generateResponse(Client& client, int status)
 	}
 	catch(const std::exception& e)
 	{
+		LOGD("PING");
 		generateResponse(client, RES_INTERNAL_ERROR);
 		return ;
 	}
 	if (response)
 		response->writeResponse(client._outBuffers);
 	client.setResponse(response);
-
+	client.setMode(CLIENT_MODE_WRITE); //temporary
 	client.terminate(); //! tempory
-
 }
 
 int IControl::generateCGIProcess(Client& client) {
