@@ -1,16 +1,3 @@
-POST http://localhost:8080/index.php HTTP/1.1
-Host: server3
-Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
-Accept-Encoding: gzip, deflate, br, zstd
-Connection: keep-alive
-Upgrade-Insecure-Requests: 1
-Sec-Fetch-Dest: document
-Sec-Fetch-Mode: navigate
-Sec-Fetch-Site: none
-Sec-Fetch-User: ?1
-Priority: u=1
-Transfer-encoding: chunked
-
 wdwefwefwefwef
 wefwefwefwef
 wefwefbweifwnfweiufwe

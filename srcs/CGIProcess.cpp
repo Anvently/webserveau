@@ -134,6 +134,7 @@ void    CGIProcess::_launchCGI(Client &client)
     int     fd_out = open(client.getRequest()->_resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
     int     fd_in;
     char    **argv;
+    (void) argv;
     if (!client.getRequest()->_resHints.bodyFileName.empty())
     {
         fd_in = open(client.getRequest()->_resHints.bodyFileName.c_str(), O_RDONLY);

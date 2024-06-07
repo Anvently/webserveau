@@ -178,7 +178,7 @@ void	Host::addClient(Client* newClient) {
 /// @param
 void	Host::shutdown(void) {
 	for (std::list<Client*>::iterator it = _clients.begin(); it != _clients.end(); it++)
-		Client::deleteClient(*it);
+		(*it)->terminate();
 }
 
 void	Host::addCGIConfig(const std::deque<std::string>& names, CGIConfig& cgiConfig)

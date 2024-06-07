@@ -93,7 +93,6 @@ void	Client::deleteClient(Client* client)
 {
 	if (client == NULL)
 		return;
-	client->shutdownConnection();
 	std::list<Client>::iterator pos = findClient(client);
 	if (pos != _clientList.end())
 		_clientList.erase(pos);
@@ -303,13 +302,15 @@ void	Client::setResponse(AResponse* response) {
 	this->_response = response;
 }
 
-void	Client::deleteBodyFile()
+/// @brief Delete body stream and associated file 
+void	Client::deleteBodyStream()
 {
 	if (_bodyStream) {
 		delete _bodyStream;
 		_bodyStream = NULL;
+		if (_request && _request->_resHints.unlink == true)
+			unlink(_bodyFileName.c_str());
 	}
-	unlink(_bodyFileName.c_str());
 }
 
 void	Client::checkTO()
@@ -348,10 +349,11 @@ void	Client::deleteCGIProcess() {
 		delete _cgiProcess;
 		_cgiProcess = NULL;
 	}
-	deleteBodyFile();
+	deleteBodyStream();
 }
 
 void	Client::clear() {
+	deleteBodyStream();
 	if (_request) {
 		delete _request;
 		_request = NULL;
@@ -360,7 +362,6 @@ void	Client::clear() {
 		delete _response;
 		_response = NULL;
 	}
-	deleteBodyFile();
 }
 
 void	Client::terminate(void) {
@@ -370,5 +371,6 @@ void	Client::terminate(void) {
 		_host->removeClient(this);
 	}
 	_listenServer.removeClient(this);
+	close(_socket.fd);
 	Client::deleteClient(this);
 }

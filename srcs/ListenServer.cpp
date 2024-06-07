@@ -135,8 +135,13 @@ void	ListenServer::removeServer(std::list<ListenServer>::iterator it)
 		it->shutdown();
 	for (std::list<Client*>::iterator clientIt = it->_orphanClients.begin(); clientIt != it->_orphanClients.end();)
 	{
-		Client::deleteClient(*clientIt);
-		it->_orphanClients.remove(*clientIt++);
+		(*clientIt++)->terminate();
+		// it->_orphanClients.remove(*clientIt++);
+	}
+	for (std::list<Client*>::iterator clientIt = it->_connectedClients.begin(); clientIt != it->_connectedClients.end();)
+	{
+		(*clientIt++)->terminate();
+		// it->_connectedClients.remove(*clientIt++);
 	}
 	for (UniqueValuesMapIterator<std::string, Host*> hostIt = it->_hostMap.begin(); hostIt != it->_hostMap.end();)
 	{
@@ -246,7 +251,6 @@ void	ListenServer::unassignHost(Host* host) {
 	this->_nbrHost--;
 	host->removeListenServer(this);
 	LOGI("Host (%ss) was unassigned from %ss:%ss", &host->getServerNames().at(0), &this->_ip, &this->_port);
-	// Host::removeHost(host);
 }
 
 // add the socket to the epoll interest list with a pointer to ListenServer in event.data. Then tells the socket to listen.

@@ -200,7 +200,8 @@ int	IControl::handleClientIn(Client& client)
 	res = client.parseRequest(buffer_c, n_read);
 	if (res < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
-			res = handleRequestHeaders(client, *client.getRequest());
+			if ((res = handleRequestHeaders(client, *client.getRequest())))
+				return (res);
 			defineBodyParsing(client, *client.getRequest());
 			res = client.parseRequest("", 0);
 		}
@@ -388,14 +389,16 @@ static int	checkFileExist(const char *path) {
 
 int	IControl::defineBodyParsing(Client& client, Request& request)
 {
-	if (request._type == REQ_TYPE_CGI)
+	if (request._type == REQ_TYPE_CGI) {
 		client.setBodyFile(generate_name(client.getHost()->getServerNames().front()));
+		request._resHints.unlink = true;
+	}
 	else if (request._type == REQ_TYPE_STATIC && request._method == POST) {
 		std::string	filePath;
-		filePath = request._resHints.locationRules->root \
-			+ (request._resHints.locationRules->upload_root != "" ? \
-					request._resHints.locationRules->upload_root : "") \
-			+ request._parsedUri.path;
+		filePath =  (request._resHints.locationRules->upload_root != "" ? \
+					request._resHints.locationRules->upload_root : \
+					request._resHints.locationRules->root) \
+					+ request._parsedUri.path;
 		switch (checkFileExist(filePath.c_str()))
 		{
 			case FILE_DONT_EXIT:
@@ -414,6 +417,7 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 		}
 		request._resHints.path = filePath;
 		client.setBodyFile(filePath);
+		request._resHints.unlink = false;
 	}
 	else {
 		client.setBodyFile("");

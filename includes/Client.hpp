@@ -138,7 +138,7 @@ class	Client : public IObject
 		void				setResponse(AResponse*);
 
 		void				shutdownConnection(void);
-		void				deleteBodyFile();
+		void				deleteBodyStream();
 		void				deleteCGIProcess();
 		void				clear(void);
 		void				terminate();

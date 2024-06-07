@@ -12,7 +12,7 @@
 #include <vector>
 
 
-#define HEADER_MAX_SIZE 4096
+#define HEADER_MAX_SIZE 500
 #define	HEADER_MAX_BUFFER 4
 
 #define CRLF "\r\n"
