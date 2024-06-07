@@ -108,15 +108,15 @@ int CGIProcess::_inspectHeaders(ResHints &hints)
     return (0);
 }
 
-int CGIProcess::execCGI(Request &request)
+int CGIProcess::execCGI(Client &client)
 {
     int pid;
     gettimeofday(&_fork_time, NULL);
-    request._resHints.cgiOutput = generate_name(request._resHints.path);
+    client.getRequest()->_resHints.cgiOutput = generate_name(client.getRequest()->_resHints.path);
     pid = fork();
     if (pid == 0)
     {
-        _launchCGI(request);
+        _launchCGI(client);
     }
     else
     {
@@ -127,17 +127,17 @@ int CGIProcess::execCGI(Request &request)
     return (0);
 }
 
-void    CGIProcess::_launchCGI(Request &request)
+void    CGIProcess::_launchCGI(Client &client)
 {
-    int fd_out = open(request._resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
+    int fd_out = open(client.getRequest()->_resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
     int fd_in;
-    if (!request._resHints.bodyFileName.empty())
+    if (!client.getRequest()->_resHints.bodyFileName.empty())
     {
-        fd_in = open(request._resHints.bodyFileName.c_str(), O_RDONLY);
+        fd_in = open(client.getRequest()->_resHints.bodyFileName.c_str(), O_RDONLY);
         dup2(fd_in, STDIN_FILENO);
     }
     dup2(fd_out, STDOUT_FILENO);
-    _setVariables(request);
+    _setVariables(client);
     //setup env variables
     //dup stdin into the body input file ?
     //exec CGI => script path in hints
@@ -159,15 +159,31 @@ const char* CGIProcess::child_exit_exception::what() const throw() {
     return ("Script failed");
 }
 
-void    CGIProcess::_setVariables(Request &request)
+void    CGIProcess::_setVariables(Client &client)
 {
+    Request request = *client.getRequest();
+
     setenv("REQUEST_METHOD", METHOD_STR[request._method].c_str(), 1);
-    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1); // which version to use ?
     setenv("QUERY_STRING", request._parsedUri.query.c_str(), 1);
-    setenv("PATH_INFO", request._parsedUri.pathInfo.c_str(), 1);
-    setenv("SCRIPT_NAME", request._parsedUri.path.c_str(), 1);
+
+    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1); // which version to use ?
     setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
     setenv("SERVER_NAME", request.getHeader("Host").c_str(), 1);
+    setenv("REMOTE_ADDR", client.getStrAddr().c_str(), 1);
+    setenv("SERVER_PORT", IntToString(client.getAddrPort(), 10).c_str(), 1);
+
+    if (!request._parsedUri.pathInfo().empty())
+    {
+        setenv("PATH_INFO", request._parsedUri.pathInfo.c_str(), 1);
+        setenv("PATH_TRANSLATED", "", 1); //TODODODODODODO
+    }
+    else
+    {
+        setenv("PATH_INFO", NULL, 1);
+        setenv("PATH_TRANSLATED", NULL, 1);
+    }
+    setenv("SCRIPT_NAME", request._parsedUri.path.c_str(), 1); //Not sure which variable to use
+
 }
 
 

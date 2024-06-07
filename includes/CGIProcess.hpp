@@ -10,7 +10,7 @@ typedef struct ResHints ResHints;
 enum	CGI_RES_TYPE {CGI_RES_DOC = 0, CGI_RES_LOCAL_REDIRECT, CGI_RES_CLIENT_REDIRECT};
 enum	CHILD_STATUS {CHILD_RUNNING, CHILD_TERM};
 
-
+std::string	IntToString(int x, int base);
 
 class CGIProcess {
 
@@ -27,8 +27,8 @@ class CGIProcess {
 		int		_extract_header();
 		int		_inspectHeaders(ResHints &hints);
 		int		_retrieveHeader(std::string key, std::string &value);
-		void	_launchCGI(Request &request);
-		void	_setVariables(Request &request);
+		void	_launchCGI(Client &client);
+		void	_setVariables(Client &Client);
 
 	public:
 
@@ -42,7 +42,7 @@ class CGIProcess {
 		/// @param
 		/// @return Identify document type
 		int	parseHeaders(Request& request);
-		int	execCGI(Request& request);
+		int	execCGI(Client &client);
 		int	getStatus();
 		int	getPID();
 		struct timeval	getForkTime();
