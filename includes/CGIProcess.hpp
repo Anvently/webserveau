@@ -17,21 +17,27 @@ class CGIProcess {
 
 	private:
 
+		CGIProcess();
+
 		std::string							_line;
 		size_t								_index;
 		std::map<std::string, std::string> 	_cgi_headers;
 		struct timeval						_fork_time;
 		int									_pid;
 		int									_status;
+		Request&							_request;
+		Client&								_client;
 
 		int		_getLine(std::string &buffer);
 		int		_extract_header();
-		int		_inspectHeaders(ResHints &hints);
+		int		_inspectHeaders();
 		int		_retrieveHeader(std::string key, std::string &value);
-		void	_launchCGI(Client &client);
-		void	_setVariables(Client &Client);
+		void	_launchCGI();
+		void	_setVariables();
 
 	public:
+
+		CGIProcess(Client& client);
 
 		static char**						_env;
 		/// @brief
@@ -42,8 +48,8 @@ class CGIProcess {
 		/// @brief Add potential header to resHints, change the status
 		/// @param
 		/// @return Identify document type
-		int	parseHeaders(Request& request);
-		int	execCGI(Client &client);
+		int	parseHeaders();
+		int	execCGI();
 		int	getStatus();
 		int	getPID();
 		struct timeval	getForkTime() {return (_fork_time);}

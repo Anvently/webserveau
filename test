@@ -1,6 +1,7 @@
 POST /index.php HTTP/1.1
 host: server1
 transfer-encoding: chunked
+expect: 100-continue
 
 5
 abcde

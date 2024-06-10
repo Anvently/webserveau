@@ -103,6 +103,7 @@ class	Request
 {
 	private:
 
+		std::map<std::string, std::string, i_less>	_headers;
 		std::string							_formated_headers;
 		std::string							_uri;
 		int									_status;
@@ -134,11 +135,10 @@ class	Request
 		Request(const Request& copy);
 		~Request();
 
-		std::map<std::string, std::string, i_less>	_headers;
-		int									_type;
-		int									_method;
-		URI									_parsedUri;
-		ResHints							_resHints;
+		int									type;
+		int									method;
+		URI									parsedUri;
+		ResHints							resHints;
 
 		void		addHeader(std::string const &name, std::string const &value);
 		int			getLine(std::string &buffer);

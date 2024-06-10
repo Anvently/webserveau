@@ -13,6 +13,8 @@
 # define BUFFER_SIZE 4096
 #endif
 
+enum	RES_SENT_SITUATION {SITUATION_CLOSE, SITUATION_KEEP_ALIVE, SITUATION_CONTINUE};
+
 class IControl
 {
 	private :

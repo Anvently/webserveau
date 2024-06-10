@@ -22,7 +22,7 @@ std::map<int, std::string>	init_response()
 	mipmap.insert(std::pair<int, std::string>(307, "Temporary Redirect"));
 
 
-
+	return(mipmap);
 }
 
 static std::map<int, std::string> ResponseLine = init_response();
@@ -33,7 +33,7 @@ static std::map<int, std::string> ResponseLine = init_response();
 // {405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
 // {415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
 // {505, "HTTP Version Not Supported"}};
-
+*/
 
 SingleLineResponse::SingleLineResponse(int status, const std::string& description)
 {
@@ -87,14 +87,14 @@ void	HeaderResponse::addUniversalHeaders()
 
 void	HeaderResponse::addHeader(std::string const &key, std::string const &value)
 {
-	_headers.insert({key, value});
+	_headers.insert(std::pair<std::string, std::string>(key, value));
 }
 
 void	HeaderResponse::addHintHeaders(ResHints &hints)
 {
 	for (std::map<std::string, std::string>::iterator it = hints.headers.begin(); it != hints.headers.end(); it++)
 	{
-		_headers.insert({it->first, it->second});
+		_headers.insert(std::pair<std::string, std::string>(it->first, it->second));
 	}
 }
 
@@ -124,11 +124,6 @@ int	HeaderResponse::writeResponse(std::queue<std::string>& outQueue)
 	return (0);
 }
 
-AResponse*	AResponse::genResponse(ResHints& hints) {
-	(void)hints;
-	return (NULL);
-}
-
 FileResponse::~FileResponse(void) {}
 
 
@@ -144,10 +139,6 @@ int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
 	return (0);
 }
 
-DynamicResponse::DynamicResponse(int status, const Request& request) {
-	(void) status;
-	(void) request;
-}
 
 DynamicResponse::~DynamicResponse(void) {}
 
@@ -168,8 +159,9 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 	{
 		response = new DynamicResponse(hints.status, hints.verboseError);
 		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
-		static_cast<DynamicResponse *>(response)->
+		// static_cast<DynamicResponse *>(response)->
 	}
+	return (NULL);
 
 }
 

@@ -163,20 +163,23 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 				generateResponse(client, res);
 			else if ((res = generateCGIProcess(client)))
 				generateResponse(client, RES_INTERNAL_ERROR);
-			// client.setMode(CLIENT_MODE_WRITE);
 		}
 	}
 	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
-		if (client._cgiProcess)
+		if (client.cgiProcess)
 			handleCGIProcess(client);
 		if (client.getResponse()) {
 			if ((res = handleClientOut(client))) {
-				if (res > 0) {
+				if (res == SITUATION_KEEP_ALIVE) {
 					client.clear();
 					client.setMode(CLIENT_MODE_READ);
 					return (0);
+				} else if (res == SITUATION_CONTINUE) {
+					client.clearResponse();
+					client.setMode(CLIENT_MODE_READ);
 				}
-				client.terminate();
+				else
+					client.terminate();
 			}
 		}
 	} else if ((event->events & EPOLLHUP) || client.getMode() == CLIENT_MODE_ERROR)
@@ -202,8 +205,8 @@ int	IControl::handleClientIn(Client& client)
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
 			if ((res = handleRequestHeaders(client, *client.getRequest())))
 				return (res);
-			defineBodyParsing(client, *client.getRequest());
-			res = client.parseRequest("", 0);
+			if (client.getBodyStatus() != BODY_STATUS_NONE)
+				res = client.parseRequest("", 0);
 		}
 		if (res <= 0 && client.getBodyStatus() != BODY_STATUS_ONGOING)
 			res = handleRequestBodyDone(*client.getRequest());
@@ -217,12 +220,13 @@ int	IControl::handleClientIn(Client& client)
 /// and connection is to be kept alive, ```< 0``` if connection is to be closed.
 int	IControl::handleClientOut(Client& client) {
 	(void) client;
-	client.getResponse()->writeResponse(client._outBuffers);
+	client.getResponse()->writeResponse(client.outBuffers);
 	return (0);
 }
 
 int	IControl::handleClientHup(Client& client) {
 	client.terminate();
+	LOGD("EPOLLHUP !!!");
 	return (0);
 }
 
@@ -230,13 +234,13 @@ int	IControl::handleClientHup(Client& client) {
 /// @param client
 /// @return
 int	IControl::handleCGIProcess(Client& client) {
-	int	res = client._cgiProcess->checkEnd();
+	int	res = client.cgiProcess->checkEnd();
 	if (res == 0)
 		return (0);
 	if (res < 0)
 		generateResponse(client, RES_INTERNAL_ERROR);
 	else if (res > 0) {
-		res = client._cgiProcess->parseHeaders(*client.getRequest());
+		res = client.cgiProcess->parseHeaders();
 		if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
 			generateResponse(client);
 		else if (res == CGI_RES_LOCAL_REDIRECT) {
@@ -263,15 +267,15 @@ int	IControl::handleCGIProcess(Client& client) {
 **/
 int	IControl::checkForbiddenHeaders(Request& request) {
 	if (request.getHeader("accept-ranges") != "") {
-		request._resHints.verboseError = "accept-range header not implemented";
+		request.resHints.verboseError = "accept-range header not implemented";
 	} else if (request.checkHeader("content-encoding") && request.getHeader("content-encoding") != "identity") {
-		request._resHints.verboseError = "identity is the only value supported for content-encoding";
+		request.resHints.verboseError = "identity is the only value supported for content-encoding";
 	} else if (request.checkHeader("transfer-encoding") && request.getHeader("transfer-encoding") != "chunked") {
-		request._resHints.verboseError = "chunked is the only value supported for transfer-encoding";
+		request.resHints.verboseError = "chunked is the only value supported for transfer-encoding";
 	}
 	else
 		return (0);
-	request._resHints.status = RES_NOT_IMPLEMENTED;
+	request.resHints.status = RES_NOT_IMPLEMENTED;
 	return (RES_NOT_IMPLEMENTED);
 }
 
@@ -290,8 +294,8 @@ Check content-length
 **/
 int	IControl::assignHost(Client& client, Request& request) {
 	if (request.checkHeader("host") == false) {
-		request._resHints.verboseError = "request must include an host header";
-		request._resHints.status = RES_BAD_REQUEST;
+		request.resHints.verboseError = "request must include an host header";
+		request.resHints.status = RES_BAD_REQUEST;
 		return (RES_BAD_REQUEST);
 	}
 	client.setHost(request.getHeader("host"));
@@ -310,7 +314,7 @@ int	IControl::checkBodyLength(Client& client, Request& request)
 	if (request.checkHeader("content-length") == true) {
 		getInt(request.getHeader("content-length"), 10, bodyLength);
 		if (bodyLength > client.getHost()->getMaxSize()) {
-			request._resHints.status = RES_REQUEST_ENTITY_TOO_LARGE;
+			request.resHints.status = RES_REQUEST_ENTITY_TOO_LARGE;
 			return (RES_REQUEST_ENTITY_TOO_LARGE);
 		}
 		else if (bodyLength > 0)
@@ -369,9 +373,10 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 	if (request.getHeader("expect") == "100-continue")
 		res = RES_CONTINUE;
 	else if (request.getHeader("expect") != "") {
-		request._resHints.status = RES_EXPECTATION_FAILED;
+		request.resHints.status = RES_EXPECTATION_FAILED;
 		return (RES_EXPECTATION_FAILED);
 	}
+	defineBodyParsing(client, *client.getRequest());
 	client.setHeaderStatus(HEADER_STATUS_DONE);
 	return (res);
 }
@@ -389,40 +394,44 @@ static int	checkFileExist(const char *path) {
 
 int	IControl::defineBodyParsing(Client& client, Request& request)
 {
-	if (request._type == REQ_TYPE_CGI) {
+	if (request.type == REQ_TYPE_CGI) {
 		client.setBodyFile(generate_name(client.getHost()->getServerNames().front()));
-		request._resHints.unlink = true;
+		request.resHints.unlink = true;
 	}
-	else if (request._type == REQ_TYPE_STATIC && request._method == POST) {
+	else if (request.type == REQ_TYPE_STATIC && request.method == POST) {
 		std::string	filePath;
-		filePath =  (request._resHints.locationRules->upload_root != "" ? \
-					request._resHints.locationRules->upload_root : \
-					request._resHints.locationRules->root) \
-					+ request._parsedUri.path;
+		filePath =  (request.resHints.locationRules->upload_root != "" ? \
+					request.resHints.locationRules->upload_root : \
+					request.resHints.locationRules->root) \
+					+ request.parsedUri.path;
 		switch (checkFileExist(filePath.c_str()))
 		{
 			case FILE_DONT_EXIT:
-				request._resHints.alreadyExist = false;
-				request._resHints.status = RES_CREATED;
+				request.resHints.alreadyExist = false;
+				request.resHints.status = RES_CREATED;
 				break;
 
 			case FILE_EXIST:
-				request._resHints.alreadyExist = true;
-				request._resHints.status = RES_OK;
+				if (access(filePath.c_str(), W_OK) < 0) {
+					request.resHints.status = RES_FORBIDDEN;
+					return (RES_FORBIDDEN);
+				}
+				request.resHints.alreadyExist = true;
+				request.resHints.status = RES_OK;
 				break;
 
 			case FILE_IS_NOT_REG:
-				request._resHints.status = RES_FORBIDDEN;
+				request.resHints.status = RES_FORBIDDEN;
 				return (RES_FORBIDDEN);
 		}
-		request._resHints.path = filePath;
+		request.resHints.path = filePath;
 		client.setBodyFile(filePath);
-		request._resHints.unlink = false;
+		request.resHints.unlink = false;
 	}
 	else {
 		client.setBodyFile("");
 	}
-	request._resHints.headers["content-type"] = request.getHeader("content-type");
+	request.resHints.headers["content-type"] = request.getHeader("content-type");
 	return (0);
 }
 
@@ -430,11 +439,11 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 
 int	IControl::handleRequestBodyDone(Request& request)
 {
-	if (request._type == REQ_TYPE_STATIC) {
-		if (request._method == POST) {
-			return (request._resHints.status);
+	if (request.type == REQ_TYPE_STATIC) {
+		if (request.method == POST) {
+			return (request.resHints.status);
 		}
-		else if (request._method == DELETE)
+		else if (request.method == DELETE)
 			return (RES_NO_CONTENT);
 	}
 	return (RES_OK);
@@ -461,10 +470,10 @@ void	IControl::fillErrorPage(const Host* host, ResHints& resHints) {
 /// @brief Add any additionnal header such as ```connection``` if success status
 /// @param request
 void	IControl::fillAdditionnalHeaders(Request& request) {
-	if (request._resHints.status >= 200 && request._resHints.status < 300)
-		request._resHints.headers["connection"] = request.getHeader("connection");
+	if (request.resHints.status >= 200 && request.resHints.status < 300)
+		request.resHints.headers["connection"] = request.getHeader("connection");
 	else
-		request._resHints.headers["connection"] = "close";
+		request.resHints.headers["connection"] = "close";
 }
 
 /// @brief Generate an appropriate response type from the given
@@ -481,18 +490,18 @@ void	IControl::generateResponse(Client& client, int status)
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
 		return ; //Not sure
-	fillErrorPage(client.getHost(), request._resHints);
+	fillErrorPage(client.getHost(), request.resHints);
 	fillAdditionnalHeaders(request);
 	///REdirections
 	if (status)
-		request._resHints.status = status;
-	if (request._resHints.status)
+		request.resHints.status = status;
+	if (request.resHints.status)
 	LOGI("Generating response status %d | verbose = %ss",
-		request._resHints.status, &request._resHints.verboseError);
-	request._resHints.type = request._type;
+		request.resHints.status, &request.resHints.verboseError);
+	request.resHints.type = request.type;
 	try
 	{
-		response = AResponse::genResponse(client.getRequest()->_resHints);
+		response = AResponse::genResponse(client.getRequest()->resHints);
 	}
 	catch(const std::exception& e)
 	{
@@ -501,14 +510,18 @@ void	IControl::generateResponse(Client& client, int status)
 		return ;
 	}
 	if (response)
-		response->writeResponse(client._outBuffers);
+		response->writeResponse(client.outBuffers);
 	client.setResponse(response);
 	client.setMode(CLIENT_MODE_WRITE); //temporary
 	client.terminate(); //! tempory
 }
 
 int IControl::generateCGIProcess(Client& client) {
-	(void)client;
+	client.cgiProcess = new CGIProcess(client);
+	if (client.cgiProcess->execCGI()) {
+		client.getRequest()->resHints.verboseError = "could not initiate a new process"; //May want to remove
+		return (RES_INTERNAL_ERROR);
+	}
 	return (0);
 }
 

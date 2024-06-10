@@ -136,7 +136,6 @@ class	DynamicResponse : public HeaderResponse
 
 		//dir_listing
 		//Redir
-		static DynamicResponse*				generateBadRequest
 		DynamicResponse(int status, std::string const &description);
 		// DynamicResponse(bodyGenerator_func, const std::string&);
 		virtual	~DynamicResponse();

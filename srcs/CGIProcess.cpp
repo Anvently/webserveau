@@ -8,197 +8,203 @@
 
 char**  CGIProcess::_env;
 
-int CGIProcess::parseHeaders(Request &request)
-{
-    std::fstream    fstream(request._resHints.path.c_str());
-    char            *c_buffer = new char[HEADER_MAX_SIZE];
-    fstream.read(c_buffer, HEADER_MAX_SIZE);
-    std::string     buffer(c_buffer, fstream.gcount());
+CGIProcess::CGIProcess(Client& client) : _client(client), _request(*client.getRequest()) {}
 
-    while(_getLine(buffer))
-    {
-        if (_line.empty())
-            break;
-        if (_extract_header())
-        {
-            request._resHints.status = 500;
-            //do i need to unling now?
-            return (0);
-        }
-    }
-    request._resHints.index = _index;
-    int res = _inspectHeaders(request._resHints); // res should give the type of response document [local] redirect
-    return (res); // res should allow to discriminate what to do with the request
+int CGIProcess::parseHeaders()
+{
+	std::fstream    fstream(_request.resHints.path.c_str());
+	char            *c_buffer = new char[HEADER_MAX_SIZE];
+	fstream.read(c_buffer, HEADER_MAX_SIZE);
+	std::string     buffer(c_buffer, fstream.gcount());
+
+	while(_getLine(buffer))
+	{
+		if (_line.empty())
+			break;
+		if (_extract_header())
+		{
+			_request.resHints.status = 500;
+			//do i need to unling now?
+			return (0);
+		}
+	}
+	_request.resHints.index = _index;
+	int res = _inspectHeaders(); // res should give the type of response document [local] redirect
+	return (res); // res should allow to discriminate what to do with the request
 }
 
 int CGIProcess::_getLine(std::string &buffer)
 {
-    size_t  idx = buffer.find("\r\n", 0);
-    if (idx == std::string::npos)
-        return (0);
-    _line = buffer.substr(0, idx);
-    _index += idx + 2;
-    buffer = buffer.substr(idx + 2, std::string::npos);
-    return (1);
+	size_t  idx = buffer.find("\r\n", 0);
+	if (idx == std::string::npos)
+		return (0);
+	_line = buffer.substr(0, idx);
+	_index += idx + 2;
+	buffer = buffer.substr(idx + 2, std::string::npos);
+	return (1);
 }
 
 int CGIProcess::_extract_header()
 {
-    std::string key;
-    std::string value;
-    size_t  idx = _line.find(":", 0);
-    if (idx == std::string::npos)
-        return (500);
-    key = _line.substr(0, idx);
-    value = _line.substr(idx + 1, _line.size());
-    _cgi_headers[key] = value;
-    _line.clear();
-    return (0);
+	std::string key;
+	std::string value;
+	size_t  idx = _line.find(":", 0);
+	if (idx == std::string::npos)
+		return (500);
+	key = _line.substr(0, idx);
+	value = _line.substr(idx + 1, _line.size());
+	_cgi_headers[key] = value;
+	_line.clear();
+	return (0);
 }
 
 int CGIProcess::_retrieveHeader(std::string key, std::string &value)
 {
-    try{
-        value = _cgi_headers.at(key);
-        return (1);
-    }
-    catch(std::out_of_range &e)
-    {
-        return (0);
-    }
+	try{
+		value = _cgi_headers.at(key);
+		return (1);
+	}
+	catch(std::out_of_range &e)
+	{
+		return (0);
+	}
 }
 
 
-int CGIProcess::_inspectHeaders(ResHints &hints)
+int CGIProcess::_inspectHeaders()
 {
-    std::string value;
-    if (_retrieveHeader("Location", value) && value.substr(0, 7) == "http://")
-    {
-        hints.headers["Location"] = value;
-        hints.status = 302;
-        if (_retrieveHeader("Content-Type", value))
-        {
-            hints.headers["Content-Type"] = value;
-            hints.hasBody = 1;
-        }
-        return (CGI_RES_CLIENT_REDIRECT);
-    }
-    else if (_retrieveHeader("Location", value) && value[0] == '/')
-    {
-        hints.redir_type = REDIR_LOCAL;
-        hints.path = value;
-        return (CGI_RES_LOCAL_REDIRECT);
-    }
-    else
-    {
-        if (_retrieveHeader("Status", value) && getInt(value, 10, hints.status))
-        {
-            hints.status = 500;
-            return (CGI_RES_DOC);
-        }
-        else
-            hints.status = 200;
-        if (_retrieveHeader("Content-Type", value))
-        {
-            hints.hasBody = 1;
-            hints.headers["Content-Type"] = value;
-        }
-        else
-            hints.hasBody = 0;
-    }
-    return (CGI_RES_DOC);
+	ResHints&   hints = _request.resHints;
+	std::string value;
+	if (_retrieveHeader("Location", value) && value.substr(0, 7) == "http://")
+	{
+		hints.headers["Location"] = value;
+		hints.status = 302;
+		if (_retrieveHeader("Content-Type", value))
+		{
+			hints.headers["Content-Type"] = value;
+			hints.hasBody = 1;
+		}
+		return (CGI_RES_CLIENT_REDIRECT);
+	}
+	else if (_retrieveHeader("Location", value) && value[0] == '/')
+	{
+		hints.redir_type = REDIR_LOCAL;
+		hints.path = value;
+		return (CGI_RES_LOCAL_REDIRECT);
+	}
+	else
+	{
+		if (_retrieveHeader("Status", value) && getInt(value, 10, hints.status))
+		{
+			hints.status = 500;
+			return (CGI_RES_DOC);
+		}
+		else
+			hints.status = 200;
+		if (_retrieveHeader("Content-Type", value))
+		{
+			hints.hasBody = 1;
+			hints.headers["Content-Type"] = value;
+		}
+		else
+			hints.hasBody = 0;
+	}
+	return (CGI_RES_DOC);
 }
 
-int CGIProcess::execCGI(Client &client)
+/// @brief 
+/// @return ```0``` for success. ```-1``` if error. Child error will be handled
+/// elsewhere
+int CGIProcess::execCGI()
 {
-    int pid;
-    gettimeofday(&_fork_time, NULL);
-    client.getRequest()->_resHints.cgiOutput = generate_name(client.getRequest()->_resHints.path);
-    pid = fork();
-    if (pid == 0)
-    {
-        _launchCGI(client);
-    }
-    else
-    {
-        _pid = pid;
-        _status = CHILD_RUNNING;
-        return (0);
-    }
-    return (0);
+	int pid;
+	gettimeofday(&_fork_time, NULL);
+	_request.resHints.cgiOutput = generate_name(_request.resHints.path);
+	pid = fork();
+	if (pid == 0)
+	{
+		_launchCGI();
+	}
+	else if (pid > 0)
+	{
+		_pid = pid;
+		_status = CHILD_RUNNING;
+		return (0);
+	} else if (pid < 0)
+		return (1);
+	return (0);
 }
 
-void    CGIProcess::_launchCGI(Client &client)
+void    CGIProcess::_launchCGI()
 {
-    int     fd_out = open(client.getRequest()->_resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
-    int     fd_in;
-    char    **argv = new char*[3];
-    argv[2] = NULL;
-    argv[0] = new char[client.getRequest()->_resHints.cgiRules->exec.size() + 1];
-    argv[1] = new char[client.getRequest()->_resHints.scriptPath.size() + 1];
-    argv[1][client.getRequest()->_resHints.scriptPath.size()] = 0;
-    std::copy(client.getRequest()->_resHints.scriptPath.begin(), client.getRequest()->_resHints.scriptPath.end(), argv[0]);
-    if (!client.getRequest()->_resHints.bodyFileName.empty())
-    {
-        fd_in = open(client.getRequest()->_resHints.bodyFileName.c_str(), O_RDONLY);
-        dup2(fd_in, STDIN_FILENO);
-    }
-    dup2(fd_out, STDOUT_FILENO);
-    _setVariables(client);
-    execv(argv[0], argv);
-    delete[] argv[0];
-    delete[] argv;
-    LOGE("The script %ss failed", &client.getRequest()->_resHints.scriptPath);
-    throw(CGIProcess::child_exit_exception());
+	int     fd_out = open(_request.resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
+	int     fd_in;
+	char    **argv = new char*[3];
+	argv[2] = NULL;
+	argv[0] = new char[_request.resHints.cgiRules->exec.size() + 1];
+	argv[1] = new char[_request.resHints.scriptPath.size() + 1];
+	argv[1][_request.resHints.scriptPath.size()] = 0;
+	std::copy(_request.resHints.scriptPath.begin(), _request.resHints.scriptPath.end(), argv[0]);
+	if (!_request.resHints.bodyFileName.empty())
+	{
+		fd_in = open(_request.resHints.bodyFileName.c_str(), O_RDONLY);
+		dup2(fd_in, STDIN_FILENO);
+	}
+	dup2(fd_out, STDOUT_FILENO);
+	_setVariables();
+	execv(argv[0], argv);
+	delete[] argv[0];
+	delete[] argv;
+	LOGE("The script %ss failed", &_request.resHints.scriptPath);
+	throw(CGIProcess::child_exit_exception());
 }
 
 int CGIProcess::getStatus()
 {
-    return (_status);
+	return (_status);
 }
 
 int CGIProcess::getPID()
 {
-    return (_pid);
+	return (_pid);
 }
 
 const char* CGIProcess::child_exit_exception::what() const throw() {
 
-    return ("Script failed");
+	return ("Script failed");
 }
 
-void    CGIProcess::_setVariables(Client &client)
+void    CGIProcess::_setVariables()
 {
-    Request request = *client.getRequest();
-    std::string         str;
+	std::string         str;
 
-    setenv("REQUEST_METHOD", METHOD_STR[request._method].c_str(), 1);
-    setenv("QUERY_STRING", request._parsedUri.query.c_str(), 1);
+	setenv("REQUEST_METHOD", METHOD_STR[_request.method].c_str(), 1);
+	setenv("QUERY_STRING", _request.parsedUri.query.c_str(), 1);
 
-    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1); // which version to use ?
-    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-    setenv("SERVER_NAME", request.getHeader("Host").c_str(), 1);
-    setenv("REMOTE_ADDR", client.getStrAddr().c_str(), 1);
-    setenv("SERVER_PORT", IntToString(client.getAddrPort(), 10).c_str(), 1);
+	setenv("GATEWAY_INTERFACE", "CGI/1.1", 1); // which version to use ?
+	setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+	setenv("SERVER_NAME", _request.getHeader("Host").c_str(), 1);
+	setenv("REMOTE_ADDR", _client.getStrAddr().c_str(), 1);
+	setenv("SERVER_PORT", IntToString(_client.getAddrPort(), 10).c_str(), 1);
 
-    if (!request._parsedUri.pathInfo.empty())
-    {
-        setenv("PATH_INFO", request._parsedUri.pathInfo.c_str(), 1);
-        str = request._resHints.cgiRules->root + request._parsedUri.pathInfo;
-        setenv("PATH_TRANSLATED", str.c_str() , 1); //TODODODODODODO
-    }
-    else
-    {
-        unsetenv("PATH_INFO");
-        unsetenv("PATH_TRANSLATED");
-        // setenv("PATH_INFO", NULL, 1);
-        // setenv("PATH_TRANSLATED", NULL, 1);
-    }
-    setenv("SCRIPT_NAME", request._resHints.scriptPath.c_str(), 1); //Not sure which variable to use
-    if (request._resHints.hasBody && _retrieveHeader("Content-Type", str))
-        setenv("CONTENT_TYPE", str.c_str(), 1);
-    else
-        unsetenv("CONTENT_TYPE");
+	if (!_request.parsedUri.pathInfo.empty())
+	{
+		setenv("PATH_INFO", _request.parsedUri.pathInfo.c_str(), 1);
+		str = _request.resHints.cgiRules->root + _request.parsedUri.pathInfo;
+		setenv("PATH_TRANSLATED", str.c_str() , 1); //TODODODODODODO
+	}
+	else
+	{
+		unsetenv("PATH_INFO");
+		unsetenv("PATH_TRANSLATED");
+		// setenv("PATH_INFO", NULL, 1);
+		// setenv("PATH_TRANSLATED", NULL, 1);
+	}
+	setenv("SCRIPT_NAME", _request.resHints.scriptPath.c_str(), 1); //Not sure which variable to use
+	if (_request.resHints.hasBody && _retrieveHeader("Content-Type", str))
+		setenv("CONTENT_TYPE", str.c_str(), 1);
+	else
+		unsetenv("CONTENT_TYPE");
 
 
 }
@@ -211,9 +217,9 @@ CONTENT_TYPE -> if the input includes a body this is the content-type of the req
 GATEWAY_INTERFACE -> CGI/1.1
 PATH_INFO -> the path following the cgi in the uri
 PATH_TRANSLATED -> example http://host:port/path/to/script.cgi/path/info
-                    -> path info = /path/info
-                    ->path_translated = /root/path/info
-        IF path_info = NULL => path_translated=NULL
+					-> path info = /path/info
+					->path_translated = /root/path/info
+		IF path_info = NULL => path_translated=NULL
 
 QUERY STRING -> the query string, if not query set it as ""
 
