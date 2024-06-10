@@ -91,4 +91,9 @@ int	main(int, char **, char **env)
 		LOGE("%s", e.what());
 		return (IControl::cleanExit(1));
 	}
+	catch(const CGIProcess::child_exit_exception &e)
+	{
+		LOGE("%s", e.what());
+		return (IControl::cleanExit(1));
+	}
 }

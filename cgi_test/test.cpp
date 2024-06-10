@@ -9,7 +9,7 @@
 #include <map>
 #include <fcntl.h>
 #include <sys/stat.h>
-
+#include <new>
 #include <sstream>
 
 template <typename T>
@@ -49,15 +49,34 @@ int extract_header()
   std::cout << _line << std::endl;
   return (0);
 }
+#include <cstring>
 
-int	main()
+int	main(int, char **, char **env)
 {
-	int fd = open("../test", O_RDONLY);
-  char  buff[200];
-  int n_read = read(fd, buff, 200);
-  std::string str(buff, n_read);
-  size_t  n = str.find("\r\n", 0);
-  if (n == std::string::npos)
-    std::cout << "No rn found \n";
+	  int fd = open("./result", O_CREAT | O_RDWR | O_TRUNC);
+    int infd = open("./inbody", O_RDONLY);
+    //unlink("./inbody");
+    dup2(fd, STDOUT_FILENO);
+    dup2(infd, STDIN_FILENO);
+    setenv("REQUEST_METHOD", "POST", 1);
+    setenv("QUERY_STRING", "", 1);
+    std::cout << getenv("QUERY_STRING") << std::endl;
+    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1); // which version to use ?
+    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+   // setenv("SERVER_NAME", request.getHeader("Host").c_str(), 1);
+    //setenv("REMOTE_ADDR", client.getStrAddr().c_str(), 1);
+    //setenv("SERVER_PORT", IntToString(client.getAddrPort(), 10).c_str(), 1);
+    setenv("PATH_INFO", "./upl/", 1);
+    setenv("PATH_TRANSLATED", "/home/lmahe/Documents/cercle_5/webserv/webserv/cgi_test/upl", 1); //TODODODODODODO
+    setenv("SCRIPT_NAME", "/home/lmahe/Documents/cercle_5/webserv/webserv/cgi_test/upload.php", 1);
+    setenv("CONTENT_TYPE", "multipart/form-data; boundary=---------------------------73", 1);
+    setenv("CONTENT_LENGTH", "173", 1);
+    char  *argv[3];
+    argv[0] = strdup("/usr/bin/php");
+    argv[1] = strdup("/home/lmahe/Documents/cercle_5/webserv/webserv/cgi_test/upload.php");
+    argv[2] = NULL;
+    execv(argv[0], argv);
+    std::cout << "FAILED" << std::endl;
+
 
 }

@@ -8,7 +8,24 @@ static	std::string	days[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 static	std::string	months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", };
 
 
-static std::map<int, std::string> ResponseLine;
+std::map<int, std::string>	init_response()
+{
+	std::map<int, std::string>	mipmap;
+
+	mipmap.insert({100, "Continue"});
+	mipmap.insert({200, "OK"});
+	mipmap.insert({201, "CREATED"});
+	mipmap.insert({204, "No Content"});
+	mipmap.insert({300, "Multiple Choices"});
+	mipmap.insert({301, "Move Permanently"});
+	mipmap.insert({302, "Found"});
+	mipmap.insert({307, "Temporary Redirect"});
+
+
+
+}
+
+static std::map<int, std::string> ResponseLine = init_response();
 // {{100, "Continue"}, {200, "OK"}, {201, "Created"}, {204, "No Content"}, \
 // {300, "Multiple Choices"}, {301, "Move Permanently"}, {302, "Found"}, {307, "Temporary Redirect"}, \
 // {308, "Permanent Redirect"}, {400, "Bad Request"}, {401, "Unauthorized"}, {403, "Forbidden"}, {404, "Not Found"}, \
@@ -128,4 +145,14 @@ DynamicResponse::~DynamicResponse(void) {}
 int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
 	(void)outQueue;
 	return (0);
+}
+
+AResponse*	AResponse::genResponse(ResHints &hints)
+{
+	AResponse	*response;
+	if (hints.status == 100)
+	{
+		response = new SingleLineResponse(hints.status, )
+	}
+
 }

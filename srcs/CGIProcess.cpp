@@ -133,7 +133,12 @@ void    CGIProcess::_launchCGI(Client &client)
 {
     int     fd_out = open(client.getRequest()->_resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
     int     fd_in;
-    char    **argv;
+    char    **argv = new char*[3];
+    argv[2] = NULL;
+    argv[0] = new char[client.getRequest()->_resHints.cgiRules->exec.size() + 1];
+    argv[1] = new char[client.getRequest()->_resHints.scriptPath.size() + 1];
+    argv[1][client.getRequest()->_resHints.scriptPath.size()] = 0;
+    std::copy(client.getRequest()->_resHints.scriptPath.begin(), client.getRequest()->_resHints.scriptPath.end(), argv[0]);
     if (!client.getRequest()->_resHints.bodyFileName.empty())
     {
         fd_in = open(client.getRequest()->_resHints.bodyFileName.c_str(), O_RDONLY);
@@ -141,8 +146,10 @@ void    CGIProcess::_launchCGI(Client &client)
     }
     dup2(fd_out, STDOUT_FILENO);
     _setVariables(client);
-    //dup stdin into the body input file ?
-    //exec CGI => script path in hints
+    execv(argv[0], argv);
+    delete[] argv[0];
+    delete[] argv;
+    LOGE("The script %ss failed", &client.getRequest()->_resHints.scriptPath);
     throw(CGIProcess::child_exit_exception());
 }
 
@@ -192,7 +199,7 @@ void    CGIProcess::_setVariables(Client &client)
     else
         unsetenv("CONTENT_TYPE");
 
-    
+
 }
 
 
