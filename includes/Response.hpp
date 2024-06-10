@@ -100,8 +100,9 @@ class	HeaderResponse : public AResponse
 		virtual ~HeaderResponse(void);
 
 		virtual int		writeResponse(std::queue<std::string>& outQueue);
-		void	addHeader(std::string const &key, std::string const &value);
-		void	addUniversalHeaders();
+		void			addHintHeaders(ResHints &hints);
+		void			addHeader(std::string const &key, std::string const &value);
+		void			addUniversalHeaders();
 };
 
 class	FileResponse : public HeaderResponse
@@ -126,15 +127,14 @@ class	DynamicResponse : public HeaderResponse
 
 	private:
 
-		DynamicResponse(/* args */);
-		int									_pipeFd;
+		DynamicResponse();
 		std::string							_body;
 
 	public:
 
 		// typedef	void (*bodyGenerator_func)(DynamicResponse&, const std::string);
 
-		DynamicResponse(int status, const Request& request);
+		DynamicResponse(int status, std::string const &description);
 		// DynamicResponse(bodyGenerator_func, const std::string&);
 		virtual ~DynamicResponse();
 
