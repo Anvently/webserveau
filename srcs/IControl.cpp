@@ -500,11 +500,17 @@ void	IControl::fillAdditionnalHeaders(Request& request) {
 void	IControl::fillVerboseError(Request& request) {
 	switch (request.getStatus()) {
 		case RES_INTERNAL_ERROR:
+			request.resHints.path = "";
 			request.resHints.verboseError = "Internal error";
 			break;
 
 		case RES_SERVICE_UNAVAILABLE:
+			request.resHints.path = "";
 			request.resHints.verboseError = "Service temporarly unavailable.";
+			break;
+
+		case RES_BAD_REQUEST:
+			request.resHints.path = "";
 			break;
 
 		default:
@@ -530,7 +536,6 @@ void	IControl::generateResponse(Client& client, int status)
 		request.resHints.status = status;
 	fillErrorPage(client.getHost(), request.resHints);
 	fillAdditionnalHeaders(request);
-	///REdirections
 	fillVerboseError(request);
 	if (request.resHints.status)
 		LOGI("Generating response status %d | verbose = %ss",
@@ -545,7 +550,6 @@ void	IControl::generateResponse(Client& client, int status)
 	{
 		LOGE("Response exception : %s", e.what());
 		client.clearResponse();
-		//change reshints
 		generateResponse(client, RES_INTERNAL_ERROR);
 		return ;
 	}
