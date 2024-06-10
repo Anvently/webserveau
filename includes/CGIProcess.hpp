@@ -8,6 +8,8 @@ class Client;
 class Request;
 typedef struct ResHints ResHints;
 
+#define CGI_TIME_OUT 30000
+
 enum	CGI_RES_TYPE {CGI_RES_DOC = 0, CGI_RES_LOCAL_REDIRECT, CGI_RES_CLIENT_REDIRECT};
 enum	CHILD_STATUS {CHILD_RUNNING, CHILD_TERM};
 
@@ -17,36 +19,42 @@ class CGIProcess {
 
 	private:
 
+		CGIProcess();
+
 		std::string							_line;
 		size_t								_index;
 		std::map<std::string, std::string> 	_cgi_headers;
 		struct timeval						_fork_time;
 		int									_pid;
 		int									_status;
+		Client&								_client;
+		Request&							_request;
 
 		int		_getLine(std::string &buffer);
 		int		_extract_header();
-		int		_inspectHeaders(ResHints &hints);
+		int		_inspectHeaders();
 		int		_retrieveHeader(std::string key, std::string &value);
-		void	_launchCGI(Client &client);
-		void	_setVariables(Client &Client);
+		void	_launchCGI();
+		void	_setVariables();
 
 	public:
+
+		~CGIProcess();
+		CGIProcess(Client& client);
 
 		static char**						_env;
 		/// @brief
 		/// @return ```0``` if not finished, ```> 0``` if finished, ```< 0```
 		/// if error.
-		int	checkEnd() {return (0);}
+		int	checkEnd();
 
 		/// @brief Add potential header to resHints, change the status
 		/// @param
 		/// @return Identify document type
-		int	parseHeaders(Request& request);
-		int	execCGI(Client &client);
+		int	parseHeaders();
+		int	execCGI();
 		int	getStatus();
 		int	getPID();
-		struct timeval	getForkTime() {return (_fork_time);}
 
 		class	child_exit_exception: public std::exception
 		{

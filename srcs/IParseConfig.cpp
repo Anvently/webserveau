@@ -255,12 +255,14 @@ void IParseConfig::parseCGIConfig(std::stringstream &istream, Host &host)
 	CGIConfig cgiConfig;
 
 	parseValues(istream, cgiConfigNames); // May need to check what happens gere
+	
 	std::stringstream CGIConfigStream;
 	_lineNbrEndOfBlock = _lineNbr;
 	getNextBlock(istream, CGIConfigStream);
 	try
 	{
 		parseBlock(CGIConfigStream, &cgiConfig, handleCGIConfigToken);
+		checkCGIConfig(cgiConfig);
 		host.addCGIConfig(cgiConfigNames, cgiConfig);
 	}
 	catch (const LastBlockException &e)
@@ -292,6 +294,7 @@ void IParseConfig::parseLocation(std::stringstream &istream, Host &host)
 	try
 	{
 		parseBlock(locationStream, &location, handleLocationToken);
+		checkLocation(location);
 		host.addLocation(locationsName, location);
 	}
 	catch (const LastBlockException &e)
@@ -460,6 +463,18 @@ void	IParseConfig::checkHost(Host& host) {
 		throw (MissingTokenException("host default location `*`"));
 	if (ListenServer::checkServerNames(host._addr, host._ports, host._server_names) == false)
 		throw (DuplicateServerNameException());
+}
+
+void	IParseConfig::checkLocation(Location& location) {
+	if (location.root == "")
+		throw (MissingTokenException("root"));
+}
+
+void	IParseConfig::checkCGIConfig(CGIConfig& cgiConfig) {
+	if (cgiConfig.root == "")
+		throw (MissingTokenException("root"));
+	if (cgiConfig.extension == "")
+		throw (MissingTokenException("identifier"));
 }
 
 void IParseConfig::parsePorts(std::istream &istream, Host &host)

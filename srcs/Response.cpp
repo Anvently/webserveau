@@ -94,14 +94,14 @@ void	HeaderResponse::addUniversalHeaders()
 
 void	HeaderResponse::addHeader(std::string const &key, std::string const &value)
 {
-	_headers.insert({key, value});
+	_headers.insert(std::pair<std::string, std::string>(key, value));
 }
 
 void	HeaderResponse::addHintHeaders(ResHints &hints)
 {
 	for (std::map<std::string, std::string>::iterator it = hints.headers.begin(); it != hints.headers.end(); it++)
 	{
-		_headers.insert({it->first, it->second});
+		_headers.insert(std::pair<std::string, std::string>(it->first, it->second));
 	}
 }
 
@@ -129,11 +129,6 @@ int	HeaderResponse::writeResponse(std::queue<std::string>& outQueue)
 		portion.clear();
 	}
 	return (0);
-}
-
-AResponse*	AResponse::genResponse(ResHints& hints) {
-	(void)hints;
-	return (NULL);
 }
 
 FileResponse::~FileResponse(void) {}
@@ -177,7 +172,8 @@ int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
 
 AResponse*	AResponse::genResponse(ResHints &hints)
 {
-	AResponse	*response;
+	AResponse	*response = NULL;
+
 	if (hints.status == 100)
 	{
 		response = new SingleLineResponse(hints.status, hints.verboseError);

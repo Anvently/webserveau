@@ -50,6 +50,10 @@ class IParseConfig
 		static void				handleLocationToken(std::stringstream& istream, const std::string& token, void* locationPtr);
 
 		static void				checkHost(Host& host);
+		static void				checkLocation(Location& location);
+		static void				checkCGIConfig(CGIConfig& cgiConfig);
+		// template <typename T>
+		// static void				checkLocationNames(T container);
 
 		static void				parseHost(std::istream& istream);
 		static void				parseLocation(std::stringstream& istream, Host& host);
@@ -250,5 +254,14 @@ void	IParseConfig::parseValues(std::istream& istream, T& words, int maxNbr)
 		i++;
 	} while (ret == 0 && i < maxNbr);
 }
+
+// template <typename T>
+// void	IParseConfig::checkLocationNames(T names) {
+// 	for (T::iterator it = names.begin(); it != names.end(); it++) {
+// 		if ((*it)[0] == '\\')
+// 			throw IParseConfig::InvalidLocationNameException(*it);
+		
+// 	}
+// }
 
 #endif // ICONFIG_HPP

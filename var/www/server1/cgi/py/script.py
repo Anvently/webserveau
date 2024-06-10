@@ -3,12 +3,11 @@ import cgi, cgitb
 import cgitb
 cgitb.enable()
 
-
 # Create instance of FieldStorage
 form = cgi.FieldStorage()
 
 # Get data from fields
-for key in form.keys:
+for key in form.keys():
 	print(form[key])
 	
 

@@ -301,37 +301,37 @@ std::ostream&	operator<<(std::ostream& os, const Host& host)
 /// @return 
 int	Host::checkRedirection(Request& request) const
 {
-	const Location& location = *request._resHints.locationRules;
+	const Location& location = *request.resHints.locationRules;
 	switch (location.redir)
 	{
 		case 0:
 			return (0);
 	
 		case RES_MULTIPLE_CHOICE:
-			request._resHints.status = RES_MULTIPLE_CHOICE;
+			request.resHints.status = RES_MULTIPLE_CHOICE;
 			break;
 
 		case RES_MOVED_PERMANENTLY:
-			request._resHints.status = RES_MOVED_PERMANENTLY;
+			request.resHints.status = RES_MOVED_PERMANENTLY;
 			break;
 
 		case RES_FOUND:
-			request._resHints.status = RES_FOUND;
+			request.resHints.status = RES_FOUND;
 			break;
 
 		case RES_SEE_OTHER:
-			request._resHints.status = RES_SEE_OTHER;
+			request.resHints.status = RES_SEE_OTHER;
 			break;
 
 		case RES_TEMPORARY_REDIRECT:
-			request._resHints.status = RES_TEMPORARY_REDIRECT;
+			request.resHints.status = RES_TEMPORARY_REDIRECT;
 			break;
 
 		default:
 			LOGE("Invalid or unsupported redirection status (%d)", location.redir);
 			break;
 	}
-	request._resHints.redirList = &location.addr_redir;
+	request.resHints.redirList = &location.addr_redir;
 	return (0);
 }
 
@@ -343,23 +343,23 @@ int	Host::checkRedirection(Request& request) const
 /// @return 
 int	Host::matchRequest(Request& request) const
 {
-	request._resHints.locationRules = matchLocation(request._parsedUri.path);
-	request._resHints.cgiRules = matchCGIConfig(request._parsedUri.path);
-	if (request._resHints.locationRules == NULL && request._resHints.cgiRules == NULL) {
-		request._resHints.status = RES_NOT_FOUND;
-		request._type = REQ_TYPE_NO_MATCH;
+	request.resHints.locationRules = matchLocation(request.parsedUri.path);
+	request.resHints.cgiRules = matchCGIConfig(request.parsedUri.path);
+	if (request.resHints.locationRules == NULL && request.resHints.cgiRules == NULL) {
+		request.resHints.status = RES_NOT_FOUND;
+		request.type = REQ_TYPE_NO_MATCH;
 		return (RES_NOT_FOUND);
 	}
-	else if (request._resHints.cgiRules) {
-		request._type = REQ_TYPE_CGI;
-		request.extractPathInfo(request._resHints.cgiRules->extension);
-		if (request._parsedUri.pathInfo.find('/') != std::string::npos)
-			request._resHints.locationRules = matchLocation(request._parsedUri.path);
+	else if (request.resHints.cgiRules) {
+		request.type = REQ_TYPE_CGI;
+		request.extractPathInfo(request.resHints.cgiRules->extension);
+		if (request.parsedUri.pathInfo.find('/') != std::string::npos)
+			request.resHints.locationRules = matchLocation(request.parsedUri.path);
 	}
-	else if (request._parsedUri.extension == "/")
-		request._type = REQ_TYPE_DIR;
+	else if (request.parsedUri.extension == "/")
+		request.type = REQ_TYPE_DIR;
 	else
-		request._type = REQ_TYPE_STATIC;
+		request.type = REQ_TYPE_STATIC;
 	return (0);
 }
 
@@ -369,18 +369,18 @@ int	Host::matchRequest(Request& request) const
 /// Return error if dir_listing is not allowed, if methods is not ```GET```
 int	Host::checkDirRessource(Request& request) const
 {
-	const Location& location = *request._resHints.locationRules;
+	const Location& location = *request.resHints.locationRules;
 	if (location.default_uri != "") {
 		request.parseURI(location.default_uri);
 		if (matchRequest(request))
 			return (RES_NOT_FOUND);
 		return (0);
 	} else if (location.dir_listing == true) {
-		if (request._method != GET) {
-			request._resHints.status = RES_FORBIDDEN;
+		if (request.method != GET) {
+			request.resHints.status = RES_FORBIDDEN;
 			return (RES_FORBIDDEN);
 		}
-		request._resHints.path = request._parsedUri.path;
+		request.resHints.path = request.parsedUri.path;
 	}
 	return (0);
 }
@@ -392,13 +392,13 @@ int	Host::checkDirRessource(Request& request) const
 /// @return 
 int	Host::checkLocationRules(Request& request) const
 {
-	if ((request._resHints.locationRules->methods & (1 << request._method)) == 0) {
-		request._resHints.status = RES_METHOD_NOT_ALLOWED;
+	if ((request.resHints.locationRules->methods & (1 << request.method)) == 0) {
+		request.resHints.status = RES_METHOD_NOT_ALLOWED;
 		return (RES_METHOD_NOT_ALLOWED);
 	}
-	if (request._method == POST && request._type == REQ_TYPE_STATIC) {
-		if (request._resHints.locationRules->upload == false) {
-			request._resHints.status = RES_FORBIDDEN;
+	if (request.method == POST && request.type == REQ_TYPE_STATIC) {
+		if (request.resHints.locationRules->upload == false) {
+			request.resHints.status = RES_FORBIDDEN;
 			return (RES_FORBIDDEN);
 		}
 	}
@@ -411,8 +411,8 @@ int	Host::checkLocationRules(Request& request) const
 /// @return 
 int	Host::checkCGIRules(Request& request) const
 {
-	if ((request._resHints.cgiRules->methods & (1 << request._method)) == 0) {
-		request._resHints.status = RES_METHOD_NOT_ALLOWED;
+	if ((request.resHints.cgiRules->methods & (1 << request.method)) == 0) {
+		request.resHints.status = RES_METHOD_NOT_ALLOWED;
 		return (RES_METHOD_NOT_ALLOWED);
 	}
 	return (0);
@@ -424,7 +424,7 @@ int	Host::checkCGIRules(Request& request) const
 /// @param type Can be provided to make additionnal check regarding file type
 /// ```REQ_TYPE_DIR``` vs ```REQ_TYPE_CGI||REQ_TYPE_STATIC```.
 /// @return 
-int	Host::checkRessourcePath(const std::string& path, int type)
+int	Host::checkRessourcePath(const std::string& path, int type, int checkWrite)
 {
 	struct stat	f_stat;
 
@@ -434,27 +434,29 @@ int	Host::checkRessourcePath(const std::string& path, int type)
 		return (RES_FORBIDDEN);
 	else if (type == REQ_TYPE_DIR && S_ISDIR(f_stat.st_mode) == false)
 		return (RES_NOT_FOUND);
+	if (checkWrite && access(path.c_str(), checkWrite) < 0)
+		return (RES_FORBIDDEN);
 	return (0);
 }
 
 int	Host::checkRessourceExistence(Request& request) const {
 	std::string	path;
 	int			res;
-	if (request._type == REQ_TYPE_CGI) {
-		request._resHints.scriptPath = request._resHints.cgiRules->root + request._parsedUri.path;
-		res = checkRessourcePath(request._resHints.scriptPath, REQ_TYPE_CGI);
+	if (request.type == REQ_TYPE_CGI) {
+		request.resHints.scriptPath = request.resHints.cgiRules->root + request.parsedUri.path;
+		res = checkRessourcePath(request.resHints.scriptPath, REQ_TYPE_CGI, R_OK);
 	} else {
-		if (request._method == POST) {
-			path = (request._resHints.locationRules->upload_root != "" ? \
-							request._resHints.locationRules->upload_root : \
-							request._resHints.locationRules->root);
-			res = checkRessourcePath(path + request._parsedUri.root, REQ_TYPE_DIR);
+		if (request.method == POST) {
+			path = (request.resHints.locationRules->upload_root != "" ? \
+							request.resHints.locationRules->upload_root : \
+							request.resHints.locationRules->root);
+			res = checkRessourcePath(path + request.parsedUri.root, REQ_TYPE_DIR);
 		} else {
-			request._resHints.path = request._resHints.locationRules->root + request._parsedUri.path;
-			res = checkRessourcePath(request._resHints.path, request._type);
+			request.resHints.path = request.resHints.locationRules->root + request.parsedUri.path;
+			res = checkRessourcePath(request.resHints.path, request.type, R_OK);
 		}
 	}
-	request._resHints.status = res;
+	request.resHints.status = res;
 	return (res);
 }
 
@@ -472,15 +474,15 @@ int	Host::checkRequest(Request& request) const {
 
 	if ((res = matchRequest(request)))
 		return (res);
-	if (request._resHints.locationRules && (res = checkRedirection(request)))
+	if (request.resHints.locationRules && (res = checkRedirection(request)))
 		return (res);
-	if (request._type == REQ_TYPE_DIR) { //If folder
+	if (request.type == REQ_TYPE_DIR) { //If folder
 		if ((res = checkDirRessource(request)))
 			return (res);
 	}
-	if (request._resHints.locationRules && (res = checkLocationRules(request)))
+	if (request.resHints.locationRules && (res = checkLocationRules(request)))
 		return (res);
-	if (request._type == REQ_TYPE_CGI && (res = checkCGIRules(request)))
+	if (request.type == REQ_TYPE_CGI && (res = checkCGIRules(request)))
 		return (res);
 	if ((res = checkRessourceExistence(request)))
 		return (res);

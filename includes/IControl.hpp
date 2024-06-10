@@ -13,6 +13,8 @@
 # define BUFFER_SIZE 4096
 #endif
 
+enum	RES_SENT_SITUATION {SITUATION_CLOSE, SITUATION_KEEP_ALIVE, SITUATION_CONTINUE};
+
 class IControl
 {
 	private :
@@ -69,6 +71,7 @@ class IControl
 		static int	handleRequestBodyDone(Request& request);
 		static void	fillErrorPage(const Host* host, ResHints& request);
 		static void	fillAdditionnalHeaders(Request& request);
+		static void	fillVerboseError(Request& request);
 
 		static int	checkForbiddenHeaders(Request& request);
 		static int	assignHost(Client& client, Request& request);

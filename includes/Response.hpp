@@ -37,7 +37,8 @@
 #define RES_REQUEST_URI_TOO_LONG 414 //full static
 #define RES_EXPECTATION_FAILED 417 //full static
 #define RES_INTERNAL_ERROR 500 //Dynamic
-#define RES_NOT_IMPLEMENTED 501 //Dynamic => 
+#define RES_NOT_IMPLEMENTED 501 //Dynamic
+#define RES_SERVICE_UNAVAILABLE 503 //Dynamic
 #define RES_HTTP_VERSION_NOT_SUPPORTED 505 //full static
 
 
@@ -145,6 +146,8 @@ class	DynamicResponse : public HeaderResponse
 
 		// typedef	void (*bodyGenerator_func)(DynamicResponse&, const std::string);
 
+		//dir_listing
+		//Redir
 		DynamicResponse(ResHints &hints);
 		// DynamicResponse(bodyGenerator_func, const std::string&);
 		virtual ~DynamicResponse();

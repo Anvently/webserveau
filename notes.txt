@@ -18,12 +18,7 @@ root/imgs/root/serv/test/imgs/img1.png
 
 TODO
 
-	- IParseConfig :
-		- check root and lcoation path => don't start with / but ends with /
-			- NOT WORKING yet
-		- add mandatory field for location & cgis
-
-
+	- expand %
 
 	- Parsing headers
 		- add verification about HTTP protocol

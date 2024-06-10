@@ -31,7 +31,7 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	_request = NULL;
 	_response = NULL;
 	_bodyStream = NULL;
-	_cgiProcess = NULL;
+	cgiProcess = NULL;
 }
 
 //!!! bodystream copy not allocated is it ok ?
@@ -39,7 +39,7 @@ Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._ad
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), _request(copy._request), \
 	_response(copy._response), _lastInteraction(copy._lastInteraction), \
 	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
-	_bodyFileName(copy._bodyFileName), _bodyStream(copy._bodyStream), _cgiProcess(copy._cgiProcess)
+	_bodyFileName(copy._bodyFileName), _bodyStream(copy._bodyStream), cgiProcess(copy.cgiProcess)
 {}
 
 int	Client::getTotalNbrClient(void) {
@@ -47,8 +47,8 @@ int	Client::getTotalNbrClient(void) {
 }
 
 void	Client::clearBuffers(void) {
-	while (!_outBuffers.empty()) {
-		_outBuffers.pop();
+	while (!outBuffers.empty()) {
+		outBuffers.pop();
 	}
 }
 
@@ -220,7 +220,7 @@ int	Client::parseRequest(const char* bufferIn, int n_read) {
 	// }
 }
 
-long long	getDuration(struct timeval time)
+static long long	getDuration(struct timeval time)
 {
 	struct timeval	now;
 	gettimeofday(&now, NULL);
@@ -240,7 +240,7 @@ std::ostream&	operator<<(std::ostream& os, const Client& client) {
 			<< client._request->getError();
 	os << std::endl;
 	os << "		last interaction: " << getDuration(client._lastInteraction) << " ms" << std::endl;
-	os << "		nbr of out buffers: " << client._outBuffers.size() << std::endl;
+	os << "		nbr of out buffers: " << client.outBuffers.size() << std::endl;
 	return (os);
 }
 
@@ -284,13 +284,13 @@ void	Client::setBodyFile(const std::string& path)
 	{
 		_bodyStream = new std::ofstream(path.c_str(), std::ios_base::trunc);
 		_bodyFileName = path;
-		this->_request->_resHints.bodyFileName = path;
+		this->_request->resHints.bodyFileName = path;
 	}
 	else
 	{
 		_bodyStream = NULL;
 		_bodyFileName = "";
-		this->_request->_resHints.bodyFileName = path;
+		this->_request->resHints.bodyFileName = path;
 	}
 }
 
@@ -308,7 +308,7 @@ void	Client::deleteBodyStream()
 	if (_bodyStream) {
 		delete _bodyStream;
 		_bodyStream = NULL;
-		if (_request && _request->_resHints.unlink == true)
+		if (_request && _request->resHints.unlink == true)
 			unlink(_bodyFileName.c_str());
 	}
 }
@@ -328,14 +328,6 @@ void	Client::checkTO()
 			it->_request->_fillError(408, "");
 			IControl::generateResponse(*it++, 408);
 		}
-		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess
-			&& it->_cgiProcess->getStatus() == CHILD_RUNNING
-			&& getDuration(it->_cgiProcess->getForkTime()) > CGI_TIME_OUT)
-		{
-			kill(it->_cgiProcess->getPID(), SIGKILL);
-			it->_request->_fillError(500, "Internal server error");
-			IControl::generateResponse(*it++, 500);
-		}
 		else
 			it++;
 	}
@@ -347,23 +339,27 @@ void	Client::updateLastInteraction()
 }
 
 void	Client::deleteCGIProcess() {
-	if (_cgiProcess) {
-		delete _cgiProcess;
-		_cgiProcess = NULL;
+	if (cgiProcess) {
+		delete cgiProcess;
+		cgiProcess = NULL;
 	}
-	deleteBodyStream();
 }
 
-void	Client::clear() {
-	deleteBodyStream();
-	if (_request) {
-		delete _request;
-		_request = NULL;
-	}
+void	Client::clearResponse(void) {
 	if (_response) {
 		delete _response;
 		_response = NULL;
 	}
+}
+
+void	Client::clear() {
+	deleteBodyStream();
+	deleteCGIProcess();
+	if (_request) {
+		delete _request;
+		_request = NULL;
+	}
+	clearResponse();
 }
 
 void	Client::terminate(void) {

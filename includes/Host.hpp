@@ -95,7 +95,7 @@ class	Host {
 		int					checkLocationRules(Request& request) const;
 		int					checkCGIRules(Request& request) const;
 		int					checkRessourceExistence(Request& request) const;
-		static int			checkRessourcePath(const std::string& path, int type = 0);
+		static int			checkRessourcePath(const std::string& path, int type = 0, int checkWrite = 0);
 
 		template <typename T>
 		const T				getMapObjectByKey(const typename std::map<std::string, T>&, const std::string& key) const;

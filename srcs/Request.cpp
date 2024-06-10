@@ -8,11 +8,11 @@ URI::URI(void) {}
 URI::URI(const URI &copy) : path(copy.path), root(copy.root), pathInfo(copy.pathInfo),
 							extension(copy.extension), query(copy.query) {}
 
-ResHints::ResHints(void) : alreadyExist(false), unlink(false), status(0), type(0),
+ResHints::ResHints(void) : alreadyExist(false), unlink(false), hasBody(false), status(0), type(0),
 						   locationRules(NULL), cgiRules(NULL) {}
 
 ResHints::ResHints(const ResHints &copy) : path(copy.path), alreadyExist(copy.alreadyExist),
-										   unlink(copy.unlink), verboseError(copy.verboseError), status(copy.status),
+										   unlink(copy.unlink), hasBody(copy.hasBody), verboseError(copy.verboseError), status(copy.status),
 										   type(copy.type), locationRules(copy.locationRules),
 										   cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers) {}
 
@@ -20,10 +20,10 @@ Request::Request()
 	: _status(NEW), _header_size(0), _body_max_size(0), _len(0),
 	  _content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0),
 	  _chunked_status(0), _trailer_status(0), _trailer_size(0),
-	  _final_status(ONGOING), _type(0), _method(-1) {}
+	  _final_status(ONGOING), type(0), method(-1) {}
 	
 Request::Request(const Request &copy)
-	:  _formated_headers(copy._formated_headers),
+	: _headers(copy._headers), _formated_headers(copy._formated_headers),
 	  _uri(copy._uri), _status(copy._status),
 	  _header_size(copy._header_size), _line(copy._line), _hostname(copy._hostname),
 	  _body_max_size(copy._body_max_size),
@@ -31,8 +31,8 @@ Request::Request(const Request &copy)
 	  _chunked(copy._chunked), _b_status(copy._b_status),
 	  _chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status),
 	  _trailer_status(copy._trailer_status), _trailer_size(copy._trailer_size),
-	  _final_status(copy._final_status), _headers(copy._headers), _type(copy._type),
-	  _method(copy._method), _parsedUri(copy._parsedUri), _resHints(copy._resHints)
+	  _final_status(copy._final_status), type(copy.type),
+	  method(copy.method), parsedUri(copy.parsedUri), resHints(copy.resHints)
 {
 }
 
@@ -57,8 +57,8 @@ const std::string &Request::getHeader(std::string const &key) const
 
 int Request::_fillError(int error, std::string const &verbose)
 {
-	this->_resHints.status = error;
-	this->_resHints.verboseError = verbose;
+	this->resHints.status = error;
+	this->resHints.verboseError = verbose;
 	this->_line.clear();
 	this->_final_status = ERROR;
 	return (error);
@@ -80,15 +80,16 @@ int Request::getLine(std::string &buffer)
 {
 	std::string::size_type idx;
 
+	buffer = _line + buffer;
 	idx = buffer.find(CRLF, 0);
 
 	if (idx == std::string::npos)
 	{
-		this->_line += buffer;
+		this->_line = buffer;
 		buffer = "";
 		return (1);
 	}
-	this->_line += buffer.substr(0, idx);
+	this->_line = buffer.substr(0, idx);
 	buffer = buffer.substr(idx + strlen(CRLF), std::string::npos);
 	return (0);
 }
@@ -98,6 +99,8 @@ static void skipSpaces(std::string::size_type &idx, std::string &str)
 	while ((str[idx] == 32 || str[idx] == 9) && idx < str.size())
 		idx++;
 }
+
+
 
 static void nextSpace(std::string::size_type &idx, std::string &str)
 {
@@ -159,7 +162,7 @@ int Request::parseRequestLine()
 	std::string version;
 	// LOGD("line = %ss", &_line);
 	nextSpace(idx, this->_line);
-	if ((this->_method = identifyMethod(this->_line.substr(0, idx))) < 0)
+	if ((this->method = identifyMethod(this->_line.substr(0, idx))) < 0)
 		return (this->_fillError(405, "Method Not Allowd"));
 	skipSpaces(idx, this->_line);
 	r_idx = idx;
@@ -372,11 +375,11 @@ void	Request::setChunked(bool value) {
 
 void Request::printRequest() const
 {
-	std::cout << "method is: " << this->_method << std::endl;
+	std::cout << "method is: " << this->method << std::endl;
 	std::cout << "uri is: " << this->_uri << std::endl;
 	std::cout << "status is: " << this->_status << std::endl;
 	std::cout << "bstatus is: " << this->_b_status << std::endl;
-	std::cout << "error is: " << this->_resHints.status << std::endl;
+	std::cout << "error is: " << this->resHints.status << std::endl;
 }
 
 void Request::printHeaders()
@@ -463,7 +466,7 @@ int Request::_checkSizes()
 
 int Request::getError() const
 {
-	return (this->_resHints.status);
+	return (this->resHints.status);
 }
 
 void Request::setBodyMaxSize(int size)
@@ -538,15 +541,15 @@ int Request::checkPath()
 	std::string subpath;
 	std::vector<std::string> v;
 
-	while ((idx = _parsedUri.path.find("//", 0)) != std::string::npos)
-		_parsedUri.path.erase(idx, 1);
-	while ((idx = _parsedUri.path.find("/./", 0)) != std::string::npos)
-		_parsedUri.path.erase(idx, 2);
+	while ((idx = parsedUri.path.find("//", 0)) != std::string::npos)
+		parsedUri.path.erase(idx, 1);
+	while ((idx = parsedUri.path.find("/./", 0)) != std::string::npos)
+		parsedUri.path.erase(idx, 2);
 	idx = 0;
-	while ((idx = _parsedUri.path.find("/", 0)) != std::string::npos)
+	while ((idx = parsedUri.path.find("/", 0)) != std::string::npos)
 	{
-		subpath = _parsedUri.path.substr(0, idx);
-		_parsedUri.path.erase(0, idx + 1);
+		subpath = parsedUri.path.substr(0, idx);
+		parsedUri.path.erase(0, idx + 1);
 		if (subpath == ".." && v.size() == 0)
 			return (1);
 		else if (subpath == ".." && v.size())
@@ -555,34 +558,34 @@ int Request::checkPath()
 			v.push_back(subpath);
 		subpath.clear();
 	}
-	v.push_back(_parsedUri.path);
-	_parsedUri.path.clear();
+	v.push_back(parsedUri.path);
+	parsedUri.path.clear();
 	for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); it++)
-		_parsedUri.path += "/" + *it;
-	_parsedUri.path.erase(0, 1);
+		parsedUri.path += "/" + *it;
+	parsedUri.path.erase(0, 1);
 	return (0);
 }
 
 void Request::prunePath()
 {
 	std::string filename;
-	if (_parsedUri.path.empty() || _parsedUri.path[_parsedUri.path.length() - 1] == '/')
+	if (parsedUri.path.empty() || parsedUri.path[parsedUri.path.length() - 1] == '/')
 	{
-		_parsedUri.root = _parsedUri.path;
-		_parsedUri.extension = "/";
+		parsedUri.root = parsedUri.path;
+		parsedUri.extension = "/";
 		return;
 	}
-	size_t idx = _parsedUri.path.find_last_of("/");
+	size_t idx = parsedUri.path.find_last_of("/");
 	if (idx == 0 || idx == std::string::npos) //! modified
-		_parsedUri.root = "/";
+		parsedUri.root = "/";
 	else
-		_parsedUri.root = _parsedUri.path.substr(0, idx + 1);
-	filename = _parsedUri.path.substr(idx + 1);
+		parsedUri.root = parsedUri.path.substr(0, idx + 1);
+	filename = parsedUri.path.substr(idx + 1);
 	idx = filename.rfind('.');
 	if (idx == std::string::npos)
-		_parsedUri.extension = "";
+		parsedUri.extension = "";
 	else
-		_parsedUri.extension = filename.substr(idx);
+		parsedUri.extension = filename.substr(idx);
 }
 
 int Request::parseURI(const std::string &suffix)
@@ -593,32 +596,32 @@ int Request::parseURI(const std::string &suffix)
 
 int Request::parseURI()
 {
-	_parsedUri.query = _uri;
-	if (pruneScheme(_parsedUri.query))
+	parsedUri.query = _uri;
+	if (pruneScheme(parsedUri.query))
 		return (_fillError(400, "Bad uri"));
-	pruneDelim(_parsedUri.query, "@");
-	pruneDelim(_parsedUri.query, "/");
-	_parsedUri.path = extractPath(_parsedUri.query);
+	pruneDelim(parsedUri.query, "@");
+	pruneDelim(parsedUri.query, "/");
+	parsedUri.path = extractPath(parsedUri.query);
 	if (checkPath())
 		return _fillError(400, "too many ../ in uri");
 	prunePath();
 	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss|",
-		 &_parsedUri.path, &_parsedUri.root, &_parsedUri.extension, &_parsedUri.query);
+		 &parsedUri.path, &parsedUri.root, &parsedUri.extension, &parsedUri.query);
 	return (0);
 }
 
 void Request::extractPathInfo(const std::string &extension)
 {
-	size_t idx = _parsedUri.path.rfind(extension);
-	_parsedUri.pathInfo = _parsedUri.path.substr(idx + extension.length());
-	_parsedUri.path = _parsedUri.path.substr(0, idx + extension.length());
-	idx = _parsedUri.path.find_last_of('/');
+	size_t idx = parsedUri.path.rfind(extension);
+	parsedUri.pathInfo = parsedUri.path.substr(idx + extension.length());
+	parsedUri.path = parsedUri.path.substr(0, idx + extension.length());
+	idx = parsedUri.path.find_last_of('/');
 	if (idx == std::string::npos)
-		_parsedUri.root = "/";
+		parsedUri.root = "/";
 	else
-		_parsedUri.root = _parsedUri.path.substr(0, idx + 1);
-	_parsedUri.extension = extension;
+		parsedUri.root = parsedUri.path.substr(0, idx + 1);
+	parsedUri.extension = extension;
 	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss| pathinfo = |%ss|",
-		 &_parsedUri.path, &_parsedUri.root, &_parsedUri.extension, &_parsedUri.query,
-		 &_parsedUri.pathInfo);
+		 &parsedUri.path, &parsedUri.root, &parsedUri.extension, &parsedUri.query,
+		 &parsedUri.pathInfo);
 }

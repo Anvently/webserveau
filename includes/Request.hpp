@@ -30,7 +30,7 @@ static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
 #define METHOD_NBR 3
 #define METHOD_IS_INVALID (&METHODS_STR[METHODS_NBR])
 
-std::string	generate_name(const std::string &hostname);
+std::string	generate_name(const std::string* hostname);
 bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
 int	getMethodIndex(const std::string& method);
@@ -61,7 +61,6 @@ typedef struct ResHints {
 	std::string							extension;
 	std::string							scriptPath; // root + path
 	std::string							bodyFileName;
-	std::string							cgiOutput;
 	bool								alreadyExist;
 	bool								unlink;
 	bool								hasBody;
@@ -104,6 +103,7 @@ class	Request
 {
 	private:
 
+		std::map<std::string, std::string, i_less>	_headers;
 		std::string							_formated_headers;
 		std::string							_uri;
 		int									_status;
@@ -135,11 +135,10 @@ class	Request
 		Request(const Request& copy);
 		~Request();
 
-		std::map<std::string, std::string, i_less>	_headers;
-		int									_type;
-		int									_method;
-		URI									_parsedUri;
-		ResHints							_resHints;
+		int									type;
+		int									method;
+		URI									parsedUri;
+		ResHints							resHints;
 
 		void		addHeader(std::string const &name, std::string const &value);
 		int			getLine(std::string &buffer);

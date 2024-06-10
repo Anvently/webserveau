@@ -87,12 +87,12 @@ int	main(int, char **, char **env)
 		}
 		return (IControl::cleanExit(0));
 	}
-	catch (const std::exception& e) {
+	catch(const CGIProcess::child_exit_exception &e)
+	{
 		LOGE("%s", e.what());
 		return (IControl::cleanExit(1));
 	}
-	catch(const CGIProcess::child_exit_exception &e)
-	{
+	catch (const std::exception& e) {
 		LOGE("%s", e.what());
 		return (IControl::cleanExit(1));
 	}

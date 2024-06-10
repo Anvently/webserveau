@@ -20,14 +20,12 @@
 // class Response;
 
 #define MAX_NBR_OUT_BUFFERS 10
-#define CLIENT_TIME_OUT 10000 //timeout in milliseconds for client input
+#define CLIENT_TIME_OUT 100000 //timeout in milliseconds for client input
 
 
 #ifndef BUFFER_SIZE
 # define BUFFER_SIZE 4096
 #endif
-
-#define CGI_TIME_OUT 30000
 
 #define HEADER_STATUS_ONGOING 0
 #define HEADER_STATUS_READY 1
@@ -93,8 +91,8 @@ class	Client : public IObject
 
 	public:
 
-		std::queue<std::string>	_outBuffers;
-		CGIProcess*				_cgiProcess;
+		std::queue<std::string>	outBuffers;
+		CGIProcess*				cgiProcess;
 
 		Client(const Client &Copy);
 		virtual ~Client();
@@ -132,6 +130,7 @@ class	Client : public IObject
 		void				stashBuffer(std::string &buffer);
 		void				retrieveBuffer(std::string &str);
 		void				clearBuffer();
+		void				clearResponse(void);
 		void				updateLastInteraction(void);
 
 		void				setHost(const std::string& hostname);
