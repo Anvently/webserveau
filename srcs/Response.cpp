@@ -32,7 +32,7 @@ static std::map<int, std::string> ResponseLine = init_response();
 // {405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
 // {415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
 // {505, "HTTP Version Not Supported"}};
-
+*/
 
 SingleLineResponse::SingleLineResponse(int status, const std::string& description)
 {

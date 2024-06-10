@@ -31,6 +31,7 @@ Client::Client(const ClientSocket& socket, ListenServer& listenServer) \
 	_request = NULL;
 	_response = NULL;
 	_bodyStream = NULL;
+	_cgiProcess = NULL;
 }
 
 //!!! bodystream copy not allocated is it ok ?
@@ -38,7 +39,7 @@ Client::Client(const Client& copy) : _socket(copy._socket), _addressStr(copy._ad
 	_port(copy._port), _host(copy._host), _listenServer(copy._listenServer), _request(copy._request), \
 	_response(copy._response), _lastInteraction(copy._lastInteraction), \
 	_headerStatus(copy._headerStatus), _bodyStatus(copy._bodyStatus), _mode(copy._mode), _buffer(copy._buffer), \
-	_bodyFileName(copy._bodyFileName), _bodyStream(copy._bodyStream)
+	_bodyFileName(copy._bodyFileName), _bodyStream(copy._bodyStream), _cgiProcess(copy._cgiProcess)
 {}
 
 int	Client::getTotalNbrClient(void) {
@@ -92,7 +93,6 @@ void	Client::deleteClient(Client* client)
 {
 	if (client == NULL)
 		return;
-	client->shutdownConnection();
 	std::list<Client>::iterator pos = findClient(client);
 	if (pos != _clientList.end())
 		_clientList.erase(pos);
@@ -168,21 +168,21 @@ void	Client::clearBuffer()
 }
 
 int	Client::parseRequest(const char* bufferIn, int n_read) {
-	std::string	fullBuffer = _buffer + std::string(bufferIn, n_read);
+	_buffer += std::string(bufferIn, n_read);
 	Request*	request = getRequest();
 	int			res = 0;
 
-	LOGI("fullBuffer: %ss", &fullBuffer);
+	LOGI("fullBuffer: %ss", &_buffer);
 	if (_headerStatus < HEADER_STATUS_READY)
 	{
-		res = request->parseHeaders(fullBuffer);
+		res = request->parseHeaders(_buffer);
 		if (res < 0)
 			_headerStatus = HEADER_STATUS_READY;
 		return (res);
 	}
 	else if (_headerStatus == HEADER_STATUS_DONE && _bodyStatus == ONGOING)
 	{
-		res = request->parseInput(fullBuffer, _bodyStream);
+		res = request->parseInput(_buffer, _bodyStream);
 		if (res < 0)
 			_bodyStatus = BODY_STATUS_DONE;
 		return(res);
@@ -302,18 +302,20 @@ void	Client::setResponse(AResponse* response) {
 	this->_response = response;
 }
 
-void	Client::deleteBodyFile()
+/// @brief Delete body stream and associated file 
+void	Client::deleteBodyStream()
 {
 	if (_bodyStream) {
 		delete _bodyStream;
 		_bodyStream = NULL;
+		if (_request && _request->_resHints.unlink == true)
+			unlink(_bodyFileName.c_str());
 	}
-	unlink(_bodyFileName.c_str());
 }
 
 void	Client::checkTO()
 {
-	for (std::list<Client>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
+	for (std::list<Client>::iterator it = _clientList.begin(); it != _clientList.end();)
 	{
 		if (it->getMode() == CLIENT_MODE_READ && getDuration(it->_lastInteraction) > CLIENT_TIME_OUT)
 		{
@@ -324,14 +326,18 @@ void	Client::checkTO()
 			it->setMode(CLIENT_MODE_WRITE);
 			it->_request->setStatus(COMPLETE);
 			it->_request->_fillError(408, "");
-			IControl::generateResponse(*it, 408);
+			IControl::generateResponse(*it++, 408);
 		}
-		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess->getStatus() == CHILD_RUNNING && getDuration(it->_cgiProcess->getForkTime()) > CGI_TIME_OUT)
+		else if (it->getMode() == CLIENT_MODE_WRITE && it->_cgiProcess
+			&& it->_cgiProcess->getStatus() == CHILD_RUNNING
+			&& getDuration(it->_cgiProcess->getForkTime()) > CGI_TIME_OUT)
 		{
 			kill(it->_cgiProcess->getPID(), SIGKILL);
 			it->_request->_fillError(500, "Internal server error");
-			IControl::generateResponse(*it, 500);
+			IControl::generateResponse(*it++, 500);
 		}
+		else
+			it++;
 	}
 }
 
@@ -345,10 +351,11 @@ void	Client::deleteCGIProcess() {
 		delete _cgiProcess;
 		_cgiProcess = NULL;
 	}
-	deleteBodyFile();
+	deleteBodyStream();
 }
 
 void	Client::clear() {
+	deleteBodyStream();
 	if (_request) {
 		delete _request;
 		_request = NULL;
@@ -357,7 +364,6 @@ void	Client::clear() {
 		delete _response;
 		_response = NULL;
 	}
-	deleteBodyFile();
 }
 
 void	Client::terminate(void) {
@@ -367,5 +373,6 @@ void	Client::terminate(void) {
 		_host->removeClient(this);
 	}
 	_listenServer.removeClient(this);
+	close(_socket.fd);
 	Client::deleteClient(this);
 }

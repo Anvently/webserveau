@@ -190,8 +190,10 @@ void    CGIProcess::_setVariables(Client &client)
     }
     else
     {
-        setenv("PATH_INFO", NULL, 1);
-        setenv("PATH_TRANSLATED", NULL, 1);
+        unsetenv("PATH_INFO");
+        unsetenv("PATH_TRANSLATED");
+        // setenv("PATH_INFO", NULL, 1);
+        // setenv("PATH_TRANSLATED", NULL, 1);
     }
     setenv("SCRIPT_NAME", request._resHints.scriptPath.c_str(), 1); //Not sure which variable to use
     if (request._resHints.hasBody && _retrieveHeader("Content-Type", str))

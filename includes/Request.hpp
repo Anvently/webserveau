@@ -12,7 +12,7 @@
 #include <vector>
 
 
-#define HEADER_MAX_SIZE 4096
+#define HEADER_MAX_SIZE 500
 #define	HEADER_MAX_BUFFER 4
 
 #define CRLF "\r\n"
@@ -156,6 +156,8 @@ class	Request
 		int					getStatus(void) const;
 		void				setStatus(int status);
 		int					getError() const;
+		void				setChunked(bool);
+		void				setContentLength(int);
 
 		const std::string&	getHeader(std::string const &key) const;
 		int					getHostName(std::string &hostname) const;

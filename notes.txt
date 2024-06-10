@@ -20,7 +20,9 @@ TODO
 
 	- IParseConfig :
 		- check root and lcoation path => don't start with / but ends with /
-		- servername must not appears twice
+			- NOT WORKING yet
+		- add mandatory field for location & cgis
+
 
 
 	- Parsing headers
