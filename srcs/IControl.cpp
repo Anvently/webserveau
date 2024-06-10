@@ -398,7 +398,10 @@ static int	checkFileExist(const char *path) {
 int	IControl::defineBodyParsing(Client& client, Request& request)
 {
 	if (request.type == REQ_TYPE_CGI) {
-		client.setBodyFile(generate_name(&client.getHost()->getServerNames().front()));
+		if (client.getBodyStatus() != BODY_STATUS_NONE)
+			client.setBodyFile(generate_name(&client.getHost()->getServerNames().front()));
+		else
+			client.setBodyFile("");
 		request.resHints.unlink = true;
 	}
 	else if (request.type == REQ_TYPE_STATIC && request.method == POST) {

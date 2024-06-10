@@ -11,6 +11,10 @@ char**  CGIProcess::_env;
 
 CGIProcess::CGIProcess(Client& client) : _client(client), _request(*client.getRequest()) {}
 
+CGIProcess::~CGIProcess(void) {
+	unlink(_request.resHints.path.c_str());
+}
+
 int CGIProcess::parseHeaders()
 {
 	std::fstream    fstream(_request.resHints.path.c_str());

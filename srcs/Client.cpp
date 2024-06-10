@@ -343,7 +343,6 @@ void	Client::deleteCGIProcess() {
 		delete cgiProcess;
 		cgiProcess = NULL;
 	}
-	deleteBodyStream();
 }
 
 void	Client::clearResponse(void) {

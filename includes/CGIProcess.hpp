@@ -39,6 +39,7 @@ class CGIProcess {
 
 	public:
 
+		~CGIProcess();
 		CGIProcess(Client& client);
 
 		static char**						_env;
