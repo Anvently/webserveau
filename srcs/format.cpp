@@ -70,7 +70,7 @@ bool nocase_string_eq(const std::string& a, const std::string& b)
 }
 
 
-std::string	generate_name(const std::string &hostname)
+std::string	generate_name(const std::string* hostname)
 {
 	struct timeval	t;
 	long long		time;
@@ -79,7 +79,8 @@ std::string	generate_name(const std::string &hostname)
 	gettimeofday(&t, NULL);
 	time = t.tv_sec * 1000000 + t.tv_usec;
 	filename << "./tmp/";
-	filename << hostname;
+	if (hostname)
+		filename << *hostname;
 	filename << "_";
 	filename << time;
 	return (filename.str());

@@ -35,6 +35,7 @@
 #define RES_EXPECTATION_FAILED 417 //full static
 #define RES_INTERNAL_ERROR 500 //Dynamic
 #define RES_NOT_IMPLEMENTED 501 //Dynamic
+#define RES_SERVICE_UNAVAILABLE 503 //Dynamic
 #define RES_HTTP_VERSION_NOT_SUPPORTED 505 //full static
 
 

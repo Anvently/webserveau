@@ -4,6 +4,7 @@
 #include <Request.hpp>
 #include <sys/time.h>
 #include <ctime>
+#include <sys/wait.h>
 #include <IControl.hpp>
 
 char**  CGIProcess::_env;
@@ -112,6 +113,31 @@ int CGIProcess::_inspectHeaders()
 	return (CGI_RES_DOC);
 }
 
+static long long	getDuration(struct timeval time)
+{
+	struct timeval	now;
+	gettimeofday(&now, NULL);
+
+	return (now.tv_sec * 1000 + now.tv_usec / 1000 - time.tv_sec * 1000 - time.tv_usec / 1000);
+}
+
+int	CGIProcess::checkEnd() {
+	int	status;
+
+	if (_pid == 0)
+		return (-1);
+	if (waitpid(_pid, &status, WNOHANG) == 0) {
+		if (getDuration(_fork_time) > CGI_TIME_OUT) {
+			kill(_pid, SIGKILL);
+			return (-1);
+		}
+		return (0);
+	}
+	if (WEXITSTATUS(status) != 0 || WIFSIGNALED(status))
+		return (-1);
+	return (1);
+}
+
 /// @brief 
 /// @return ```0``` for success. ```-1``` if error. Child error will be handled
 /// elsewhere
@@ -119,7 +145,7 @@ int CGIProcess::execCGI()
 {
 	int pid;
 	gettimeofday(&_fork_time, NULL);
-	_request.resHints.cgiOutput = generate_name(_request.resHints.path);
+	_request.resHints.path = generate_name(NULL);
 	pid = fork();
 	if (pid == 0)
 	{
@@ -137,23 +163,30 @@ int CGIProcess::execCGI()
 
 void    CGIProcess::_launchCGI()
 {
-	int     fd_out = open(_request.resHints.cgiOutput.c_str(), O_CREAT | O_TRUNC);
+	int     fd_out = open(_request.resHints.path.c_str(), O_RDWR | O_TRUNC | O_CREAT, 0644);
 	int     fd_in;
 	char    **argv = new char*[3];
 	argv[2] = NULL;
 	argv[0] = new char[_request.resHints.cgiRules->exec.size() + 1];
+	argv[0][_request.resHints.cgiRules->exec.size()] = '\0';
 	argv[1] = new char[_request.resHints.scriptPath.size() + 1];
 	argv[1][_request.resHints.scriptPath.size()] = 0;
-	std::copy(_request.resHints.scriptPath.begin(), _request.resHints.scriptPath.end(), argv[0]);
+	std::copy(&_request.resHints.cgiRules->exec.c_str()[0], &_request.resHints.cgiRules->exec.c_str()[_request.resHints.cgiRules->exec.size()], &argv[0][0]);
+	std::copy(&_request.resHints.scriptPath.c_str()[0], &_request.resHints.scriptPath.c_str()[_request.resHints.scriptPath.size()], &argv[1][0]);
 	if (!_request.resHints.bodyFileName.empty())
 	{
 		fd_in = open(_request.resHints.bodyFileName.c_str(), O_RDONLY);
-		dup2(fd_in, STDIN_FILENO);
+		if (dup2(fd_in, STDIN_FILENO) < 0)
+			LOGE("Dup2() with infile (%ss) failed", &_request.resHints.bodyFileName);
+		close(fd_in);
 	}
-	dup2(fd_out, STDOUT_FILENO);
+	if (dup2(fd_out, STDOUT_FILENO) < 0)
+		LOGE("Dup2() with outfile (%ss) failed", &_request.resHints.path);
+	close(fd_out);
 	_setVariables();
 	execv(argv[0], argv);
 	delete[] argv[0];
+	delete[] argv[1];
 	delete[] argv;
 	LOGE("The script %ss failed", &_request.resHints.scriptPath);
 	throw(CGIProcess::child_exit_exception());

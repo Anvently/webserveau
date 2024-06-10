@@ -8,6 +8,8 @@ class Client;
 class Request;
 typedef struct ResHints ResHints;
 
+#define CGI_TIME_OUT 30000
+
 enum	CGI_RES_TYPE {CGI_RES_DOC = 0, CGI_RES_LOCAL_REDIRECT, CGI_RES_CLIENT_REDIRECT};
 enum	CHILD_STATUS {CHILD_RUNNING, CHILD_TERM};
 
@@ -25,8 +27,8 @@ class CGIProcess {
 		struct timeval						_fork_time;
 		int									_pid;
 		int									_status;
-		Request&							_request;
 		Client&								_client;
+		Request&							_request;
 
 		int		_getLine(std::string &buffer);
 		int		_extract_header();
@@ -43,7 +45,7 @@ class CGIProcess {
 		/// @brief
 		/// @return ```0``` if not finished, ```> 0``` if finished, ```< 0```
 		/// if error.
-		int	checkEnd() {return (0);}
+		int	checkEnd();
 
 		/// @brief Add potential header to resHints, change the status
 		/// @param
@@ -52,7 +54,6 @@ class CGIProcess {
 		int	execCGI();
 		int	getStatus();
 		int	getPID();
-		struct timeval	getForkTime() {return (_fork_time);}
 
 		class	child_exit_exception: public std::exception
 		{

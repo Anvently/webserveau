@@ -8,8 +8,8 @@
 #include <sys/time.h>
 #include <string.h>
 
-#define BUFFER_SIZE 15
-#define PAUSE_TIME 500000
+#define BUFFER_SIZE 500
+#define PAUSE_TIME 0
 #define ADDRESS "127.0.0.1"
 #define PORT 8080
 

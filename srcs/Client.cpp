@@ -220,7 +220,7 @@ int	Client::parseRequest(const char* bufferIn, int n_read) {
 	// }
 }
 
-long long	getDuration(struct timeval time)
+static long long	getDuration(struct timeval time)
 {
 	struct timeval	now;
 	gettimeofday(&now, NULL);
@@ -328,14 +328,6 @@ void	Client::checkTO()
 			it->_request->_fillError(408, "");
 			IControl::generateResponse(*it++, 408);
 		}
-		else if (it->getMode() == CLIENT_MODE_WRITE && it->cgiProcess
-			&& it->cgiProcess->getStatus() == CHILD_RUNNING
-			&& getDuration(it->cgiProcess->getForkTime()) > CGI_TIME_OUT)
-		{
-			kill(it->cgiProcess->getPID(), SIGKILL);
-			it->_request->_fillError(500, "Internal server error");
-			IControl::generateResponse(*it++, 500);
-		}
 		else
 			it++;
 	}
@@ -363,6 +355,7 @@ void	Client::clearResponse(void) {
 
 void	Client::clear() {
 	deleteBodyStream();
+	deleteCGIProcess();
 	if (_request) {
 		delete _request;
 		_request = NULL;

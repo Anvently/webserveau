@@ -149,7 +149,8 @@ int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
 
 AResponse*	AResponse::genResponse(ResHints &hints)
 {
-	AResponse	*response;
+	AResponse	*response = NULL;
+
 	if (hints.status == 100)
 	{
 		response = new SingleLineResponse(hints.status, hints.verboseError);
@@ -161,7 +162,7 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
 		// static_cast<DynamicResponse *>(response)->
 	}
-	return (NULL);
+	return (response);
 
 }
 

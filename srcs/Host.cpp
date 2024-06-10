@@ -444,7 +444,7 @@ int	Host::checkRessourceExistence(Request& request) const {
 	int			res;
 	if (request.type == REQ_TYPE_CGI) {
 		request.resHints.scriptPath = request.resHints.cgiRules->root + request.parsedUri.path;
-		res = checkRessourcePath(request.resHints.scriptPath, REQ_TYPE_CGI, X_OK);
+		res = checkRessourcePath(request.resHints.scriptPath, REQ_TYPE_CGI, R_OK);
 	} else {
 		if (request.method == POST) {
 			path = (request.resHints.locationRules->upload_root != "" ? \

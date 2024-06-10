@@ -1,12 +1,3 @@
-POST /index.php HTTP/1.1
+GET /script.py?param1=veeef&param2=wedew HTTP/1.1
 host: server1
-transfer-encoding: chunked
-expect: 100-continue
 
-5
-abcde
-4
-fghk
-3
-lpo
-0

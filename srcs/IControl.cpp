@@ -147,7 +147,7 @@ int	IControl::handleListenEvent(epoll_event* event)
 	Client			*newClient = NULL;
 	if ((newClient = pt->acceptConnection()) == NULL)
 		return (1);
-	if (registerToEpoll(newClient->getfd(), newClient, EPOLLIN | EPOLLHUP))
+	if (registerToEpoll(newClient->getfd(), newClient, EPOLLIN | EPOLLHUP | EPOLLOUT))
 		return (1);
 	return (0);
 }
@@ -159,10 +159,12 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 
 	if ((event->events & EPOLLIN) && client.getMode() == CLIENT_MODE_READ) {
 		if ((res = IControl::handleClientIn(client))) {
-			if (res > 0)
-				generateResponse(client, res);
-			else if ((res = generateCGIProcess(client)))
-				generateResponse(client, RES_INTERNAL_ERROR);
+			if (res > 0) {
+				if (client.getRequest()->type != REQ_TYPE_CGI || res != RES_OK)
+					generateResponse(client, res);
+				else if ((res = generateCGIProcess(client)))
+					generateResponse(client, RES_INTERNAL_ERROR);
+			}
 		}
 	}
 	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
@@ -238,7 +240,7 @@ int	IControl::handleCGIProcess(Client& client) {
 	if (res == 0)
 		return (0);
 	if (res < 0)
-		generateResponse(client, RES_INTERNAL_ERROR);
+		generateResponse(client, RES_SERVICE_UNAVAILABLE);
 	else if (res > 0) {
 		res = client.cgiProcess->parseHeaders();
 		if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
@@ -248,7 +250,8 @@ int	IControl::handleCGIProcess(Client& client) {
 			generateResponse(client);
 		}
 	}
-	client.deleteCGIProcess();
+	if (client.cgiProcess)
+		client.deleteCGIProcess();
 	return (0);
 }
 
@@ -395,7 +398,7 @@ static int	checkFileExist(const char *path) {
 int	IControl::defineBodyParsing(Client& client, Request& request)
 {
 	if (request.type == REQ_TYPE_CGI) {
-		client.setBodyFile(generate_name(client.getHost()->getServerNames().front()));
+		client.setBodyFile(generate_name(&client.getHost()->getServerNames().front()));
 		request.resHints.unlink = true;
 	}
 	else if (request.type == REQ_TYPE_STATIC && request.method == POST) {
@@ -476,6 +479,21 @@ void	IControl::fillAdditionnalHeaders(Request& request) {
 		request.resHints.headers["connection"] = "close";
 }
 
+void	IControl::fillVerboseError(Request& request) {
+	switch (request.getStatus()) {
+		case RES_INTERNAL_ERROR:
+			request.resHints.verboseError = "Internal error";
+			break;
+		
+		case RES_SERVICE_UNAVAILABLE:
+			request.resHints.verboseError = "Service temporarly unavailable.";
+			break;
+
+		default:
+			break;
+	}
+}
+
 /// @brief Generate an appropriate response type from the given
 /// status.
 /// @param client
@@ -490,14 +508,15 @@ void	IControl::generateResponse(Client& client, int status)
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
 		return ; //Not sure
+	if (status)
+		request.resHints.status = status;
 	fillErrorPage(client.getHost(), request.resHints);
 	fillAdditionnalHeaders(request);
 	///REdirections
-	if (status)
-		request.resHints.status = status;
+	fillVerboseError(request);
 	if (request.resHints.status)
-	LOGI("Generating response status %d | verbose = %ss",
-		request.resHints.status, &request.resHints.verboseError);
+		LOGI("Generating response status %d | verbose = %ss",
+			request.resHints.status, &request.resHints.verboseError);
 	request.resHints.type = request.type;
 	try
 	{
@@ -518,10 +537,9 @@ void	IControl::generateResponse(Client& client, int status)
 
 int IControl::generateCGIProcess(Client& client) {
 	client.cgiProcess = new CGIProcess(client);
-	if (client.cgiProcess->execCGI()) {
-		client.getRequest()->resHints.verboseError = "could not initiate a new process"; //May want to remove
+	if (client.cgiProcess->execCGI())
 		return (RES_INTERNAL_ERROR);
-	}
+	client.setMode(CLIENT_MODE_WRITE);
 	return (0);
 }
 

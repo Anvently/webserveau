@@ -8,11 +8,11 @@ URI::URI(void) {}
 URI::URI(const URI &copy) : path(copy.path), root(copy.root), pathInfo(copy.pathInfo),
 							extension(copy.extension), query(copy.query) {}
 
-ResHints::ResHints(void) : alreadyExist(false), unlink(false), status(0), type(0),
+ResHints::ResHints(void) : alreadyExist(false), unlink(false), hasBody(false), status(0), type(0),
 						   locationRules(NULL), cgiRules(NULL) {}
 
 ResHints::ResHints(const ResHints &copy) : path(copy.path), alreadyExist(copy.alreadyExist),
-										   unlink(copy.unlink), verboseError(copy.verboseError), status(copy.status),
+										   unlink(copy.unlink), hasBody(copy.hasBody), verboseError(copy.verboseError), status(copy.status),
 										   type(copy.type), locationRules(copy.locationRules),
 										   cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers) {}
 
@@ -90,7 +90,6 @@ int Request::getLine(std::string &buffer)
 		return (1);
 	}
 	this->_line = buffer.substr(0, idx);
-	LOGD("line = %ss", &_line);
 	buffer = buffer.substr(idx + strlen(CRLF), std::string::npos);
 	return (0);
 }

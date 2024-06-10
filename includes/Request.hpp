@@ -30,7 +30,7 @@ static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
 #define METHOD_NBR 3
 #define METHOD_IS_INVALID (&METHODS_STR[METHODS_NBR])
 
-std::string	generate_name(const std::string &hostname);
+std::string	generate_name(const std::string* hostname);
 bool nocase_string_eq(const std::string& a, const std::string& b);
 int	getInt(std::string str, int base, int &res);
 int	getMethodIndex(const std::string& method);
@@ -60,7 +60,6 @@ typedef struct ResHints {
 	std::string							path; // /cgi-bin/script.php
 	std::string							scriptPath; // root + path
 	std::string							bodyFileName;
-	std::string							cgiOutput;
 	bool								alreadyExist;
 	bool								unlink;
 	bool								hasBody;
