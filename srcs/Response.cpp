@@ -3,256 +3,10 @@
 #include <sys/time.h>
 #include <fstream>
 #include <ctime>
+#include <ILogger.hpp>
 
 static	std::string	days[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 static	std::string	months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", };
-
-
-std::map<int, std::string>	init_response()
-{
-	std::map<int, std::string>	mipmap;
-
-	mipmap.insert(std::pair<int, std::string>{100, "Continue"});
-	mipmap.insert(std::pair<int, std::string>{200, "OK"});
-	mipmap.insert(std::pair<int, std::string>{201, "CREATED"});
-	mipmap.insert(std::pair<int, std::string>{204, "No Content"});
-	mipmap.insert(std::pair<int, std::string>{300, "Multiple Choices"});   //DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{301, "Move Permanently"});//DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{302, "Found"});//DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{307, "Temporary Redirect"});//DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{308, "Permanent Redirect"});//DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{400, "Bad Request"}); //DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{401, "Unauthorized"});
-	mipmap.insert(std::pair<int, std::string>{403, "Forbidden"});
-	mipmap.insert(std::pair<int, std::string>{404, "Not Found"});
-	mipmap.insert(std::pair<int, std::string>{405, "Method Not Allowed"});
-	mipmap.insert(std::pair<int, std::string>{408, "Request Timeout"});
-	mipmap.insert(std::pair<int, std::string>{413, "Content Too Large"});
-	mipmap.insert(std::pair<int, std::string>{414, "URI Too Long"});
-	mipmap.insert(std::pair<int, std::string>{415, "Unsupported Media Type"});
-	mipmap.insert(std::pair<int, std::string>{417, "Expectation Failed"});
-	mipmap.insert(std::pair<int, std::string>{500, "Internal Server Error"}); //DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{501, "Not Implemented"});  //DYNAMIC
-	mipmap.insert(std::pair<int, std::string>{503, "Service Uavailable"}); // timeout cgi ?
-	mipmap.insert(std::pair<int, std::string>{505, "HTTP Version Not Supported"}); //check in parsing
-
-	return (mipmap);
-}
-
-static std::map<int, std::string> ResponseLine = init_response();
-static std::map<std::string, std::string> mimeType = init_mimes();
-
-
-SingleLineResponse::SingleLineResponse(int status, const std::string& description)
-{
-	_status = status;
-	_description = description;
-	_response = "HTTP/1.1 100 Continue\r\n";
-}
-
-int	SingleLineResponse::writeResponse(std::queue<std::string>& outQueue)
-{
-	std::string	portion;
-
-	while(!_response.empty())
-	{
-		portion = _response.substr(0, HEADER_MAX_SIZE);
-		outQueue.push(portion);
-		_response.erase(0, portion.size());
-		portion.clear();
-	}
-	return (0);
-}
-
-SingleLineResponse::~SingleLineResponse(void) {}
-HeaderResponse::HeaderResponse(ResHints &hints) : hints(hints)
-{
-	_status = hints.status;
-	_description = hints.verboseError;
-	addUniversalHeaders();
-}
-
-std::string	getTime()
-{
-	time_t	t = time(0);
-	struct tm *ptime = gmtime(&t);
-	char	str[30];
-	strftime(str, 30, "%a, %d %b %G %T GMT", ptime);
-	std::string	time(str);
-	return (time);
-}
-
-
-HeaderResponse::~HeaderResponse(void) {}
-
-void	HeaderResponse::addUniversalHeaders()
-{
-	_headers["Accept-Encoding"] = "identity";
-	_headers["Accept-Ranges"] = "none";
-	_headers["Date"] = getTime();
-}
-
-void	HeaderResponse::addHeader(std::string const &key, std::string const &value)
-{
-	_headers.insert(std::pair<std::string, std::string>(key, value));
-}
-
-void	HeaderResponse::addHintHeaders(ResHints &hints)
-{
-	for (std::map<std::string, std::string>::iterator it = hints.headers.begin(); it != hints.headers.end(); it++)
-	{
-		_headers.insert(std::pair<std::string, std::string>(it->first, it->second));
-	}
-}
-
-void	HeaderResponse::_formatHeaders()
-{
-	_formated_headers += "HTTP/1.1 " + ResponseLine[_status] + "\r\n";
-	for (std::map<std::string, std::string>::iterator it = _headers.begin(); it != _headers.end(); it++)
-	{
-		_formated_headers += it->first + ": ";
-		_formated_headers += it->second + "\r\n";
-	}
-	_formated_headers += "\r\n";
-}
-
-int	HeaderResponse::writeResponse(std::queue<std::string>& outQueue)
-{
-	std::string	portion;
-
-	_formatHeaders();
-	while(!_formated_headers.empty())
-	{
-		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
-		outQueue.push(portion);
-		_formated_headers.erase(0, portion.size());
-		portion.clear();
-	}
-	return (0);
-}
-
-FileResponse::~FileResponse(void) {}
-
-
-FileResponse::FileResponse(ResHints &hints): HeaderResponse(hints)
-{
-	_path = hints.path;
-	//_ifstream.open(_path.c_str(), std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
-}
-
-int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
-{
-	std::string	portion;
-	char	*buff = new char[HEADER_MAX_SIZE];
-	this->_formatHeaders();
-	while(!_formated_headers.empty())
-	{
-		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
-		outQueue.push(portion);
-		_formated_headers.erase(0, portion.size());
-		portion.clear();
-	}
-	portion.clear();
-	while (_fstr.read(buff, HEADER_MAX_SIZE) && _fstr.gcount())
-	{
-		std::string	outBuff(buff, _fstr.gcount());
-		outQueue.push(outBuff);
-		outBuff.clear();
-	}
-}
-
-
-
-DynamicResponse::~DynamicResponse(void) {}
-
-int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
-	(void)outQueue;
-	return (0);
-}
-
-AResponse*	AResponse::genResponse(ResHints &hints)
-{
-	AResponse	*response = NULL;
-
-	if (hints.status == 100)
-	{
-		response = new SingleLineResponse(hints.status, hints.verboseError);
-		return (response);
-	}
-	else if (hints.path.empty())
-	{
-		response = new DynamicResponse(hints);
-		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
-		static_cast<DynamicResponse *>(response)->addSpecificHeaders();
-		static_cast<DynamicResponse *>(response)->_generateBody();
-	}
-	else
-	{
-		response = new FileResponse(hints);
-		static_cast<FileResponse *>(response)->addHintHeaders(hints);
-		static_cast<FileResponse *>(response)->inspectFile(hints);
-	}
-	return (response);
-}
-
-DynamicResponse::DynamicResponse(ResHints &hints) : HeaderResponse(hints)
-{
-}
-
-
-int	FileResponse::inspectFile(ResHints &hints)
-{
-	struct	stat	*st;
-	if (stat(hints.path.c_str(), st))
-		throw(std::domain_error(("Can't get stat of target file: " + hints.path).c_str()));
-	size_t	length = st->st_size;
-	length -= hints.index;
-	_fstr.open(hints.path, std::ios::in | std::ios::binary);
-	if (!_fstr.is_open())
-		throw(std::domain_error(("Could not open target file: " + hints.path).c_str()));
-	_fstr.seekg((hints.index));
-	this->addHeader("Content-Length", itostr(length));
-	this->checkType();
-	return (0);
-}
-
-
-void	FileResponse::checkType()
-{
-	std::string	type;
-	if (_retrieveType(hints.extension, type))
-	{
-		addHeader("Content-Type", type);
-	}
-}
-
-
-int HeaderResponse::_retrieveHeader(std::string key, std::string &value)
-{
-    try{
-        value = _headers.at(key);
-        return (1);
-    }
-    catch(std::out_of_range &e)
-    {
-        value.clear();
-		return (0);
-    }
-}
-
-int FileResponse::_retrieveType(std::string key, std::string &value)
-{
-    try{
-        value = mimeType.at(key);
-        return (1);
-    }
-    catch(std::out_of_range &e)
-    {
-        value.clear();
-		return (0);
-    }
-}
-
 
 std::map<std::string, std::string>	init_mimes()
 {
@@ -370,6 +124,259 @@ std::map<std::string, std::string>	init_mimes()
 	mipmap[".avi"] = "video/x-msvideo";
 
 	return (mipmap);
+}
+
+
+std::map<int, std::string>	init_response()
+{
+	std::map<int, std::string>	mipmap;
+
+	mipmap.insert(std::pair<int, std::string>(100, "Continue"));
+	mipmap.insert(std::pair<int, std::string>(200, "OK"));
+	mipmap.insert(std::pair<int, std::string>(201, "CREATED"));
+	mipmap.insert(std::pair<int, std::string>(204, "No Content"));
+	mipmap.insert(std::pair<int, std::string>(300, "Multiple Choices"));   //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(301, "Move Permanently"));//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(302, "Found"));//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(307, "Temporary Redirect"));//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(308, "Permanent Redirect"));//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(400, "Bad Request")); //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(401, "Unauthorized"));
+	mipmap.insert(std::pair<int, std::string>(403, "Forbidden"));
+	mipmap.insert(std::pair<int, std::string>(404, "Not Found"));
+	mipmap.insert(std::pair<int, std::string>(405, "Method Not Allowed"));
+	mipmap.insert(std::pair<int, std::string>(408, "Request Timeout"));
+	mipmap.insert(std::pair<int, std::string>(413, "Content Too Large"));
+	mipmap.insert(std::pair<int, std::string>(414, "URI Too Long"));
+	mipmap.insert(std::pair<int, std::string>(415, "Unsupported Media Type"));
+	mipmap.insert(std::pair<int, std::string>(417, "Expectation Failed"));
+	mipmap.insert(std::pair<int, std::string>(500, "Internal Server Error")); //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(501, "Not Implemented"));  //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(503, "Service Uavailable")); // timeout cgi ?
+	mipmap.insert(std::pair<int, std::string>(505, "HTTP Version Not Supported")); //check in parsing
+
+	return (mipmap);
+}
+
+static std::map<int, std::string> ResponseLine = init_response();
+static std::map<std::string, std::string> mimeType = init_mimes();
+
+
+SingleLineResponse::SingleLineResponse(int status, const std::string& description)
+{
+	_status = status;
+	_description = description;
+	_response = "HTTP/1.1 100 Continue\r\n";
+}
+
+int	SingleLineResponse::writeResponse(std::queue<std::string>& outQueue)
+{
+	std::string	portion;
+
+	while(!_response.empty())
+	{
+		portion = _response.substr(0, HEADER_MAX_SIZE);
+		outQueue.push(portion);
+		_response.erase(0, portion.size());
+		portion.clear();
+	}
+	return (0);
+}
+
+SingleLineResponse::~SingleLineResponse(void) {}
+HeaderResponse::HeaderResponse(ResHints &hints) : hints(hints)
+{
+	_status = hints.status;
+	_description = hints.verboseError;
+	addUniversalHeaders();
+}
+
+std::string	getTime()
+{
+	time_t	t = time(0);
+	struct tm *ptime = gmtime(&t);
+	char	str[30];
+	strftime(str, 30, "%a, %d %b %G %T GMT", ptime);
+	std::string	time(str);
+	return (time);
+}
+
+
+HeaderResponse::~HeaderResponse(void) {}
+
+void	HeaderResponse::addUniversalHeaders()
+{
+	hints.headers["Accept-Encoding"] = "identity";
+	hints.headers["Accept-Ranges"] = "none";
+	hints.headers["Date"] = getTime();
+}
+
+void	HeaderResponse::addHeader(std::string const &key, std::string const &value)
+{
+	hints.headers.insert(std::pair<std::string, std::string>(key, value));
+}
+
+void	HeaderResponse::addHintHeaders(ResHints &hints)
+{
+	for (std::map<std::string, std::string>::iterator it = hints.headers.begin(); it != hints.headers.end(); it++)
+	{
+		hints.headers.insert(std::pair<std::string, std::string>(it->first, it->second));
+	}
+}
+
+void	HeaderResponse::_formatHeaders()
+{
+	_formated_headers += "HTTP/1.1 " + itostr(_status) + " " + ResponseLine[_status] + "\r\n";
+	for (std::map<std::string, std::string>::iterator it = hints.headers.begin(); it != hints.headers.end(); it++)
+	{
+		_formated_headers += it->first + ": ";
+		_formated_headers += it->second + "\r\n";
+	}
+	_formated_headers += "\r\n";
+}
+
+int	HeaderResponse::writeResponse(std::queue<std::string>& outQueue)
+{
+	std::string	portion;
+
+	_formatHeaders();
+	while(!_formated_headers.empty())
+	{
+		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
+		outQueue.push(portion);
+		_formated_headers.erase(0, portion.size());
+		portion.clear();
+	}
+	return (0);
+}
+
+FileResponse::~FileResponse(void) {}
+
+
+FileResponse::FileResponse(ResHints &hints): HeaderResponse(hints)
+{
+	_path = hints.path;
+	//_ifstream.open(_path.c_str(), std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
+}
+
+int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
+{
+	std::string	portion;
+	char	*buff = new char[HEADER_MAX_SIZE];
+	this->_formatHeaders();
+	while(!_formated_headers.empty())
+	{
+		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
+		outQueue.push(portion);
+		_formated_headers.erase(0, portion.size());
+		portion.clear();
+	}
+	portion.clear();
+	do
+	{
+		_fstr.read(buff, HEADER_MAX_SIZE);
+		if (_fstr.gcount() == 0)
+			break;
+		std::string	outBuff(buff, _fstr.gcount());
+		outQueue.push(outBuff);
+		outBuff.clear();
+	} while (_fstr.good());
+	LOGD("gcount = %d", _fstr.gcount());
+	delete[] buff;
+	return (0);
+}
+
+
+
+DynamicResponse::~DynamicResponse(void) {}
+
+int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
+	(void)outQueue;
+	return (0);
+}
+
+AResponse*	AResponse::genResponse(ResHints &hints)
+{
+	AResponse	*response = NULL;
+
+	if (hints.status == 100)
+	{
+		response = new SingleLineResponse(hints.status, hints.verboseError);
+		return (response);
+	}
+	else if (hints.path.empty())
+	{
+		response = new DynamicResponse(hints);
+		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
+		static_cast<DynamicResponse *>(response)->addSpecificHeaders();
+		static_cast<DynamicResponse *>(response)->_generateBody();
+	}
+	else
+	{
+		response = new FileResponse(hints);
+		static_cast<FileResponse *>(response)->addHintHeaders(hints);
+		static_cast<FileResponse *>(response)->inspectFile(hints);
+	}
+	return (response);
+}
+
+DynamicResponse::DynamicResponse(ResHints &hints) : HeaderResponse(hints)
+{
+}
+
+
+int	FileResponse::inspectFile(ResHints &hints)
+{
+	struct	stat	st;
+
+	if (stat(hints.path.c_str(), &st))
+		throw(std::domain_error(("Can't get stat of target file: " + hints.path).c_str()));
+	size_t	length = st.st_size;
+	length -= hints.index;
+	_fstr.open(hints.path.c_str(), std::ios::in | std::ios::binary);
+	if (!_fstr.is_open())
+		throw(std::domain_error(("Could not open target file: " + hints.path).c_str()));
+	_fstr.seekg((hints.index));
+	hints.headers["Content-Length"] = itostr(length);
+	this->checkType();
+	return (0);
+}
+
+
+void	FileResponse::checkType()
+{
+	std::string	type;
+	if (_retrieveType(hints.extension, type))
+	{
+		hints.headers["Content-Type"] = type;
+	}
+}
+
+
+int HeaderResponse::_retrieveHeader(std::string key, std::string &value)
+{
+    try{
+        value = hints.headers.at(key);
+        return (1);
+    }
+    catch(std::out_of_range &e)
+    {
+        value.clear();
+		return (0);
+    }
+}
+
+int FileResponse::_retrieveType(std::string key, std::string &value)
+{
+    try{
+        value = mimeType.at(key);
+        return (1);
+    }
+    catch(std::out_of_range &e)
+    {
+        value.clear();
+		return (0);
+    }
 }
 
 

@@ -54,32 +54,6 @@ typedef struct URI
 struct Location;
 struct CGIConfig;
 
-//http:localhost:80/cgi-bin/script.php/images/pic.jpg
-//path translated = root + pathinfo
-typedef struct ResHints {
-	std::string							path; // /cgi-bin/script.php
-	std::string							extension;
-	std::string							scriptPath; // root + path
-	std::string							bodyFileName;
-	bool								alreadyExist;
-	bool								unlink;
-	bool								hasBody;
-	std::string							verboseError;
-	int									status;
-	int									type;
-	int									redir_type;
-	int									index;
-	const Location*						locationRules;
-	const CGIConfig*					cgiRules;
-	const std::vector<std::string>*		redirList;
-	std::map<std::string, std::string>	headers;
-
-	ResHints(void);
-	ResHints(const ResHints&);
-} ResHints;
-
-
-
 struct i_less {
 	static inline char	lowercase(char c) {
 		if (c >= 'A' && c <= 'Z')
@@ -98,6 +72,30 @@ struct i_less {
 		return ((stricmp(lhs.c_str(), rhs.c_str()) < 0));
 	}
 };
+
+//http:localhost:80/cgi-bin/script.php/images/pic.jpg
+//path translated = root + pathinfo
+typedef struct ResHints {
+	std::string							path; // /cgi-bin/script.php
+	std::string							extension;
+	std::string							scriptPath; // root + path
+	std::string							bodyFileName;
+	bool								alreadyExist;
+	bool								unlink;
+	bool								hasBody;
+	std::string							verboseError;
+	int									status;
+	int									type;
+	int									redir_type;
+	int									index;
+	const Location*						locationRules;
+	const CGIConfig*					cgiRules;
+	const std::vector<std::string>*		redirList;
+	std::map<std::string, std::string, i_less>	headers;
+
+	ResHints(void);
+	ResHints(const ResHints&);
+} ResHints;
 
 class	Request
 {

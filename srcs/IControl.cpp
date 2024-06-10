@@ -221,8 +221,23 @@ int	IControl::handleClientIn(Client& client)
 /// @return ```0``` if response if not sent yet, ```> 0``` if response sent
 /// and connection is to be kept alive, ```< 0``` if connection is to be closed.
 int	IControl::handleClientOut(Client& client) {
-	(void) client;
-	client.getResponse()->writeResponse(client.outBuffers);
+	int	nwrite = 0;
+
+	if (client.outBuffers.size() >= 1) {
+		LOGD("%ss", &client.outBuffers.front());
+		nwrite = write(client.getfd(), client.outBuffers.front().c_str(), client.outBuffers.front().size());
+		if (nwrite < 0) {
+			LOGE("Write error");
+			return (-1);
+		}
+		client.outBuffers.pop();
+	}
+	if (client.outBuffers.empty()) {
+		if (client.getRequest()->resHints.headers["connection"] == "close")
+			return (-1);
+		else
+			return (1);
+	}
 	return (0);
 }
 
@@ -523,12 +538,14 @@ void	IControl::generateResponse(Client& client, int status)
 	request.resHints.type = request.type;
 	try
 	{
-		client.getRequest()->_resHints.extension = client.getRequest()->_parsedUri.extension;
-		response = AResponse::genResponse(client.getRequest()->_resHints);
+		request.resHints.extension = request.parsedUri.extension;
+		response = AResponse::genResponse(request.resHints);
 	}
 	catch(const std::exception& e)
 	{
-		LOGD("PING");
+		LOGE("Response exception : %s", e.what());
+		client.clearResponse();
+		//change reshints
 		generateResponse(client, RES_INTERNAL_ERROR);
 		return ;
 	}
@@ -536,7 +553,6 @@ void	IControl::generateResponse(Client& client, int status)
 		response->writeResponse(client.outBuffers);
 	client.setResponse(response);
 	client.setMode(CLIENT_MODE_WRITE); //temporary
-	client.terminate(); //! tempory
 }
 
 int IControl::generateCGIProcess(Client& client) {
