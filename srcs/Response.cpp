@@ -33,7 +33,7 @@ static std::map<int, std::string> ResponseLine = init_response();
 // {405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
 // {415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
 // {505, "HTTP Version Not Supported"}};
-*/
+
 
 SingleLineResponse::SingleLineResponse(int status, const std::string& description)
 {
@@ -87,12 +87,20 @@ void	HeaderResponse::addUniversalHeaders()
 
 void	HeaderResponse::addHeader(std::string const &key, std::string const &value)
 {
-	_headers[key] = value;
+	_headers.insert({key, value});
+}
+
+void	HeaderResponse::addHintHeaders(ResHints &hints)
+{
+	for (std::map<std::string, std::string>::iterator it = hints.headers.begin(); it != hints.headers.end(); it++)
+	{
+		_headers.insert({it->first, it->second});
+	}
 }
 
 void	HeaderResponse::_formatHeaders()
 {
-	_formated_headers += "HTTP/1.1" + ResponseLine[_status] + "\r\n";
+	_formated_headers += "HTTP/1.1 " + ResponseLine[_status] + "\r\n";
 	for (std::map<std::string, std::string>::iterator it = _headers.begin(); it != _headers.end(); it++)
 	{
 		_formated_headers += it->first + ": ";
@@ -153,7 +161,19 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 	AResponse	*response;
 	if (hints.status == 100)
 	{
-		response = new SingleLineResponse(hints.status, )
+		response = new SingleLineResponse(hints.status, hints.verboseError);
+		return (response);
 	}
+	else if (hints.path.empty())
+	{
+		response = new DynamicResponse(hints.status, hints.verboseError);
+		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
+		static_cast<DynamicResponse *>(response)->
+	}
+
+}
+
+DynamicResponse::DynamicResponse(int status, std::string const &description) : HeaderResponse(status, description)
+{
 
 }
