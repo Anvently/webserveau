@@ -12,20 +12,21 @@ std::map<int, std::string>	init_response()
 {
 	std::map<int, std::string>	mipmap;
 
-	mipmap.insert({100, "Continue"});
-	mipmap.insert({200, "OK"});
-	mipmap.insert({201, "CREATED"});
-	mipmap.insert({204, "No Content"});
-	mipmap.insert({300, "Multiple Choices"});
-	mipmap.insert({301, "Move Permanently"});
-	mipmap.insert({302, "Found"});
-	mipmap.insert({307, "Temporary Redirect"});
+	mipmap.insert(std::pair<int, std::string>(100, "Continue"));
+	mipmap.insert(std::pair<int, std::string>(200, "OK"));
+	mipmap.insert(std::pair<int, std::string>(201, "CREATED"));
+	mipmap.insert(std::pair<int, std::string>(204, "No Content"));
+	mipmap.insert(std::pair<int, std::string>(300, "Multiple Choices"));
+	mipmap.insert(std::pair<int, std::string>(301, "Move Permanently"));
+	mipmap.insert(std::pair<int, std::string>(302, "Found"));
+	mipmap.insert(std::pair<int, std::string>(307, "Temporary Redirect"));
 
 
 
 }
 
 static std::map<int, std::string> ResponseLine = init_response();
+/*
 // {{100, "Continue"}, {200, "OK"}, {201, "Created"}, {204, "No Content"}, \
 // {300, "Multiple Choices"}, {301, "Move Permanently"}, {302, "Found"}, {307, "Temporary Redirect"}, \
 // {308, "Permanent Redirect"}, {400, "Bad Request"}, {401, "Unauthorized"}, {403, "Forbidden"}, {404, "Not Found"}, \

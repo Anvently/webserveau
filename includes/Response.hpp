@@ -127,16 +127,18 @@ class	DynamicResponse : public HeaderResponse
 	private:
 
 		DynamicResponse(/* args */);
-		int									_pipeFd;
 		std::string							_body;
 
 	public:
 
 		// typedef	void (*bodyGenerator_func)(DynamicResponse&, const std::string);
 
+		//dir_listing
+		//Redir
+		static DynamicResponse*				generateBadRequest
 		DynamicResponse(int status, const Request& request);
 		// DynamicResponse(bodyGenerator_func, const std::string&);
-		virtual ~DynamicResponse();
+		virtual	~DynamicResponse();
 
 	virtual int		writeResponse(std::queue<std::string>& outQueue);
 };

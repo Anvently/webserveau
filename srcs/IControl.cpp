@@ -483,6 +483,7 @@ void	IControl::generateResponse(Client& client, int status)
 		return ; //Not sure
 	fillErrorPage(client.getHost(), request._resHints);
 	fillAdditionnalHeaders(request);
+	///REdirections
 	if (status)
 		request._resHints.status = status;
 	if (request._resHints.status)

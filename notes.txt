@@ -23,7 +23,7 @@ TODO
 			- NOT WORKING yet
 		- add mandatory field for location & cgis
 
-
+	- expand %
 
 	- Parsing headers
 		- add verification about HTTP protocol

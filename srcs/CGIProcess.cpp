@@ -74,7 +74,6 @@ int CGIProcess::_inspectHeaders(ResHints &hints)
     std::string value;
     if (_retrieveHeader("Location", value) && value.substr(0, 7) == "http://")
     {
-        hints.redir_type = REDIR_CLIENT;
         hints.headers["Location"] = value;
         hints.status = 302;
         if (_retrieveHeader("Content-Type", value))
@@ -82,20 +81,20 @@ int CGIProcess::_inspectHeaders(ResHints &hints)
             hints.headers["Content-Type"] = value;
             hints.hasBody = 1;
         }
-        return (0);
+        return (CGI_RES_CLIENT_REDIRECT);
     }
     else if (_retrieveHeader("Location", value) && value[0] == '/')
     {
         hints.redir_type = REDIR_LOCAL;
         hints.path = value;
-        return (1);
+        return (CGI_RES_LOCAL_REDIRECT);
     }
     else
     {
         if (_retrieveHeader("Status", value) && getInt(value, 10, hints.status))
         {
             hints.status = 500;
-            return (0);
+            return (CGI_RES_DOC);
         }
         else
             hints.status = 200;
@@ -107,7 +106,7 @@ int CGIProcess::_inspectHeaders(ResHints &hints)
         else
             hints.hasBody = 0;
     }
-    return (0);
+    return (CGI_RES_DOC);
 }
 
 int CGIProcess::execCGI(Client &client)

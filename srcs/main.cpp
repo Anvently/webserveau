@@ -64,7 +64,7 @@ int	main(int, char **, char **env)
 	struct epoll_event	events[EPOLL_EVENT_MAX_SIZE];
 
 	initLogs();
-	// try {
+	try {
 		epollfd = epoll_create(1);
 		if (epollfd < 0) {
 			LOGE("Fatal error : could not create epoll");
@@ -87,12 +87,12 @@ int	main(int, char **, char **env)
 		}
 		return (IControl::cleanExit(0));
 	}
-	catch (const std::exception& e) {
+	catch(const CGIProcess::child_exit_exception &e)
+	{
 		LOGE("%s", e.what());
 		return (IControl::cleanExit(1));
 	}
-	catch(const CGIProcess::child_exit_exception &e)
-	{
+	catch (const std::exception& e) {
 		LOGE("%s", e.what());
 		return (IControl::cleanExit(1));
 	}
