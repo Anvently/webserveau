@@ -9,6 +9,9 @@
 #include <queue>
 #include <iterator>
 #include <sstream>
+#include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 // 1xx indicates an informational message only
 // 2xx indicates success of some kind
@@ -19,11 +22,11 @@
 #define RES_OK 200
 #define RES_CREATED 201
 #define RES_NO_CONTENT 204
-#define RES_MULTIPLE_CHOICE 300 //Dynamic
-#define RES_MOVED_PERMANENTLY 301 //Dynamic
-#define RES_FOUND 302 //Dynamic
-#define RES_SEE_OTHER 303 //Dynamic
-#define RES_TEMPORARY_REDIRECT 307 //Dynamic
+#define RES_MULTIPLE_CHOICE 300 //Dynamic => Location headers + in body
+#define RES_MOVED_PERMANENTLY 301 //Dynamic => Location headers + in body
+#define RES_FOUND 302 //Dynamic => Location headers + in body
+#define RES_SEE_OTHER 303 //Dynamic => Location headers + in body
+#define RES_TEMPORARY_REDIRECT 307 //Dynamic => Location headers + in body
 #define RES_BAD_REQUEST 400 //Dynamic
 #define RES_FORBIDDEN 403 //full static
 #define RES_NOT_FOUND 404 //full static
@@ -34,7 +37,7 @@
 #define RES_REQUEST_URI_TOO_LONG 414 //full static
 #define RES_EXPECTATION_FAILED 417 //full static
 #define RES_INTERNAL_ERROR 500 //Dynamic
-#define RES_NOT_IMPLEMENTED 501 //Dynamic
+#define RES_NOT_IMPLEMENTED 501 //Dynamic => 
 #define RES_HTTP_VERSION_NOT_SUPPORTED 505 //full static
 
 
@@ -88,21 +91,25 @@ class	HeaderResponse : public AResponse
 {
 	protected:
 
-		HeaderResponse(void);
+
 		std::map<std::string, std::string, i_less>	_headers;
 		std::string									_formated_headers;
+		ResHints									&hints;
 
 		void										_formatHeaders();
+		int 										_retrieveHeader(std::string key, std::string &value);
+
 
 	public:
 
-		HeaderResponse(int status, const std::string& description);
+		HeaderResponse(ResHints &hints);
 		virtual ~HeaderResponse(void);
 
 		virtual int		writeResponse(std::queue<std::string>& outQueue);
 		void			addHintHeaders(ResHints &hints);
 		void			addHeader(std::string const &key, std::string const &value);
 		void			addUniversalHeaders();
+		virtual void			addSpecificHeaders() = 0;
 };
 
 class	FileResponse : public HeaderResponse
@@ -111,15 +118,18 @@ class	FileResponse : public HeaderResponse
 
 		FileResponse();
 
-		std::ifstream							_ifstream;
-		std::string								_path;
+		std::fstream	_fstr;
+		std::string		_path;
+		int				_retrieveType(std::string key, std::string &value);
 
 	public:
 
-		FileResponse(const std::string& infile, int status, const std::string &description);
+		FileResponse(ResHints &hints);
 		~FileResponse();
-
+		int				inspectFile(ResHints &hints);
+		void			checkType();
 		virtual int		writeResponse(std::queue<std::string>& outQueue);
+		virtual void	addSpecificHeaders();
 };
 
 class	DynamicResponse : public HeaderResponse
@@ -130,15 +140,17 @@ class	DynamicResponse : public HeaderResponse
 		DynamicResponse();
 		std::string							_body;
 
+
 	public:
 
 		// typedef	void (*bodyGenerator_func)(DynamicResponse&, const std::string);
 
-		DynamicResponse(int status, std::string const &description);
+		DynamicResponse(ResHints &hints);
 		// DynamicResponse(bodyGenerator_func, const std::string&);
 		virtual ~DynamicResponse();
-
-	virtual int		writeResponse(std::queue<std::string>& outQueue);
+		void	_generateBody();
+		virtual void	addSpecificHeaders();
+		virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
 
 

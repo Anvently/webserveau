@@ -491,6 +491,7 @@ void	IControl::generateResponse(Client& client, int status)
 	request._resHints.type = request._type;
 	try
 	{
+		client.getRequest()->_resHints.extension = client.getRequest()->_parsedUri.extension;
 		response = AResponse::genResponse(client.getRequest()->_resHints);
 	}
 	catch(const std::exception& e)

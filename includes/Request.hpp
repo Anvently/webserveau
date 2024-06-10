@@ -58,6 +58,7 @@ struct CGIConfig;
 //path translated = root + pathinfo
 typedef struct ResHints {
 	std::string							path; // /cgi-bin/script.php
+	std::string							extension;
 	std::string							scriptPath; // root + path
 	std::string							bodyFileName;
 	std::string							cgiOutput;

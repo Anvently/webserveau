@@ -12,39 +12,35 @@ std::map<int, std::string>	init_response()
 {
 	std::map<int, std::string>	mipmap;
 
-	mipmap.insert({100, "Continue"});
-	mipmap.insert({200, "OK"});
-	mipmap.insert({201, "CREATED"});
-	mipmap.insert({204, "No Content"});
-	mipmap.insert({300, "Multiple Choices"});
-	mipmap.insert({301, "Move Permanently"});
-	mipmap.insert({302, "Found"});
-	mipmap.insert({307, "Temporary Redirect"});
-	mipmap.insert({308, "Permanent Redirect"});
-	mipmap.insert({400, "Bad Request"});
-	mipmap.insert({401, "Unauthorized"});
-	mipmap.insert({403, "Forbidden"});
-	mipmap.insert({404, "Not Found"});
-	mipmap.insert({405, "Method Not Allowed"});
-	mipmap.insert({408, "Request Timeout"});
-	mipmap.insert({413, "Content Too Large"});
-	mipmap.insert({414, "URI Too Long"});
-	mipmap.insert({415, "Unsupported Media Type"});
-	mipmap.insert({417, "Expectation Failed"});
-	mipmap.insert({500, "Internal Server Error"});
-	mipmap.insert({501, "Not Implemented"});
-	mipmap.insert({505, "HTTP Version Not Supported"});
+	mipmap.insert(std::pair<int, std::string>{100, "Continue"});
+	mipmap.insert(std::pair<int, std::string>{200, "OK"});
+	mipmap.insert(std::pair<int, std::string>{201, "CREATED"});
+	mipmap.insert(std::pair<int, std::string>{204, "No Content"});
+	mipmap.insert(std::pair<int, std::string>{300, "Multiple Choices"});   //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{301, "Move Permanently"});//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{302, "Found"});//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{307, "Temporary Redirect"});//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{308, "Permanent Redirect"});//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{400, "Bad Request"}); //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{401, "Unauthorized"});
+	mipmap.insert(std::pair<int, std::string>{403, "Forbidden"});
+	mipmap.insert(std::pair<int, std::string>{404, "Not Found"});
+	mipmap.insert(std::pair<int, std::string>{405, "Method Not Allowed"});
+	mipmap.insert(std::pair<int, std::string>{408, "Request Timeout"});
+	mipmap.insert(std::pair<int, std::string>{413, "Content Too Large"});
+	mipmap.insert(std::pair<int, std::string>{414, "URI Too Long"});
+	mipmap.insert(std::pair<int, std::string>{415, "Unsupported Media Type"});
+	mipmap.insert(std::pair<int, std::string>{417, "Expectation Failed"});
+	mipmap.insert(std::pair<int, std::string>{500, "Internal Server Error"}); //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{501, "Not Implemented"});  //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>{503, "Service Uavailable"}); // timeout cgi ?
+	mipmap.insert(std::pair<int, std::string>{505, "HTTP Version Not Supported"}); //check in parsing
 
 	return (mipmap);
 }
 
 static std::map<int, std::string> ResponseLine = init_response();
-// {{100, "Continue"}, {200, "OK"}, {201, "Created"}, {204, "No Content"}, \
-// {300, "Multiple Choices"}, {301, "Move Permanently"}, {302, "Found"}, {307, "Temporary Redirect"}, \
-// {308, "Permanent Redirect"}, {400, "Bad Request"}, {401, "Unauthorized"}, {403, "Forbidden"}, {404, "Not Found"}, \
-// {405, "Method Not Allowed"}, {408, "Request Timeout"}, {413, "Content Too Large"}, {414, "URI Too Long"}, \
-// {415, "Unsupported Media Type"}, {417, "Expectation Failed"}, {500, "Internal Server Error"}, {501, "Not Implemented"}, \
-// {505, "HTTP Version Not Supported"}};
+static std::map<std::string, std::string> mimeType = init_mimes();
 
 
 SingleLineResponse::SingleLineResponse(int status, const std::string& description)
@@ -69,10 +65,10 @@ int	SingleLineResponse::writeResponse(std::queue<std::string>& outQueue)
 }
 
 SingleLineResponse::~SingleLineResponse(void) {}
-HeaderResponse::HeaderResponse(int status, const std::string& description)
+HeaderResponse::HeaderResponse(ResHints &hints) : hints(hints)
 {
-	_status = status;
-	_description = description;
+	_status = hints.status;
+	_description = hints.verboseError;
 	addUniversalHeaders();
 }
 
@@ -86,7 +82,6 @@ std::string	getTime()
 	return (time);
 }
 
-HeaderResponse::HeaderResponse(void) {}
 
 HeaderResponse::~HeaderResponse(void) {}
 
@@ -144,22 +139,34 @@ AResponse*	AResponse::genResponse(ResHints& hints) {
 FileResponse::~FileResponse(void) {}
 
 
-FileResponse::FileResponse(const std::string& infile, int status, const std::string &description): HeaderResponse(status, description)
+FileResponse::FileResponse(ResHints &hints): HeaderResponse(hints)
 {
-	_path = infile;
-	_ifstream.open(_path.c_str(), std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
+	_path = hints.path;
+	//_ifstream.open(_path.c_str(), std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
 }
 
 int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
 {
-	(void) outQueue;
-	return (0);
+	std::string	portion;
+	char	*buff = new char[HEADER_MAX_SIZE];
+	this->_formatHeaders();
+	while(!_formated_headers.empty())
+	{
+		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
+		outQueue.push(portion);
+		_formated_headers.erase(0, portion.size());
+		portion.clear();
+	}
+	portion.clear();
+	while (_fstr.read(buff, HEADER_MAX_SIZE) && _fstr.gcount())
+	{
+		std::string	outBuff(buff, _fstr.gcount());
+		outQueue.push(outBuff);
+		outBuff.clear();
+	}
 }
 
-DynamicResponse::DynamicResponse(int status, const Request& request) {
-	(void) status;
-	(void) request;
-}
+
 
 DynamicResponse::~DynamicResponse(void) {}
 
@@ -178,14 +185,205 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 	}
 	else if (hints.path.empty())
 	{
-		response = new DynamicResponse(hints.status, hints.verboseError);
+		response = new DynamicResponse(hints);
 		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
-		static_cast<DynamicResponse *>(response)->
+		static_cast<DynamicResponse *>(response)->addSpecificHeaders();
+		static_cast<DynamicResponse *>(response)->_generateBody();
 	}
-
+	else
+	{
+		response = new FileResponse(hints);
+		static_cast<FileResponse *>(response)->addHintHeaders(hints);
+		static_cast<FileResponse *>(response)->inspectFile(hints);
+	}
+	return (response);
 }
 
-DynamicResponse::DynamicResponse(int status, std::string const &description) : HeaderResponse(status, description)
+DynamicResponse::DynamicResponse(ResHints &hints) : HeaderResponse(hints)
 {
+}
 
+
+int	FileResponse::inspectFile(ResHints &hints)
+{
+	struct	stat	*st;
+	if (stat(hints.path.c_str(), st))
+		throw(std::domain_error(("Can't get stat of target file: " + hints.path).c_str()));
+	size_t	length = st->st_size;
+	length -= hints.index;
+	_fstr.open(hints.path, std::ios::in | std::ios::binary);
+	if (!_fstr.is_open())
+		throw(std::domain_error(("Could not open target file: " + hints.path).c_str()));
+	_fstr.seekg((hints.index));
+	this->addHeader("Content-Length", itostr(length));
+	this->checkType();
+	return (0);
+}
+
+
+void	FileResponse::checkType()
+{
+	std::string	type;
+	if (_retrieveType(hints.extension, type))
+	{
+		addHeader("Content-Type", type);
+	}
+}
+
+
+int HeaderResponse::_retrieveHeader(std::string key, std::string &value)
+{
+    try{
+        value = _headers.at(key);
+        return (1);
+    }
+    catch(std::out_of_range &e)
+    {
+        value.clear();
+		return (0);
+    }
+}
+
+int FileResponse::_retrieveType(std::string key, std::string &value)
+{
+    try{
+        value = mimeType.at(key);
+        return (1);
+    }
+    catch(std::out_of_range &e)
+    {
+        value.clear();
+		return (0);
+    }
+}
+
+
+std::map<std::string, std::string>	init_mimes()
+{
+	std::map<std::string, std::string>	mipmap;
+
+	mipmap[".html"] = "text/html";
+	mipmap[".htm"] = "text/html";
+	mipmap[".shtml"] = "text/html";
+	mipmap[".css"] = "text/css";
+	mipmap[".xml"] = "text/xml";
+	mipmap[".gif"] = "image/gif";
+	mipmap[".jpeg"] = "image/jpeg";
+	mipmap[".jpg"] = "image/jpeg";
+	mipmap[".js"] = "application/javascript";
+	mipmap[".atom"] = "application/atom+xml";
+	mipmap[".rss"] = "application/rss+xml";
+	mipmap[".mml"] = "text/mathml";
+	mipmap[".txt"] = "text/plain";
+	mipmap[".jad"] = "text/vnd.sun.j2me.app-descriptor";
+	mipmap[".wml"] = "text/vnd.wap.wml";
+	mipmap[".htc"] = "text/x-component";
+	mipmap[".avif"] = "image/avif";
+	mipmap[".png"] = "image/png";
+	mipmap[".svg"] = "image/svg+xml";
+	mipmap[".svgz"] = "image/svg+xml";
+	mipmap[".tif"] = "image/tiff";
+	mipmap[".tiff"] = "image/";
+	mipmap[".wbmp"] = "image/vnd.wap.wbmp";
+	mipmap[".webp"] = "image/webp";
+	mipmap[".ico"] = "image/x-icon";
+	mipmap[".jng"] = "image/x-jng";
+	mipmap[".bmp"] = "image/x-ms-bmp";
+	mipmap[".woff"] = "font/woff";
+	mipmap[".woff2"] = "font/woff2";
+	mipmap[".jar"] = "application/java-archive";
+	mipmap[".war"] = "application/java-archive";
+	mipmap[".ear"] = "application/java-archive";
+	mipmap[".json"] = "application/json";
+	mipmap[".hqx"] = "application/mac-binhex40";
+	mipmap[".doc"] = "application/msword";
+	mipmap[".pdf"] = "application/pdf";
+	mipmap[".ps"] = "application/postscript";
+	mipmap[".eps"] = "application/postscript";
+	mipmap[".ai"] = "application/postscript";
+	mipmap[".rtf"] = "application/rtf";
+	mipmap[".m3u8"] = "application/vnd.apple.mpegurl";
+	mipmap[".kml"] = "application/vnd.google-earth.kml+xml";
+	mipmap[".kmz"] = "application/vnd.google-earth.kmz";
+	mipmap[".xls"] = "application/vnd.ms-excel";
+	mipmap[".eot"] = "application/vnd.ms-fontobject";
+	mipmap[".ppt"] = "application/vnd.ms-powerpoint";
+	mipmap[".odg"] = "application/vnd.oasis.opendocument.graphics";
+	mipmap[".odp"] = "application/vnd.oasis.opendocument.presentation";
+	mipmap[".ods"] = "application/vnd.oasis.opendocument.spreadsheet";
+	mipmap[".odt"] = "application/vnd.oasis.opendocument.text";
+	mipmap[".pptx"] = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+	mipmap[".xlsx"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+	mipmap[".docx"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+	mipmap[".wmlc"] = "application/vnd.wap.wmlc";
+	mipmap[".wasm"] = "application/wasm";
+	mipmap[".7z"] = "application/x-7z-compressed";
+	mipmap[".cco"] = "application/x-cocoa";
+	mipmap[".jardiff"] = "application/x-java-archive-diff";
+	mipmap[".jnlp"] = "application/x-java-jnlp-file";
+	mipmap[".run"] = "application/x-makeself";
+	mipmap[".pl"] = "application/x-perl";
+	mipmap[".pm"] = "application/x-perl";
+	mipmap[".prc"] = "application/x-pilot";
+	mipmap[".pdb"] = "application/x-pilot";
+	mipmap[".rar"] = "application/x-rar-compressed";
+	mipmap[".rpm"] = "application/x-redhat-package-manager";
+	mipmap[".sea"] = "application/x-sea";
+	mipmap[".swf"] = "application/x-shockwave-flash";
+	mipmap[".sit"] = "application/x-stuffit";
+	mipmap[".tcl"] = "application/x-tcl";
+	mipmap[".tk"] = "application/x-tcl";
+	mipmap[".der"] = "application/x-x509-ca-cert";
+	mipmap[".pem"] = "application/x-x509-ca-cert";
+	mipmap[".crt"] = "application/x-x509-ca-cert";
+	mipmap[".xpi"] = "application/x-xpinstall";
+	mipmap[".xhtml"] = "application/xhtml+xml";
+	mipmap[".xspf"] = "application/xspf+xml";
+	mipmap[".zip"] = "application/zip";
+	mipmap[".bin"] = "application/octet-stream";
+	mipmap[".exe"] = "application/octet-stream";
+	mipmap[".dll"] = "application/octet-stream";
+	mipmap[".deb"] = "application/octet-stream";
+	mipmap[".dmg"] = "application/octet-stream";
+	mipmap[".iso"] = "application/octet-stream";
+	mipmap[".img"] = "application/octet-stream";
+	mipmap[".msi"] = "application/octet-stream";
+	mipmap[".msp"] = "application/octet-stream";
+	mipmap[".msm"] = "application/octet-stream";
+	mipmap[".mid"] = "audio/midi";
+	mipmap[".midi"] = "audio/midi";
+	mipmap[".kar"] = "audio/midi";
+	mipmap[".mp3"] = "audio/mpeg";
+	mipmap[".ogg"] = "audio/ogg";
+	mipmap[".m4a"] = "audio/x-m4a";
+	mipmap[".ra"] = "audio/x-realaudio";
+	mipmap[".3gpp"] = "video/3gpp";
+	mipmap[".3gp"] = "video/3gpp";
+	mipmap[".ts"] = "video/mp2t";
+	mipmap[".mp4"] = "video/mp4";
+	mipmap[".mpeg"] = "video/mpeg";
+	mipmap[".mpg"] = "video/mpeg";
+	mipmap[".mov"] = "video/quicktime";
+	mipmap[".webm"] = "video/webm";
+	mipmap[".flv"] = "video/x-flv";
+	mipmap[".m4v"] = "video/x-m4v";
+	mipmap[".mng"] = "video/x-mng";
+	mipmap[".asx"] = "video/x-ms-asf";
+	mipmap[".asf"] = "video/x-ms-asf";
+	mipmap[".wmv"] = "video/x-ms-wmv";
+	mipmap[".avi"] = "video/x-msvideo";
+
+	return (mipmap);
+}
+
+
+void	DynamicResponse::_generateBody()
+{
+	std::string	line;
+	line = itostr(hints.status) + " " + ResponseLine[hints.status];
+	_body += "<html><head><title> " + line + " </title></head><body><style>";
+	_body += "#one{color:darkred;text-align:center;font-size:300%;}";
+	_body += "#two{color:brown;text-align:center;font-size:150%;}</style>";
+	_body += "<p id=\"one\">" + line + "</p>";
+	_body += "<p id=\"two\">" + hints.verboseError + "</p></body></html>";
 }
