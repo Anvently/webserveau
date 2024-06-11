@@ -21,7 +21,7 @@
 
 enum {none, chuncked, mesured};
 enum {GET, POST, DELETE};
-enum {TERM, ONGOING, NEW};
+enum {TERM, ONGOING, RLINE,NEW};
 enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
 enum {REQ_TYPE_NO_MATCH = 0, REQ_TYPE_CGI, REQ_TYPE_STATIC, REQ_TYPE_DIR};
 enum {NONE, REDIR_LOCAL, REDIR_CLIENT};
@@ -170,6 +170,7 @@ class	Request
 		void	extractPathInfo(const std::string& extension);
 		int		checkPath();
 		void	prunePath();
+		void	prunePercent();
 		void	splitVar(std::string &str);
 
 		//DEBUG

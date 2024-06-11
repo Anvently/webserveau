@@ -291,7 +291,10 @@ int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
 DynamicResponse::~DynamicResponse(void) {}
 
 int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
-	(void)outQueue;
+
+	std::string	portion;
+	this->_formated_headers();
+
 	return (0);
 }
 
@@ -389,4 +392,10 @@ void	DynamicResponse::_generateBody()
 	_body += "#two{color:brown;text-align:center;font-size:150%;}</style>";
 	_body += "<p id=\"one\">" + line + "</p>";
 	_body += "<p id=\"two\">" + hints.verboseError + "</p></body></html>";
+}
+
+void	DynamicResponse::addSpecificHeaders()
+{
+	if (hints.status / 100 == 3)
+		addHeader("Location", hints.redirList->front());
 }

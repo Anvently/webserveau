@@ -21,6 +21,7 @@ int CGIProcess::parseHeaders()
 	char            *c_buffer = new char[HEADER_MAX_SIZE];
 	fstream.read(c_buffer, HEADER_MAX_SIZE);
 	std::string     buffer(c_buffer, fstream.gcount());
+	delete[] c_buffer;
 
 	while(_getLine(buffer))
 	{
@@ -29,7 +30,7 @@ int CGIProcess::parseHeaders()
 		if (_extract_header())
 		{
 			_request.resHints.status = 500;
-			//do i need to unling now?
+			//do i need to unlink now?
 			return (0);
 		}
 	}
@@ -142,7 +143,7 @@ int	CGIProcess::checkEnd() {
 	return (1);
 }
 
-/// @brief 
+/// @brief
 /// @return ```0``` for success. ```-1``` if error. Child error will be handled
 /// elsewhere
 int CGIProcess::execCGI()

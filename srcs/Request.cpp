@@ -21,7 +21,7 @@ Request::Request()
 	  _content_length(-1), _chunked(0), _b_status(NEW), _chunked_body_size(0),
 	  _chunked_status(0), _trailer_status(0), _trailer_size(0),
 	  _final_status(ONGOING), type(0), method(-1) {}
-	
+
 Request::Request(const Request &copy)
 	: _headers(copy._headers), _formated_headers(copy._formated_headers),
 	  _uri(copy._uri), _status(copy._status),
@@ -184,8 +184,18 @@ int Request::parseHeaders(std::string &buffer)
 	this->_header_size += buffer.size();
 	if (this->_status == NEW)
 	{
-		// while (buffer.empty() == false && !isalpha(buffer[0]))
-			// buffer.erase(0, 1);
+		while (buffer.empty() == false && !isalpha(buffer[0]))
+			buffer.erase(0, 1);
+		if (!buffer.empty())
+		{
+			_status = RLINE;
+			this->_header_size = buffer.size();
+		}
+		else
+			return (_checkSizes());
+	}
+	if (_status == RLINE)
+	{
 		if (this->getLine(buffer))
 			return (this->_checkSizes());
 		if (this->_line.size() > HEADER_MAX_SIZE)
@@ -605,6 +615,7 @@ int Request::parseURI()
 	if (checkPath())
 		return _fillError(400, "too many ../ in uri");
 	prunePath();
+	prunePercent();
 	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss|",
 		 &parsedUri.path, &parsedUri.root, &parsedUri.extension, &parsedUri.query);
 	return (0);
@@ -624,4 +635,34 @@ void Request::extractPathInfo(const std::string &extension)
 	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss| pathinfo = |%ss|",
 		 &parsedUri.path, &parsedUri.root, &parsedUri.extension, &parsedUri.query,
 		 &parsedUri.pathInfo);
+}
+
+void	translatePercent(std::string &str)
+{
+	size_t	idx = 0;
+	size_t	cur = 0;
+	size_t	len = str.size();
+	int		res;
+	std::string	hexaChar;
+
+	while ((cur = str.find("%", idx)) < len - 2)
+	{
+		hexaChar = str.substr(cur + 1, 2);
+		if (getInt(hexaChar, 16, res))
+		{
+			str[cur] = res;
+			str.erase(cur + 1, 2);
+			len -= 2;
+		}
+		idx = cur + 1;
+	}
+}
+
+void	Request::prunePercent()
+{
+	translatePercent(parsedUri.path);
+	translatePercent(parsedUri.pathInfo);
+	translatePercent(parsedUri.query);
+	translatePercent(parsedUri.root);
+	translatePercent(parsedUri.extension);
 }
