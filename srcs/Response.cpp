@@ -333,6 +333,7 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 		response = new FileResponse(hints);
 		static_cast<FileResponse *>(response)->addHintHeaders(hints);
 		static_cast<FileResponse *>(response)->inspectFile(hints);
+		static_cast<FileResponse *>(response)->addSpecificHeaders();
 	}
 	return (response);
 }
@@ -487,3 +488,5 @@ void	DynamicResponse::addSpecificHeaders()
 	if (hints.status / 100 == 3)
 		addHeader("Location",getRedirPath(hints.redirList->front(), hints.parsedUri.filename));
 }
+
+/
