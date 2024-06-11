@@ -35,6 +35,7 @@
 #define RES_LENGTH_REQUIRED 411 //full static
 #define RES_REQUEST_ENTITY_TOO_LARGE 413 //full static
 #define RES_REQUEST_URI_TOO_LONG 414 //full static
+#define RES_UNSUPPORTED_MEDIA_TYPE 415
 #define RES_EXPECTATION_FAILED 417 //full static
 #define RES_INTERNAL_ERROR 500 //Dynamic
 #define RES_NOT_IMPLEMENTED 501 //Dynamic

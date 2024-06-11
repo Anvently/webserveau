@@ -228,15 +228,17 @@ int	IControl::handleClientOut(Client& client) {
 		nwrite = write(client.getfd(), client.outBuffers.front().c_str(), client.outBuffers.front().size());
 		if (nwrite < 0) {
 			LOGE("Write error");
-			return (-1);
+			return (SITUATION_CLOSE);
 		}
 		client.outBuffers.pop();
 	}
 	if (client.outBuffers.empty()) {
-		if (client.getRequest()->resHints.headers["connection"] == "close")
-			return (-1);
+		if (client.getRequest()->getHeader("expect") == "100-continue")
+			return (SITUATION_CONTINUE);
+		else if (client.getRequest()->resHints.headers["connection"] == "close")
+			return (SITUATION_CLOSE);
 		else
-			return (1);
+			return (SITUATION_KEEP_ALIVE);
 	}
 	return (0);
 }
@@ -287,7 +289,8 @@ int	IControl::checkForbiddenHeaders(Request& request) {
 	if (request.getHeader("accept-ranges") != "") {
 		request.resHints.verboseError = "accept-range header not implemented";
 	} else if (request.checkHeader("content-encoding") && request.getHeader("content-encoding") != "identity") {
-		request.resHints.verboseError = "identity is the only value supported for content-encoding";
+		request.resHints.status = RES_UNSUPPORTED_MEDIA_TYPE;
+		return (RES_UNSUPPORTED_MEDIA_TYPE);
 	} else if (request.checkHeader("transfer-encoding") && request.getHeader("transfer-encoding") != "chunked") {
 		request.resHints.verboseError = "chunked is the only value supported for transfer-encoding";
 	}
@@ -396,6 +399,10 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 	}
 	defineBodyParsing(client, *client.getRequest());
 	client.setHeaderStatus(HEADER_STATUS_DONE);
+	if (res == RES_CONTINUE) {
+		generateContinueResponse(client);
+		return (0);
+	}
 	return (res);
 }
 
@@ -452,11 +459,15 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 	else {
 		client.setBodyFile("");
 	}
-	request.resHints.headers["content-type"] = request.getHeader("content-type");
+	if (request.checkHeader("content-type"))
+		request.resHints.headers["content-type"] = request.getHeader("content-type");
 	return (0);
 }
 
-// int	IControl::parseBodyB
+int	IControl::handleDeleteMethod(Request& request) {
+	unlink(request.resHints.path.c_str());
+	return (0);
+}
 
 int	IControl::handleRequestBodyDone(Request& request)
 {
@@ -464,8 +475,11 @@ int	IControl::handleRequestBodyDone(Request& request)
 		if (request.method == POST) {
 			return (request.resHints.status);
 		}
-		else if (request.method == DELETE)
+		else if (request.method == DELETE) {
+			handleDeleteMethod(request);
+			request.resHints.path = "";
 			return (RES_NO_CONTENT);
+		}
 	}
 	return (RES_OK);
 }
@@ -491,8 +505,12 @@ void	IControl::fillErrorPage(const Host* host, ResHints& resHints) {
 /// @brief Add any additionnal header such as ```connection``` if success status
 /// @param request
 void	IControl::fillAdditionnalHeaders(Request& request) {
-	if (request.resHints.status >= 200 && request.resHints.status < 300)
-		request.resHints.headers["connection"] = request.getHeader("connection");
+	if (request.resHints.status >= 200 && request.resHints.status < 300) {
+		if (request.checkHeader("connection"))
+			request.resHints.headers["connection"] = request.getHeader("connection");
+		else
+			request.resHints.headers["connection"] = "keep-alive";
+	}
 	else
 		request.resHints.headers["connection"] = "close";
 }
@@ -518,14 +536,28 @@ void	IControl::fillVerboseError(Request& request) {
 	}
 }
 
+void	IControl::fillResponse(Client& client, Request& request) {
+	fillErrorPage(client.getHost(), request.resHints);
+	fillAdditionnalHeaders(request);
+	fillVerboseError(request);
+	if (request.resHints.status)
+		LOGI("Generating response status %d | verbose = %ss",
+			request.resHints.status, &request.resHints.verboseError);
+	request.resHints.type = request.type;
+	request.resHints.extension = request.parsedUri.extension;
+}
+
+void	IControl::generateContinueResponse(Client& client) {
+	client.setResponse(new SingleLineResponse(100, "100-continue"));
+	client.getResponse()->writeResponse(client.outBuffers);
+	// LOGD("continue generated");
+	client.setMode(CLIENT_MODE_WRITE); //temporary
+}
+
 /// @brief Generate an appropriate response type from the given
 /// status.
 /// @param client
-/// @param status ```0``` if the response to generate is not an error
-/// @note Possible hints for response
-///				- headers
-///				- final path
-///				-
+/// @param status
 void	IControl::generateResponse(Client& client, int status)
 {
 	AResponse*	response = NULL;
@@ -534,16 +566,9 @@ void	IControl::generateResponse(Client& client, int status)
 		return ; //Not sure
 	if (status)
 		request.resHints.status = status;
-	fillErrorPage(client.getHost(), request.resHints);
-	fillAdditionnalHeaders(request);
-	fillVerboseError(request);
-	if (request.resHints.status)
-		LOGI("Generating response status %d | verbose = %ss",
-			request.resHints.status, &request.resHints.verboseError);
-	request.resHints.type = request.type;
+	fillResponse(client, request);
 	try
 	{
-		request.resHints.extension = request.parsedUri.extension;
 		response = AResponse::genResponse(request.resHints);
 	}
 	catch(const std::exception& e)
@@ -560,7 +585,7 @@ void	IControl::generateResponse(Client& client, int status)
 	if (response)
 		response->writeResponse(client.outBuffers);
 	client.setResponse(response);
-	client.setMode(CLIENT_MODE_WRITE); //temporary
+	client.setMode(CLIENT_MODE_WRITE);
 }
 
 int IControl::generateCGIProcess(Client& client) {

@@ -76,6 +76,7 @@ int	readSock(int sock) {
 		return (-1);
 	buffer[nread] = '\0';
 	printf("%s", buffer);
+	fflush(stdout);
 	if (status == RECEIVING_CONTINUE) {
 		response += std::string(buffer, nread);
 		if (response.find("HTTP/1.1 100 Continue") != std::string::npos) {
@@ -123,7 +124,7 @@ int	changeEpoll(int epollfd, int fd, int flags) {
 
 	event.events = flags;
 	event.data.fd = fd;
-	if (epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event))
+	if (epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event) < 0)
 		return (-1);
 	return (0);
 }

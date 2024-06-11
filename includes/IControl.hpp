@@ -72,11 +72,13 @@ class IControl
 		static void	fillErrorPage(const Host* host, ResHints& request);
 		static void	fillAdditionnalHeaders(Request& request);
 		static void	fillVerboseError(Request& request);
+		static void	fillResponse(Client& client, Request& request);
 
 		static int	checkForbiddenHeaders(Request& request);
 		static int	assignHost(Client& client, Request& request);
 		static int	checkBodyLength(Client& client, Request& request);
 
+		static int	handleDeleteMethod(Request& request);
 		static int	handleCGIProcess(Client& client);
 
 		static void	handleKillCommand(std::deque<std::string>& words);
@@ -94,6 +96,7 @@ class IControl
 		static int	handleEpoll(epoll_event* events, int nbrEvents);
 		static int	handleCommandPrompt(epoll_event* event);
 
+		static void	generateContinueResponse(Client& client);
 		static void	generateResponse(Client& client, int status = 0);
 		static int	generateCGIProcess(Client& client);
 		static int	cleanExit(int code);
