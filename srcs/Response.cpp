@@ -466,6 +466,8 @@ void	DynamicResponse::generateListBody()
 	}
 	_body += "</ul>";
 	_body += "</body></html>";
+	addHeader("Content-Type", "text/html");
+	addHeader("Content-Length", itostr(_body.size()));
 
 }
 
