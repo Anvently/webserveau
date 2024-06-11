@@ -163,7 +163,7 @@ int Request::parseRequestLine()
 	// LOGD("line = %ss", &_line);
 	nextSpace(idx, this->_line);
 	if ((this->method = identifyMethod(this->_line.substr(0, idx))) < 0)
-		return (this->_fillError(405, "Method Not Allowd"));
+		return (this->_fillError(501, "Method Not Implemented"));
 	skipSpaces(idx, this->_line);
 	r_idx = idx;
 	nextSpace(r_idx, this->_line);
