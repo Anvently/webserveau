@@ -135,11 +135,11 @@ std::map<int, std::string>	init_response()
 	mipmap.insert(std::pair<int, std::string>(200, "OK"));
 	mipmap.insert(std::pair<int, std::string>(201, "CREATED"));
 	mipmap.insert(std::pair<int, std::string>(204, "No Content"));
-	mipmap.insert(std::pair<int, std::string>(300, "Multiple Choices"));   //DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(300, "Multiple Choices"));   //DYNAMIC LIST
 	mipmap.insert(std::pair<int, std::string>(301, "Move Permanently"));//DYNAMIC
 	mipmap.insert(std::pair<int, std::string>(302, "Found"));//DYNAMIC
 	mipmap.insert(std::pair<int, std::string>(307, "Temporary Redirect"));//DYNAMIC
-	mipmap.insert(std::pair<int, std::string>(308, "Permanent Redirect"));//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(308, "Permanent Redirect"));//DYNAMIC LIST
 	mipmap.insert(std::pair<int, std::string>(400, "Bad Request")); //DYNAMIC
 	mipmap.insert(std::pair<int, std::string>(401, "Unauthorized"));
 	mipmap.insert(std::pair<int, std::string>(403, "Forbidden"));
@@ -293,9 +293,22 @@ DynamicResponse::~DynamicResponse(void) {}
 int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
 
 	std::string	portion;
-	// this->_formated_headers();
-	(void) outQueue;
-
+	this->_formatHeaders();
+	while (!_formated_headers.empty())
+	{
+		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
+		outQueue.push(portion);
+		_formated_headers.erase(0, portion.size());
+		portion.clear();
+	}
+	portion.clear();
+	while (!_body.empty())
+	{
+		portion = _body.substr(0, HEADER_MAX_SIZE);
+		outQueue.push(portion);
+		_body.erase(0, portion.size());
+		portion.clear();
+	}
 	return (0);
 }
 
@@ -313,7 +326,7 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 		response = new DynamicResponse(hints);
 		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
 		static_cast<DynamicResponse *>(response)->addSpecificHeaders();
-		static_cast<DynamicResponse *>(response)->_generateBody();
+		static_cast<DynamicResponse *>(response)->generateBody();
 	}
 	else
 	{
@@ -384,7 +397,48 @@ int FileResponse::_retrieveType(std::string key, std::string &value)
 }
 
 
-void	DynamicResponse::_generateBody()
+void	DynamicResponse::generateBody()
+{
+	switch(hints.status / 100)
+	{
+		case(3):
+			generateRedirBody();
+			break;
+		default:
+			generateVerboseBody();
+	}
+}
+
+void	DynamicResponse::generateRedirBody()
+{
+	switch(hints.status % 100)
+	{
+		case(0):
+			generateListBody();
+			break;
+		case(8):
+			generateListBody();
+			break;
+		default:
+			generateSimpleRedirBody();
+	}
+}
+
+void	DynamicResponse::generateSimpleRedirBody()
+{
+	std::string	line = itostr(hints.status) + " " + ResponseLine[hints.status];
+	std::string	redir = hints.redirList->front();
+	_body += "<html><head><title> " + line + " </title><meta http-equiv=\"refresh\"content=\"0; url=" + redir + "\"></head><body><style>";
+	_body += "#one{color:darkred;text-align:center;font-size:300%;}";
+	_body += "#two{text-align:center;font-size:150%;}</style>";
+	_body += "<p id=\"one\">" + line + "</p>";
+	_body += "<p id=\"two\"> The document can be found at <a href=\"" + redir + "\">" + redir + "</a></p></body></html>";
+
+	addHeader("Content-Length", itostr(_body.size()));
+	addHeader("Content-Type", "text/html");
+}
+
+void	DynamicResponse::generateVerboseBody()
 {
 	std::string	line;
 	line = itostr(hints.status) + " " + ResponseLine[hints.status];
@@ -393,6 +447,28 @@ void	DynamicResponse::_generateBody()
 	_body += "#two{color:brown;text-align:center;font-size:150%;}</style>";
 	_body += "<p id=\"one\">" + line + "</p>";
 	_body += "<p id=\"two\">" + hints.verboseError + "</p></body></html>";
+	addHeader("Content-Length", itostr(_body.size()));
+	addHeader("Content-Type", "text/html");
+}
+
+void	DynamicResponse::generateListBody()
+{
+	std::string	line = itostr(hints.status) + " " + ResponseLine[hints.status];
+	_body += "<html><head><title> " + line + " </title></head><body><style>";
+	_body += "#one{color:darkred;text-align:center;font-size:300%;}";
+	_body += "#two{text-align:center;font-size:150%;}</style>";
+	_body += "<p id=\"one\">" + line + "</p>";
+	_body += "<p id=\"two\"> The document has been moved to: </p>";
+	_body += "<ul>";
+	for (std::vector<std::string>::const_iterator it = hints.redirList->begin(); it != hints.redirList->end(); it++)
+	{
+		_body += "<li><a href=\"" + *it + "\">" + *it + "</a></li>";
+	}
+	_body += "</ul>";
+	_body += "</body></html>";
+	addHeader("Content-Type", "text/html");
+	addHeader("Content-Length", itostr(_body.size()));
+
 }
 
 void	DynamicResponse::addSpecificHeaders()

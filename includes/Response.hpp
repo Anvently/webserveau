@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 #include <fstream>
 #include <Request.hpp>
 #include <queue>
@@ -27,6 +28,7 @@
 #define RES_FOUND 302 //Dynamic => Location headers + in body
 #define RES_SEE_OTHER 303 //Dynamic => Location headers + in body
 #define RES_TEMPORARY_REDIRECT 307 //Dynamic => Location headers + in body
+#define RES_PERMANENT_REDIRECT 308
 #define RES_BAD_REQUEST 400 //Dynamic
 #define RES_FORBIDDEN 403 //full static
 #define RES_NOT_FOUND 404 //full static
@@ -150,7 +152,11 @@ class	DynamicResponse : public HeaderResponse
 		DynamicResponse(ResHints &hints);
 		// DynamicResponse(bodyGenerator_func, const std::string&);
 		virtual ~DynamicResponse();
-		void	_generateBody();
+		void	generateBody();
+		void	generateListBody();
+		void	generateRedirBody();
+		void	generateSimpleRedirBody();
+		void	generateVerboseBody();
 		virtual void	addSpecificHeaders();
 		virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
