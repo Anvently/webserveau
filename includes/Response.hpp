@@ -150,7 +150,7 @@ class	DynamicResponse : public HeaderResponse
 		// DynamicResponse(bodyGenerator_func, const std::string&);
 		virtual ~DynamicResponse();
 		void	_generateBody();
-		virtual void	addSpecificHeaders() {}
+		virtual void	addSpecificHeaders();
 		virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
 

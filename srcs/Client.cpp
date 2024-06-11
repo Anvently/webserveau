@@ -360,6 +360,9 @@ void	Client::clear() {
 		_request = NULL;
 	}
 	clearResponse();
+	_bodyFileName = "";
+	_bodyStatus = BODY_STATUS_NONE;
+	_headerStatus = HEADER_STATUS_ONGOING;
 }
 
 void	Client::terminate(void) {

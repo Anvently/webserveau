@@ -293,7 +293,8 @@ DynamicResponse::~DynamicResponse(void) {}
 int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
 
 	std::string	portion;
-	this->_formated_headers();
+	// this->_formated_headers();
+	(void) outQueue;
 
 	return (0);
 }

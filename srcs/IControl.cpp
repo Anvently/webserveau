@@ -498,7 +498,7 @@ void	IControl::fillAdditionnalHeaders(Request& request) {
 }
 
 void	IControl::fillVerboseError(Request& request) {
-	switch (request.getStatus()) {
+	switch (request.resHints.status) {
 		case RES_INTERNAL_ERROR:
 			request.resHints.path = "";
 			request.resHints.verboseError = "Internal error";
@@ -549,8 +549,12 @@ void	IControl::generateResponse(Client& client, int status)
 	catch(const std::exception& e)
 	{
 		LOGE("Response exception : %s", e.what());
-		client.clearResponse();
-		generateResponse(client, RES_INTERNAL_ERROR);
+		if (request.resHints.status == RES_INTERNAL_ERROR)
+			client.terminate();
+		else {
+			client.clearResponse();
+			generateResponse(client, RES_INTERNAL_ERROR);
+		}
 		return ;
 	}
 	if (response)
