@@ -19,8 +19,8 @@ root/imgs/root/serv/test/imgs/img1.png
 TODO
 
 	to fix:
-		- 204 response is not sent
-		- sender doesn't read the full response
+		- filename for cgi
+		
 
 	- expand %
 

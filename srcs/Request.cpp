@@ -5,13 +5,13 @@ static const std::string dummyString = "";
 
 URI::URI(void) {}
 
-URI::URI(const URI &copy) : path(copy.path), root(copy.root), pathInfo(copy.pathInfo),
+URI::URI(const URI &copy) : filename(copy.filename), path(copy.path), root(copy.root), pathInfo(copy.pathInfo),
 							extension(copy.extension), query(copy.query) {}
 
 ResHints::ResHints(void) : alreadyExist(false), unlink(false), hasBody(false), status(0), type(0),
 						   redir_type(0), index(0), locationRules(NULL), cgiRules(NULL) {}
 
-ResHints::ResHints(const ResHints &copy) : path(copy.path), alreadyExist(copy.alreadyExist),
+ResHints::ResHints(const ResHints &copy) : parsedUri(copy.parsedUri), path(copy.path), alreadyExist(copy.alreadyExist),
 										   unlink(copy.unlink), hasBody(copy.hasBody), verboseError(copy.verboseError), status(copy.status),
 										   type(copy.type), redir_type(copy.redir_type), index(copy.index), locationRules(copy.locationRules),
 										   cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers) {}
@@ -32,7 +32,7 @@ Request::Request(const Request &copy)
 	  _chunked_body_size(copy._chunked_body_size), _chunked_status(copy._chunked_status),
 	  _trailer_status(copy._trailer_status), _trailer_size(copy._trailer_size),
 	  _final_status(copy._final_status), type(copy.type),
-	  method(copy.method), parsedUri(copy.parsedUri), resHints(copy.resHints)
+	  method(copy.method), resHints(copy.resHints)
 {
 }
 
@@ -551,15 +551,15 @@ int Request::checkPath()
 	std::string subpath;
 	std::vector<std::string> v;
 
-	while ((idx = parsedUri.path.find("//", 0)) != std::string::npos)
-		parsedUri.path.erase(idx, 1);
-	while ((idx = parsedUri.path.find("/./", 0)) != std::string::npos)
-		parsedUri.path.erase(idx, 2);
+	while ((idx = resHints.parsedUri.path.find("//", 0)) != std::string::npos)
+		resHints.parsedUri.path.erase(idx, 1);
+	while ((idx = resHints.parsedUri.path.find("/./", 0)) != std::string::npos)
+		resHints.parsedUri.path.erase(idx, 2);
 	idx = 0;
-	while ((idx = parsedUri.path.find("/", 0)) != std::string::npos)
+	while ((idx = resHints.parsedUri.path.find("/", 0)) != std::string::npos)
 	{
-		subpath = parsedUri.path.substr(0, idx);
-		parsedUri.path.erase(0, idx + 1);
+		subpath = resHints.parsedUri.path.substr(0, idx);
+		resHints.parsedUri.path.erase(0, idx + 1);
 		if (subpath == ".." && v.size() == 0)
 			return (1);
 		else if (subpath == ".." && v.size())
@@ -568,34 +568,34 @@ int Request::checkPath()
 			v.push_back(subpath);
 		subpath.clear();
 	}
-	v.push_back(parsedUri.path);
-	parsedUri.path.clear();
+	v.push_back(resHints.parsedUri.path);
+	resHints.parsedUri.path.clear();
 	for (std::vector<std::string>::iterator it = v.begin(); it != v.end(); it++)
-		parsedUri.path += "/" + *it;
-	parsedUri.path.erase(0, 1);
+		resHints.parsedUri.path += "/" + *it;
+	resHints.parsedUri.path.erase(0, 1);
 	return (0);
 }
 
 void Request::prunePath()
 {
-	std::string filename;
-	if (parsedUri.path.empty() || parsedUri.path[parsedUri.path.length() - 1] == '/')
+	if (resHints.parsedUri.path.empty() || resHints.parsedUri.path[resHints.parsedUri.path.length() - 1] == '/')
 	{
-		parsedUri.root = parsedUri.path;
-		parsedUri.extension = "/";
+		resHints.parsedUri.root = resHints.parsedUri.path;
+		resHints.parsedUri.extension = "/";
+		resHints.parsedUri.filename = "";
 		return;
 	}
-	size_t idx = parsedUri.path.find_last_of("/");
+	size_t idx = resHints.parsedUri.path.find_last_of("/");
 	if (idx == 0 || idx == std::string::npos) //! modified
-		parsedUri.root = "/";
+		resHints.parsedUri.root = "/";
 	else
-		parsedUri.root = parsedUri.path.substr(0, idx + 1);
-	filename = parsedUri.path.substr(idx + 1);
-	idx = filename.rfind('.');
+		resHints.parsedUri.root = resHints.parsedUri.path.substr(0, idx + 1);
+	resHints.parsedUri.filename = resHints.parsedUri.path.substr(idx + 1);
+	idx = resHints.parsedUri.filename.rfind('.');
 	if (idx == std::string::npos)
-		parsedUri.extension = "";
+		resHints.parsedUri.extension = "";
 	else
-		parsedUri.extension = filename.substr(idx);
+		resHints.parsedUri.extension = resHints.parsedUri.filename.substr(idx);
 }
 
 int Request::parseURI(const std::string &suffix)
@@ -606,35 +606,35 @@ int Request::parseURI(const std::string &suffix)
 
 int Request::parseURI()
 {
-	parsedUri.query = _uri;
-	if (pruneScheme(parsedUri.query))
+	resHints.parsedUri.query = _uri;
+	if (pruneScheme(resHints.parsedUri.query))
 		return (_fillError(400, "Bad uri"));
-	pruneDelim(parsedUri.query, "@");
-	pruneDelim(parsedUri.query, "/");
-	parsedUri.path = extractPath(parsedUri.query);
+	pruneDelim(resHints.parsedUri.query, "@");
+	pruneDelim(resHints.parsedUri.query, "/");
+	resHints.parsedUri.path = extractPath(resHints.parsedUri.query);
 	if (checkPath())
 		return _fillError(400, "too many ../ in uri");
 	prunePath();
 	prunePercent();
-	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss|",
-		 &parsedUri.path, &parsedUri.root, &parsedUri.extension, &parsedUri.query);
+	LOGD("path = |%ss| root = |%ss| filename = |%ss| extension = |%ss| query = |%ss|",
+		 &resHints.parsedUri.path, &resHints.parsedUri.root, &resHints.parsedUri.filename, &resHints.parsedUri.extension, &resHints.parsedUri.query);
 	return (0);
 }
 
 void Request::extractPathInfo(const std::string &extension)
 {
-	size_t idx = parsedUri.path.rfind(extension);
-	parsedUri.pathInfo = parsedUri.path.substr(idx + extension.length());
-	parsedUri.path = parsedUri.path.substr(0, idx + extension.length());
-	idx = parsedUri.path.find_last_of('/');
+	size_t idx = resHints.parsedUri.path.rfind(extension);
+	resHints.parsedUri.pathInfo = resHints.parsedUri.path.substr(idx + extension.length());
+	resHints.parsedUri.path = resHints.parsedUri.path.substr(0, idx + extension.length());
+	idx = resHints.parsedUri.path.find_last_of('/');
 	if (idx == std::string::npos)
-		parsedUri.root = "/";
+		resHints.parsedUri.root = "/";
 	else
-		parsedUri.root = parsedUri.path.substr(0, idx + 1);
-	parsedUri.extension = extension;
-	LOGD("path = |%ss| root = |%ss| extension = |%ss| query = |%ss| pathinfo = |%ss|",
-		 &parsedUri.path, &parsedUri.root, &parsedUri.extension, &parsedUri.query,
-		 &parsedUri.pathInfo);
+		resHints.parsedUri.root = resHints.parsedUri.path.substr(0, idx + 1);
+	resHints.parsedUri.extension = extension;
+	LOGD("path = |%ss| root = |%ss| filename = |%ss| extension = |%ss| query = |%ss| pathinfo = |%ss|",
+		 &resHints.parsedUri.path, &resHints.parsedUri.root, &resHints.parsedUri.filename, &resHints.parsedUri.extension, &resHints.parsedUri.query,
+		 &resHints.parsedUri.pathInfo);
 }
 
 void	translatePercent(std::string &str)
@@ -644,11 +644,10 @@ void	translatePercent(std::string &str)
 	size_t	len = str.size();
 	int		res;
 	std::string	hexaChar;
-
 	while ((cur = str.find("%", idx)) < len - 2)
 	{
 		hexaChar = str.substr(cur + 1, 2);
-		if (getInt(hexaChar, 16, res))
+		if (getInt(hexaChar, 16, res) == 0)
 		{
 			str[cur] = res;
 			str.erase(cur + 1, 2);
@@ -660,9 +659,10 @@ void	translatePercent(std::string &str)
 
 void	Request::prunePercent()
 {
-	translatePercent(parsedUri.path);
-	translatePercent(parsedUri.pathInfo);
-	translatePercent(parsedUri.query);
-	translatePercent(parsedUri.root);
-	translatePercent(parsedUri.extension);
+	translatePercent(resHints.parsedUri.path);
+	translatePercent(resHints.parsedUri.pathInfo);
+	translatePercent(resHints.parsedUri.query);
+	translatePercent(resHints.parsedUri.root);
+	translatePercent(resHints.parsedUri.extension);
+	translatePercent(resHints.parsedUri.filename);
 }

@@ -172,6 +172,7 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 			handleCGIProcess(client);
 		if (client.getResponse()) {
 			if ((res = handleClientOut(client))) {
+				LOGD("FINISHED");
 				if (res == SITUATION_KEEP_ALIVE) {
 					client.clear();
 					client.setMode(CLIENT_MODE_READ);
@@ -224,7 +225,7 @@ int	IControl::handleClientOut(Client& client) {
 	int	nwrite = 0;
 
 	if (client.outBuffers.size() >= 1) {
-		LOGD("%ss", &client.outBuffers.front());
+		// LOGD("%ss", &client.outBuffers.front());
 		nwrite = write(client.getfd(), client.outBuffers.front().c_str(), client.outBuffers.front().size());
 		if (nwrite < 0) {
 			LOGE("Write error");
@@ -431,7 +432,7 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 		filePath =  (request.resHints.locationRules->upload_root != "" ? \
 					request.resHints.locationRules->upload_root : \
 					request.resHints.locationRules->root) \
-					+ request.parsedUri.path;
+					+ request.resHints.parsedUri.path;
 		switch (checkFileExist(filePath.c_str()))
 		{
 			case FILE_DONT_EXIT:
@@ -516,7 +517,22 @@ void	IControl::fillAdditionnalHeaders(Request& request) {
 }
 
 void	IControl::fillVerboseError(Request& request) {
+	std::string	allows;
+	int			locMethod, cgiMethod;
+
 	switch (request.resHints.status) {
+		case RES_METHOD_NOT_ALLOWED:
+			locMethod = (request.resHints.locationRules ? \
+				request.resHints.locationRules->methods : INT32_MAX);
+			cgiMethod = (request.resHints.cgiRules ? \
+				request.resHints.cgiRules->methods : INT32_MAX);
+			for (int i = 0; i < METHOD_NBR; i++) {
+				if ((locMethod & (1 << i)) && (cgiMethod & (1 << i)))
+					allows += (allows.size() ? "," : "") + METHOD_STR[i];
+			}
+			request.resHints.headers["Allow"] = allows;
+			break;
+
 		case RES_INTERNAL_ERROR:
 			request.resHints.path = "";
 			request.resHints.verboseError = "Internal error";
@@ -544,7 +560,7 @@ void	IControl::fillResponse(Client& client, Request& request) {
 		LOGI("Generating response status %d | verbose = %ss",
 			request.resHints.status, &request.resHints.verboseError);
 	request.resHints.type = request.type;
-	request.resHints.extension = request.parsedUri.extension;
+	request.resHints.extension = request.resHints.parsedUri.extension;
 }
 
 void	IControl::generateContinueResponse(Client& client) {

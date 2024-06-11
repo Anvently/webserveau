@@ -346,13 +346,17 @@ int	FileResponse::inspectFile(ResHints &hints)
 {
 	struct	stat	st;
 
-	if (stat(hints.path.c_str(), &st))
+	if (stat(hints.path.c_str(), &st)) {
+		delete (this);
 		throw(std::domain_error(("Can't get stat of target file: " + hints.path).c_str()));
+	}
 	size_t	length = st.st_size;
 	length -= hints.index;
 	_fstr.open(hints.path.c_str(), std::ios::in | std::ios::binary);
-	if (!_fstr.is_open())
+	if (!_fstr.is_open()) {
+		delete (this);
 		throw(std::domain_error(("Could not open target file: " + hints.path).c_str()));
+	}
 	_fstr.seekg((hints.index));
 	hints.headers["Content-Length"] = itostr(length);
 	this->checkType();
@@ -409,6 +413,13 @@ void	DynamicResponse::generateBody()
 	}
 }
 
+std::string	getRedirPath(const std::string& redir, const std::string& filename) {
+	if (redir[redir.size() - 1] == '/')
+		return (redir + filename);
+	else
+		return (redir);
+};
+
 void	DynamicResponse::generateRedirBody()
 {
 	switch(hints.status % 100)
@@ -427,7 +438,7 @@ void	DynamicResponse::generateRedirBody()
 void	DynamicResponse::generateSimpleRedirBody()
 {
 	std::string	line = itostr(hints.status) + " " + ResponseLine[hints.status];
-	std::string	redir = hints.redirList->front();
+	std::string	redir = getRedirPath(hints.redirList->front(), hints.parsedUri.filename);
 	_body += "<html><head><title> " + line + " </title><meta http-equiv=\"refresh\"content=\"0; url=" + redir + "\"></head><body><style>";
 	_body += "#one{color:darkred;text-align:center;font-size:300%;}";
 	_body += "#two{text-align:center;font-size:150%;}</style>";
@@ -462,7 +473,7 @@ void	DynamicResponse::generateListBody()
 	_body += "<ul>";
 	for (std::vector<std::string>::const_iterator it = hints.redirList->begin(); it != hints.redirList->end(); it++)
 	{
-		_body += "<li><a href=\"" + *it + "\">" + *it + "</a></li>";
+		_body += "<li><a href=\"" + getRedirPath(*it, hints.parsedUri.filename) + "\">" + getRedirPath(*it, hints.parsedUri.filename) + "</a></li>";
 	}
 	_body += "</ul>";
 	_body += "</body></html>";
@@ -474,5 +485,5 @@ void	DynamicResponse::generateListBody()
 void	DynamicResponse::addSpecificHeaders()
 {
 	if (hints.status / 100 == 3)
-		addHeader("Location", hints.redirList->front());
+		addHeader("Location",getRedirPath(hints.redirList->front(), hints.parsedUri.filename));
 }

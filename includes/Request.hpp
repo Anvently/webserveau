@@ -41,6 +41,7 @@ int	getMethodIndex(const std::string& method);
 
 typedef struct URI
 {
+	std::string filename;
 	std::string	path;
 	std::string	root;
 	std::string	pathInfo;
@@ -76,6 +77,7 @@ struct i_less {
 //http:localhost:80/cgi-bin/script.php/images/pic.jpg
 //path translated = root + pathinfo
 typedef struct ResHints {
+	URI									parsedUri;
 	std::string							path; // /cgi-bin/script.php
 	std::string							extension;
 	std::string							scriptPath; // root + path
@@ -135,7 +137,6 @@ class	Request
 
 		int									type;
 		int									method;
-		URI									parsedUri;
 		ResHints							resHints;
 
 		void		addHeader(std::string const &name, std::string const &value);

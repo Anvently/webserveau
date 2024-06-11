@@ -327,12 +327,16 @@ int	Host::checkRedirection(Request& request) const
 			request.resHints.status = RES_TEMPORARY_REDIRECT;
 			break;
 
+		case RES_PERMANENT_REDIRECT:
+			request.resHints.status = RES_PERMANENT_REDIRECT;
+			break;
+
 		default:
 			LOGE("Invalid or unsupported redirection status (%d)", location.redir);
 			break;
 	}
 	request.resHints.redirList = &location.addr_redir;
-	return (0);
+	return (request.resHints.status);
 }
 
 /// @brief Try to match the request to location/cgi rules and to a type
@@ -343,8 +347,8 @@ int	Host::checkRedirection(Request& request) const
 /// @return 
 int	Host::matchRequest(Request& request) const
 {
-	request.resHints.locationRules = matchLocation(request.parsedUri.path);
-	request.resHints.cgiRules = matchCGIConfig(request.parsedUri.path);
+	request.resHints.locationRules = matchLocation(request.resHints.parsedUri.path);
+	request.resHints.cgiRules = matchCGIConfig(request.resHints.parsedUri.path);
 	if (request.resHints.locationRules == NULL && request.resHints.cgiRules == NULL) {
 		request.resHints.status = RES_NOT_FOUND;
 		request.type = REQ_TYPE_NO_MATCH;
@@ -353,10 +357,10 @@ int	Host::matchRequest(Request& request) const
 	else if (request.resHints.cgiRules) {
 		request.type = REQ_TYPE_CGI;
 		request.extractPathInfo(request.resHints.cgiRules->extension);
-		if (request.parsedUri.pathInfo.find('/') != std::string::npos)
-			request.resHints.locationRules = matchLocation(request.parsedUri.path);
+		if (request.resHints.parsedUri.pathInfo.find('/') != std::string::npos)
+			request.resHints.locationRules = matchLocation(request.resHints.parsedUri.path);
 	}
-	else if (request.parsedUri.extension == "/")
+	else if (request.resHints.parsedUri.extension == "/")
 		request.type = REQ_TYPE_DIR;
 	else
 		request.type = REQ_TYPE_STATIC;
@@ -380,7 +384,7 @@ int	Host::checkDirRessource(Request& request) const
 			request.resHints.status = RES_FORBIDDEN;
 			return (RES_FORBIDDEN);
 		}
-		request.resHints.path = request.parsedUri.path;
+		request.resHints.path = request.resHints.parsedUri.path;
 	}
 	return (0);
 }
@@ -443,16 +447,16 @@ int	Host::checkRessourceExistence(Request& request) const {
 	std::string	path;
 	int			res;
 	if (request.type == REQ_TYPE_CGI) {
-		request.resHints.scriptPath = request.resHints.cgiRules->root + request.parsedUri.path;
+		request.resHints.scriptPath = request.resHints.cgiRules->root + request.resHints.parsedUri.path;
 		res = checkRessourcePath(request.resHints.scriptPath, REQ_TYPE_CGI, R_OK);
 	} else {
 		if (request.method == POST) {
 			path = (request.resHints.locationRules->upload_root != "" ? \
 							request.resHints.locationRules->upload_root : \
 							request.resHints.locationRules->root);
-			res = checkRessourcePath(path + request.parsedUri.root, REQ_TYPE_DIR);
+			res = checkRessourcePath(path + request.resHints.parsedUri.root, REQ_TYPE_DIR);
 		} else {
-			request.resHints.path = request.resHints.locationRules->root + request.parsedUri.path;
+			request.resHints.path = request.resHints.locationRules->root + request.resHints.parsedUri.path;
 			res = checkRessourcePath(request.resHints.path, request.type, R_OK);
 		}
 	}

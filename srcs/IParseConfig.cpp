@@ -456,7 +456,7 @@ void	IParseConfig::checkHost(Host& host) {
 	if (host.getPorts().size() == 0)
 		throw (MissingTokenException("listen"));
 	if (host.getDirErrorPages() == "")
-		throw (MissingTokenException("error_pages"));
+		host._dir_errors = IParseConfig::default_error_pages;
 	if (host.getServerNames().size() == 0)
 		throw (MissingTokenException("server_name"));
 	if (host.getLocation("*") == NULL)
@@ -543,7 +543,7 @@ void IParseConfig::parseRedirection(std::istream &istream, Location &location)
 	if (values.size() < 2)
 		throw (MissingTokenException("redirection values"));
 	else if (getInt(values.at(0), 10, redirectionStatus)
-		|| redirectionStatus < 300 || redirectionStatus > 307
+		|| redirectionStatus < 300 || redirectionStatus > 308
 		|| (redirectionStatus > 303 && redirectionStatus < 307))
 		throw (InvalidRedirectionException());
 	else

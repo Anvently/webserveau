@@ -217,7 +217,7 @@ void    CGIProcess::_setVariables()
 	std::string         str;
 
 	setenv("REQUEST_METHOD", METHOD_STR[_request.method].c_str(), 1);
-	setenv("QUERY_STRING", _request.parsedUri.query.c_str(), 1);
+	setenv("QUERY_STRING", _request.resHints.parsedUri.query.c_str(), 1);
 
 	setenv("GATEWAY_INTERFACE", "CGI/1.1", 1); // which version to use ?
 	setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
@@ -225,10 +225,10 @@ void    CGIProcess::_setVariables()
 	setenv("REMOTE_ADDR", _client.getStrAddr().c_str(), 1);
 	setenv("SERVER_PORT", IntToString(_client.getAddrPort(), 10).c_str(), 1);
 
-	if (!_request.parsedUri.pathInfo.empty())
+	if (!_request.resHints.parsedUri.pathInfo.empty())
 	{
-		setenv("PATH_INFO", _request.parsedUri.pathInfo.c_str(), 1);
-		str = _request.resHints.cgiRules->root + _request.parsedUri.pathInfo;
+		setenv("PATH_INFO", _request.resHints.parsedUri.pathInfo.c_str(), 1);
+		str = _request.resHints.cgiRules->root + _request.resHints.parsedUri.pathInfo;
 		setenv("PATH_TRANSLATED", str.c_str() , 1); //TODODODODODODO
 	}
 	else
