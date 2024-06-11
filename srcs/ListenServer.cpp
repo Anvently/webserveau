@@ -351,7 +351,6 @@ Client*	ListenServer::acceptConnection(void) {
 	ClientSocket	socket;
 	socket.addrSize = sizeof(socket.addr);
 	socket.fd = accept(_sockFd, &socket.addr, &socket.addrSize);
-	LOGD("Socket.fd = %d", socket.fd);
 	if (socket.fd < 0) {
 		LOGE("Server %ss:%ss failed to accept a new client.", &_ip, &_port);
 		return (NULL);
@@ -364,7 +363,7 @@ Client*	ListenServer::acceptConnection(void) {
 	}
 	_connectedClients.push_back(newClient);
 	_orphanClients.push_back(newClient);
-	LOGI("A new client (%ss:%d) connected to server %ss:%ss", &newClient->getStrAddr(), newClient->getAddrPort(), &_ip, &_port);
+	LOGI("A new client (%ss:%d, fd = %d) connected to server %ss:%ss", &newClient->getStrAddr(), newClient->getAddrPort(), newClient->getfd(), &_ip, &_port);
 	return (newClient);
 }
 

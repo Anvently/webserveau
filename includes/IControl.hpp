@@ -13,7 +13,7 @@
 # define BUFFER_SIZE 4096
 #endif
 
-enum	RES_SENT_SITUATION {SITUATION_CLOSE, SITUATION_KEEP_ALIVE, SITUATION_CONTINUE};
+enum	RES_SENT_SITUATION {SITUATION_CLOSE = -1, SITUATION_KEEP_ALIVE = 1, SITUATION_CONTINUE = 2};
 
 class IControl
 {
@@ -97,7 +97,7 @@ class IControl
 		static int	handleCommandPrompt(epoll_event* event);
 
 		static void	generateContinueResponse(Client& client);
-		static void	generateResponse(Client& client, int status = 0);
+		static int	generateResponse(Client& client, int status = 0);
 		static int	generateCGIProcess(Client& client);
 		static int	cleanExit(int code);
 

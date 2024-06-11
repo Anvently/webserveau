@@ -151,7 +151,9 @@ std::list<Client*>::const_iterator	Host::getClientListEnd(void) const {
 	return (_clients.end());
 }
 
-
+/// @brief Check if a given serverName match with the host
+/// @param name 
+/// @return 
 bool	Host::checkServerName(const std::string& name) const {
 	std::vector<std::string>::const_iterator pos;
 	pos = std::find(_server_names.begin(), _server_names.end(), name);
@@ -164,6 +166,9 @@ const std::string&	Host::getDirErrorPages(void) const {
 	return (this->_dir_errors);
 }
 
+/// @brief Remove the host pointer from client list
+/// Memory safe.
+/// @param client 
 void	Host::removeClient(Client* client) {
 	if (client)
 		this->_clients.remove(client);

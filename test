@@ -1,6 +1,6 @@
-GHETTO http://localhost:8080/images/pouet HTTP/1.1
-Connection: keep-alive
-Transfer-encoding:chunked
+GET http://localhost:8080/script.py?weewfewf=wefewf&wedewf=ewfe HTTP/1.1
+Connection: close
+Host: server1
 
 wewefwefwefwefweffw
 efwef

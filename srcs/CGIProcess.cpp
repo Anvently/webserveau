@@ -9,7 +9,7 @@
 
 char**  CGIProcess::_env;
 
-CGIProcess::CGIProcess(Client& client) : _client(client), _request(*client.getRequest()) {}
+CGIProcess::CGIProcess(Client& client) : _index(0), _pid(-1), _status(0), _client(client), _request(*client.getRequest()) {}
 
 CGIProcess::~CGIProcess(void) {
 	unlink(_request.resHints.path.c_str());
@@ -161,8 +161,10 @@ int CGIProcess::execCGI()
 		_pid = pid;
 		_status = CHILD_RUNNING;
 		return (0);
-	} else if (pid < 0)
+	} else if (pid < 0) {
+		LOGE("FAILED TO FORK");
 		return (1);
+	}
 	return (0);
 }
 
@@ -171,6 +173,8 @@ void    CGIProcess::_launchCGI()
 	int     fd_out = open(_request.resHints.path.c_str(), O_RDWR | O_TRUNC | O_CREAT, 0644);
 	int     fd_in;
 	char    **argv = new char*[3];
+
+	close(_client.getfd());
 	argv[2] = NULL;
 	argv[0] = new char[_request.resHints.cgiRules->exec.size() + 1];
 	argv[0][_request.resHints.cgiRules->exec.size()] = '\0';

@@ -522,6 +522,7 @@ void IParseConfig::parseAllowedMethods(std::istream &istream, int &dest)
 	parseValues(istream, methods);
 	if (methods.size() == 0)
 		throw (MissingTokenException("method"));
+	dest = 0;
 	for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
 	{
 		int index = getMethodIndex(*it);
@@ -532,6 +533,7 @@ void IParseConfig::parseAllowedMethods(std::istream &istream, int &dest)
 	// LOGI("Allowed methods :");
 	// for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
 	// 	LOGI("	- %ss", &*it);
+	// LOGI("dest = %d", dest);
 }
 
 void IParseConfig::parseRedirection(std::istream &istream, Location &location)

@@ -149,6 +149,7 @@ int	IControl::handleListenEvent(epoll_event* event)
 		return (1);
 	if (registerToEpoll(newClient->getfd(), newClient, EPOLLIN | EPOLLHUP | EPOLLOUT))
 		return (1);
+	LOGE("New client %d", newClient->getfd());
 	return (0);
 }
 
@@ -168,11 +169,13 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 		}
 	}
 	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
-		if (client.cgiProcess)
-			handleCGIProcess(client);
+		// LOGE("client fd = %d", client.getfd());
+		if (client.cgiProcess && handleCGIProcess(client)) {
+			client.terminate();
+			return (1);
+		}
 		if (client.getResponse()) {
 			if ((res = handleClientOut(client))) {
-				LOGD("FINISHED");
 				if (res == SITUATION_KEEP_ALIVE) {
 					client.clear();
 					client.setMode(CLIENT_MODE_READ);
@@ -225,7 +228,6 @@ int	IControl::handleClientOut(Client& client) {
 	int	nwrite = 0;
 
 	if (client.outBuffers.size() >= 1) {
-		// LOGD("%ss", &client.outBuffers.front());
 		nwrite = write(client.getfd(), client.outBuffers.front().c_str(), client.outBuffers.front().size());
 		if (nwrite < 0) {
 			LOGE("Write error");
@@ -254,6 +256,7 @@ int	IControl::handleClientHup(Client& client) {
 /// @param client
 /// @return
 int	IControl::handleCGIProcess(Client& client) {
+	LOGD("%Cl", &client);
 	int	res = client.cgiProcess->checkEnd();
 	if (res == 0)
 		return (0);
@@ -383,7 +386,6 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 	client.setBodyStatus(BODY_STATUS_NONE);
 	if ((res = assignHost(client, request)))
 		return (res);
-	LOGD("%H", client.getHost());
 	if ((res = request.parseURI()))
 		return (res);
 	if ((res = checkForbiddenHeaders(request)))
@@ -506,7 +508,8 @@ void	IControl::fillErrorPage(const Host* host, ResHints& resHints) {
 /// @brief Add any additionnal header such as ```connection``` if success status
 /// @param request
 void	IControl::fillAdditionnalHeaders(Request& request) {
-	if (request.resHints.status >= 200 && request.resHints.status < 300) {
+	if ((request.resHints.status >= 200 && request.resHints.status < 300)
+		|| request.resHints.status == 404) {
 		if (request.checkHeader("connection"))
 			request.resHints.headers["connection"] = request.getHeader("connection");
 		else
@@ -557,8 +560,8 @@ void	IControl::fillResponse(Client& client, Request& request) {
 	fillAdditionnalHeaders(request);
 	fillVerboseError(request);
 	if (request.resHints.status)
-		LOGI("Generating response status %d | verbose = %ss",
-			request.resHints.status, &request.resHints.verboseError);
+		LOGI("Client %d : Generating response status %d | verbose = %ss",
+			client.getfd(), request.resHints.status, &request.resHints.verboseError);
 	request.resHints.type = request.type;
 	request.resHints.extension = request.resHints.parsedUri.extension;
 }
@@ -574,12 +577,12 @@ void	IControl::generateContinueResponse(Client& client) {
 /// status.
 /// @param client
 /// @param status
-void	IControl::generateResponse(Client& client, int status)
+int	IControl::generateResponse(Client& client, int status)
 {
 	AResponse*	response = NULL;
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
-		return ; //Not sure
+		return (0); //Not sure
 	if (status)
 		request.resHints.status = status;
 	fillResponse(client, request);
@@ -596,12 +599,13 @@ void	IControl::generateResponse(Client& client, int status)
 			client.clearResponse();
 			generateResponse(client, RES_INTERNAL_ERROR);
 		}
-		return ;
+		return (1);
 	}
 	if (response)
 		response->writeResponse(client.outBuffers);
 	client.setResponse(response);
 	client.setMode(CLIENT_MODE_WRITE);
+	return (0);
 }
 
 int IControl::generateCGIProcess(Client& client) {

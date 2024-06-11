@@ -20,7 +20,9 @@ TODO
 
 	to fix:
 		- filename for cgi
-		
+		- catch sigpipe
+		- 
+
 
 	- expand %
 

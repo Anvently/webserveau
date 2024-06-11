@@ -128,7 +128,11 @@ int	Client::getResponseStatus() const {
 }
 
 void	Client::setHost(const std::string& hostname) {
-
+	if (_host) {
+		if (_host->checkServerName(hostname))
+			return;
+		_host->removeClient(this);
+	}
 	this->_host = this->_listenServer.bindClient(*this, hostname);
 }
 
@@ -340,6 +344,7 @@ void	Client::updateLastInteraction()
 
 void	Client::deleteCGIProcess() {
 	if (cgiProcess) {
+		LOGE("Deleting cgiProcess for %d", getfd());
 		delete cgiProcess;
 		cgiProcess = NULL;
 	}
@@ -366,7 +371,7 @@ void	Client::clear() {
 }
 
 void	Client::terminate(void) {
-	LOGD("terminating client");
+	LOGE("terminating client (%d)", this->getfd());
 	clear();
 	if (_host) {
 		_host->removeClient(this);

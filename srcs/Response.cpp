@@ -281,7 +281,6 @@ int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
 		outQueue.push(outBuff);
 		outBuff.clear();
 	} while (_fstr.good());
-	LOGD("gcount = %d", _fstr.gcount());
 	delete[] buff;
 	return (0);
 }
@@ -489,4 +488,4 @@ void	DynamicResponse::addSpecificHeaders()
 		addHeader("Location",getRedirPath(hints.redirList->front(), hints.parsedUri.filename));
 }
 
-/
+

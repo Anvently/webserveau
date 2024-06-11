@@ -3,6 +3,7 @@
 #include <iterator>
 #include <map>
 #include <stdlib.h>
+#include <Request.hpp>
 
 class Client;
 class Request;
@@ -23,7 +24,7 @@ class CGIProcess {
 
 		std::string							_line;
 		size_t								_index;
-		std::map<std::string, std::string> 	_cgi_headers;
+		std::map<std::string, std::string, i_less> 	_cgi_headers;
 		struct timeval						_fork_time;
 		int									_pid;
 		int									_status;
