@@ -344,7 +344,6 @@ void	Client::updateLastInteraction()
 
 void	Client::deleteCGIProcess() {
 	if (cgiProcess) {
-		LOGE("Deleting cgiProcess for %d", getfd());
 		delete cgiProcess;
 		cgiProcess = NULL;
 	}
@@ -371,7 +370,8 @@ void	Client::clear() {
 }
 
 void	Client::terminate(void) {
-	LOGE("terminating client (%d)", this->getfd());
+	LOGD("terminating client (%d)", this->getfd());
+	IControl::removeFromEpoll(_socket.fd);
 	clear();
 	if (_host) {
 		_host->removeClient(this);

@@ -46,9 +46,17 @@
 // }
 
 
+static void	catchSigPipe() {
+	struct sigaction	action_sa;
+
+	memset(&action_sa, 0, sizeof(struct sigaction));
+	action_sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &action_sa, NULL);
+}
+
 static void	initLogs(void)
 {
-	ILogger::addStream(std::cout, LOG_CONFIG_DEBUG | LOG_COLORIZE_MSK);
+	ILogger::addStream(std::cout, LOG_CONFIG_VERBOSE | LOG_COLORIZE_MSK);
 	// ILogger::addLogFile("logs/sessions.log", LOG_CONFIG_DEBUG);
 	// ILogger::addLogFile("logs/error.log", LOG_ERROR_MSK);
 	ILogger::logDate(-1);
@@ -64,6 +72,7 @@ int	main(int, char **, char **env)
 	struct epoll_event	events[EPOLL_EVENT_MAX_SIZE];
 
 	initLogs();
+	catchSigPipe();
 	try {
 		epollfd = epoll_create(1);
 		if (epollfd < 0) {

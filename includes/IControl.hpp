@@ -92,6 +92,7 @@ class IControl
 
 		static int	registerCommandPrompt(void);
 		static int	registerToEpoll(int fd, void* data, int flags);
+		static int	removeFromEpoll(int fd);
 
 		static int	handleEpoll(epoll_event* events, int nbrEvents);
 		static int	handleCommandPrompt(epoll_event* event);

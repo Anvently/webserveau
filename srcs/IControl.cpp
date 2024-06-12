@@ -27,6 +27,12 @@ int	IControl::registerToEpoll(int fd, void* ptr, int flags) {
 	return (0);
 }
 
+int	IControl::removeFromEpoll(int fd) {
+	if (epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL))
+		return (-1);
+	return (0);
+}
+
 int	IControl::handleCommandPrompt(epoll_event* event) {
 	if (event->events & EPOLLHUP || std::cin.eof()) {
 		LOGI("Closing stdin");
@@ -128,8 +134,10 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 		}
 		else if ((ptr_listenS = dynamic_cast<ListenServer *> ((IObject *)events[i].data.ptr)) != NULL)
 			handleListenEvent(&events[i]);
-		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL)
-			handleClientEvent(&events[i], *ptr_client);
+		else if ((ptr_client = dynamic_cast<Client *> ((IObject *) events[i].data.ptr)) != NULL) {
+			if (handleClientEvent(&events[i], *ptr_client) < 0)
+				ptr_client->terminate();
+		}
 		//handle CGI event
 		//.....
 
@@ -149,31 +157,37 @@ int	IControl::handleListenEvent(epoll_event* event)
 		return (1);
 	if (registerToEpoll(newClient->getfd(), newClient, EPOLLIN | EPOLLHUP | EPOLLOUT))
 		return (1);
-	LOGE("New client %d", newClient->getfd());
 	return (0);
 }
 
 
+/// @brief 
+/// @param event 
+/// @param client 
+/// @return ```< 0``` if error or connection closed from client side
 int	IControl::handleClientEvent(epoll_event *event, Client& client)
 {
 	int	res = 0;
 
-	if ((event->events & EPOLLIN) && client.getMode() == CLIENT_MODE_READ) {
+	if ((event->events & EPOLLHUP) || client.getMode() == CLIENT_MODE_ERROR)
+		handleClientHup(client);
+	else if ((event->events & EPOLLIN) && ((client.getMode() == CLIENT_MODE_READ)
+										|| (client.getBodyStatus() != BODY_STATUS_ONGOING))) {
 		if ((res = IControl::handleClientIn(client))) {
 			if (res > 0) {
 				if (client.getRequest()->type != REQ_TYPE_CGI || res != RES_OK)
-					generateResponse(client, res);
+					res = generateResponse(client, res);
 				else if ((res = generateCGIProcess(client)))
-					generateResponse(client, RES_INTERNAL_ERROR);
+					res = generateResponse(client, RES_INTERNAL_ERROR);
 			}
+			if (res < 0)
+				return (-1);
 		}
 	}
 	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
 		// LOGE("client fd = %d", client.getfd());
-		if (client.cgiProcess && handleCGIProcess(client)) {
-			client.terminate();
-			return (1);
-		}
+		if (client.cgiProcess && handleCGIProcess(client))
+			return (-1);
 		if (client.getResponse()) {
 			if ((res = handleClientOut(client))) {
 				if (res == SITUATION_KEEP_ALIVE) {
@@ -188,24 +202,24 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 					client.terminate();
 			}
 		}
-	} else if ((event->events & EPOLLHUP) || client.getMode() == CLIENT_MODE_ERROR)
-		handleClientHup(client);
+	}
 	return (0);
 }
 
+/// @brief 
+/// @param client 
+/// @return ``` < 0``` if error. ```> 0 (status)``` if a response can be generated 
 int	IControl::handleClientIn(Client& client)
 {
 	char	buffer_c[BUFFER_SIZE + 1];
 	int		n_read, res = 0;
 
-	if (client.getMode() != CLIENT_MODE_READ)
-		return (0);
+	// if (client.getMode() != CLIENT_MODE_READ)
+	// 	return (0);
 	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
-	if (n_read == 0) {
-		client.terminate();
-		return (0);
-	}
+	if (n_read == 0) //Connection closed
+		return (-1);
 	res = client.parseRequest(buffer_c, n_read);
 	if (res < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
@@ -248,7 +262,7 @@ int	IControl::handleClientOut(Client& client) {
 
 int	IControl::handleClientHup(Client& client) {
 	client.terminate();
-	LOGD("EPOLLHUP !!!");
+	LOGE("EPOLLHUP !!!");
 	return (0);
 }
 
@@ -256,7 +270,6 @@ int	IControl::handleClientHup(Client& client) {
 /// @param client
 /// @return
 int	IControl::handleCGIProcess(Client& client) {
-	LOGD("%Cl", &client);
 	int	res = client.cgiProcess->checkEnd();
 	if (res == 0)
 		return (0);
@@ -577,6 +590,7 @@ void	IControl::generateContinueResponse(Client& client) {
 /// status.
 /// @param client
 /// @param status
+/// @return ```-1``` if error
 int	IControl::generateResponse(Client& client, int status)
 {
 	AResponse*	response = NULL;
@@ -599,7 +613,7 @@ int	IControl::generateResponse(Client& client, int status)
 			client.clearResponse();
 			generateResponse(client, RES_INTERNAL_ERROR);
 		}
-		return (1);
+		return (-1);
 	}
 	if (response)
 		response->writeResponse(client.outBuffers);
