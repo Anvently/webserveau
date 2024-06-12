@@ -18,24 +18,14 @@ root/imgs/root/serv/test/imgs/img1.png
 
 TODO
 
-	to fix:
-		- test track fd
-		- filename for cgi
-		- improve sender to read stdin
-		- build error_pages
-		- test more cgi
-		- compiled cgi
-		- chdir for cgi
-		- cookies
-
-
-	- expand %
-
-	- Parsing headers
-		- add verification about HTTP protocol
-		- Verifiy : 
-			- cookies ?
-		- check unknown methods ?
-
-	- Mimetype static class
-	- errors static class
+	- test track fd
+	- filename for cgi
+	- improve sender to read stdin
+	- build error_pages
+	- dir listing
+	- test more cgi
+		- test redirections
+	- compiled cgi
+	- chdir for cgi
+	- cookies
+	- add verification about HTTP version
