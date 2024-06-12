@@ -312,7 +312,7 @@ void	Client::deleteBodyStream()
 	if (_bodyStream) {
 		delete _bodyStream;
 		_bodyStream = NULL;
-		if (_request && _request->resHints.unlink == true)
+		if (_request && (_request->resHints.unlink == true || _request->resHints.status >= 300))
 			unlink(_bodyFileName.c_str());
 	}
 }

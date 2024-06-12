@@ -273,8 +273,10 @@ int	IControl::handleCGIProcess(Client& client) {
 	int	res = client.cgiProcess->checkEnd();
 	if (res == 0)
 		return (0);
-	if (res < 0)
+	if (res < 0) {
+		unlink(client.getRequest()->resHints.path.c_str());
 		generateResponse(client, RES_SERVICE_UNAVAILABLE);
+	}
 	else if (res > 0) {
 		res = client.cgiProcess->parseHeaders();
 		if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
@@ -515,14 +517,14 @@ void	IControl::fillErrorPage(const Host* host, ResHints& resHints) {
 		else
 			resHints.path =  IParseConfig::default_error_pages \
 				+ IntToString(resHints.status, 10) + ".html";
+		resHints.unlink = false;
 	}
 }
 
 /// @brief Add any additionnal header such as ```connection``` if success status
 /// @param request
 void	IControl::fillAdditionnalHeaders(Request& request) {
-	if ((request.resHints.status >= 200 && request.resHints.status < 300)
-		|| request.resHints.status == 404) {
+	if ((request.resHints.status >= 200 && request.resHints.status < 300)) {
 		if (request.checkHeader("connection"))
 			request.resHints.headers["connection"] = request.getHeader("connection");
 		else
@@ -550,17 +552,20 @@ void	IControl::fillVerboseError(Request& request) {
 			break;
 
 		case RES_INTERNAL_ERROR:
+			request.resHints.unlink = false;
 			request.resHints.path = "";
 			request.resHints.verboseError = "Internal error";
 			break;
 
 		case RES_SERVICE_UNAVAILABLE:
+			request.resHints.unlink = false;
 			request.resHints.path = "";
 			request.resHints.verboseError = "Service temporarly unavailable.";
 			break;
 
 		case RES_BAD_REQUEST:
 			request.resHints.path = "";
+			request.resHints.unlink = false;
 			break;
 
 		default:
@@ -634,6 +639,7 @@ int	IControl::cleanExit(int code) {
 	if (ListenServer::getNbrServer())
 		ListenServer::removeServers();
 	ILogger::clearFiles();
+	close(_epollfd);
 	return(code);
 }
 

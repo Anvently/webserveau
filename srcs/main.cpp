@@ -57,8 +57,8 @@ static void	catchSigPipe() {
 static void	initLogs(void)
 {
 	ILogger::addStream(std::cout, LOG_CONFIG_VERBOSE | LOG_COLORIZE_MSK);
-	// ILogger::addLogFile("logs/sessions.log", LOG_CONFIG_DEBUG);
-	// ILogger::addLogFile("logs/error.log", LOG_ERROR_MSK);
+	ILogger::addLogFile("logs/sessions.log", LOG_CONFIG_DEBUG);
+	ILogger::addLogFile("logs/error.log", LOG_ERROR_MSK);
 	ILogger::logDate(-1);
 	ILogger::setInit();
 	ILogger::printLogConfig();

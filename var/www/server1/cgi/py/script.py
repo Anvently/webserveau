@@ -11,6 +11,8 @@ print("Content-type:text/html\r\n\r\n")
 for key in form.keys():
 	print(form[key])
 	
+while (1):
+	continue
 
 print("<html>")
 print("<head>")

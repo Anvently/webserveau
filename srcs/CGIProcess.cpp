@@ -139,7 +139,7 @@ int	CGIProcess::checkEnd() {
 		return (0);
 	}
 	if (WEXITSTATUS(status) != 0 || WIFSIGNALED(status))
-		return (-1);
+		return (1); //!!TP CHANGE !!!!
 	return (1);
 }
 
@@ -174,7 +174,7 @@ void    CGIProcess::_launchCGI()
 	int     fd_in;
 	char    **argv = new char*[3];
 
-	close(_client.getfd());
+	// close(_client.getfd());
 	argv[2] = NULL;
 	argv[0] = new char[_request.resHints.cgiRules->exec.size() + 1];
 	argv[0][_request.resHints.cgiRules->exec.size()] = '\0';
@@ -185,12 +185,16 @@ void    CGIProcess::_launchCGI()
 	if (!_request.resHints.bodyFileName.empty())
 	{
 		fd_in = open(_request.resHints.bodyFileName.c_str(), O_RDONLY);
-		if (dup2(fd_in, STDIN_FILENO) < 0)
-			LOGE("Dup2() with infile (%ss) failed", &_request.resHints.bodyFileName);
+		if (dup2(fd_in, STDIN_FILENO) < 0) {
+			close (fd_in);
+			throw (CGIProcess::child_exit_exception());
+		}
 		close(fd_in);
 	}
-	if (dup2(fd_out, STDOUT_FILENO) < 0)
-		LOGE("Dup2() with outfile (%ss) failed", &_request.resHints.path);
+	if (dup2(fd_out, STDOUT_FILENO) < 0) {
+		close(fd_out);
+		throw (CGIProcess::child_exit_exception());
+	}
 	close(fd_out);
 	_setVariables();
 	execv(argv[0], argv);
@@ -198,7 +202,7 @@ void    CGIProcess::_launchCGI()
 	delete[] argv[1];
 	delete[] argv;
 	LOGE("The script %ss failed", &_request.resHints.scriptPath);
-	throw(CGIProcess::child_exit_exception());
+	throw (CGIProcess::child_exit_exception());
 }
 
 int CGIProcess::getStatus()
@@ -243,11 +247,10 @@ void    CGIProcess::_setVariables()
 		// setenv("PATH_TRANSLATED", NULL, 1);
 	}
 	setenv("SCRIPT_NAME", _request.resHints.scriptPath.c_str(), 1); //Not sure which variable to use
-	if (_request.resHints.hasBody && _retrieveHeader("Content-Type", str))
-		setenv("CONTENT_TYPE", str.c_str(), 1);
+	if (_client.getBodyFile() != "" && _request.getHeader("Content-Type") != "")
+		setenv("CONTENT_TYPE", _request.getHeader("Content-Type").c_str(), 1);
 	else
 		unsetenv("CONTENT_TYPE");
-
 
 }
 

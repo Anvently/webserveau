@@ -9,7 +9,7 @@ class Client;
 class Request;
 typedef struct ResHints ResHints;
 
-#define CGI_TIME_OUT 30000
+#define CGI_TIME_OUT 10000
 
 enum	CGI_RES_TYPE {CGI_RES_DOC = 0, CGI_RES_LOCAL_REDIRECT, CGI_RES_CLIENT_REDIRECT};
 enum	CHILD_STATUS {CHILD_RUNNING, CHILD_TERM};
@@ -24,7 +24,7 @@ class CGIProcess {
 
 		std::string							_line;
 		size_t								_index;
-		std::map<std::string, std::string, i_less> 	_cgi_headers;
+		std::map<std::string, std::string, i_less>	_cgi_headers;
 		struct timeval						_fork_time;
 		int									_pid;
 		int									_status;

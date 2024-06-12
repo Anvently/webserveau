@@ -1,6 +1,18 @@
-GET http://localhost:8080/script.py?weewfewf=wefewf&wedewf=ewfe HTTP/1.1
-Connection: close
-Host: server1
+POST /form.py HTTP/2.0
+Host: localhost:8080
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 55
+Origin: http://localhost:8080
+Connection: keep-alive
+Referer: http://localhost:8080/form.html
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
 
-wewefwefwefwefweffw
-efwef
+username=wfwef&emailaddress=pirard.nicolas%40hotmail.fr

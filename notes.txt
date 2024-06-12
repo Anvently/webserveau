@@ -19,9 +19,14 @@ root/imgs/root/serv/test/imgs/img1.png
 TODO
 
 	to fix:
+		- test track fd
 		- filename for cgi
-		- catch sigpipe
-		- 
+		- improve sender to read stdin
+		- build error_pages
+		- test more cgi
+		- compiled cgi
+		- chdir for cgi
+		- cookies
 
 
 	- expand %

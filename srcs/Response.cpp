@@ -152,7 +152,7 @@ std::map<int, std::string>	init_response()
 	mipmap.insert(std::pair<int, std::string>(417, "Expectation Failed"));
 	mipmap.insert(std::pair<int, std::string>(500, "Internal Server Error")); //DYNAMIC
 	mipmap.insert(std::pair<int, std::string>(501, "Not Implemented"));  //DYNAMIC
-	mipmap.insert(std::pair<int, std::string>(503, "Service Uavailable")); // timeout cgi ?
+	mipmap.insert(std::pair<int, std::string>(503, "Service Unavailable")); // timeout cgi ?
 	mipmap.insert(std::pair<int, std::string>(505, "HTTP Version Not Supported")); //check in parsing
 
 	return (mipmap);
@@ -213,7 +213,7 @@ void	HeaderResponse::addUniversalHeaders()
 
 void	HeaderResponse::addHeader(std::string const &key, std::string const &value)
 {
-	hints.headers.insert(std::pair<std::string, std::string>(key, value));
+	hints.headers[key] = value;
 }
 
 void	HeaderResponse::addHintHeaders(ResHints &hints)
