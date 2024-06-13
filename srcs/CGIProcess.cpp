@@ -58,9 +58,9 @@ int CGIProcess::_extract_header()
 	if (idx == std::string::npos)
 		return (500);
 	key = _line.substr(0, idx);
-	while (!key.empty() && key[0] == 32)
-		key.erase(0,1);
 	value = _line.substr(idx + 1, _line.size());
+	while (!value.empty() && value[0] == 32)
+		value.erase(0,1);
 	_cgi_headers[key] = value;
 	_line.clear();
 	return (0);
