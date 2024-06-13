@@ -94,6 +94,7 @@ int CGIProcess::_inspectHeaders()
 	}
 	else if (_retrieveHeader("Location", value) && value[0] == '/')
 	{
+		LOGD("redirects to = %ss", &value);
 		hints.redir_type = REDIR_LOCAL;
 		hints.path = value;
 		return (CGI_RES_LOCAL_REDIRECT);

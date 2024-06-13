@@ -50,7 +50,8 @@ int	main(int argc, char **argv, char **env)
 	i++;
 	int	len = atoi(&query[i]);
 
-
+	if (len <= 0)
+		len = 2;
 	int	**triangle = generate(len, &trSize, &columnSizes);
 
 
