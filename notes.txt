@@ -13,19 +13,22 @@ URI match example :
 */imgs/*/imgs/*
 */test/*
 */root/*/tes*
+
 root/imgs/root/serv/test/imgs/img1.png
+
+*.php*
+
+/script.php
+/sous_dir/script.php
 
 
 TODO
 
 	- test track fd
-	- filename for cgi
 	- improve sender to read stdin
 	- build error_pages
 	- dir listing
 	- test more cgi
 		- test redirections
-	- compiled cgi
-	- chdir for cgi
 	- cookies
 	- add verification about HTTP version

@@ -628,7 +628,7 @@ void Request::extractPathInfo(const std::string &extension)
 	resHints.parsedUri.path = resHints.parsedUri.path.substr(0, idx + extension.length());
 	idx = resHints.parsedUri.path.find_last_of('/');
 	if (idx == std::string::npos) {
-		resHints.parsedUri.filename = "";
+		resHints.parsedUri.filename = resHints.parsedUri.path;
 		resHints.parsedUri.root = "/";
 	}
 	else {
