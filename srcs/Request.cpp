@@ -125,21 +125,23 @@ static int checkVersion(std::string &str)
 	if ((str.size() < 8) || str.find("HTTP/", idx) != 0)
 		return (1);
 	idx = 5;
-	if (!isdigit(str[idx]))
-		return (1);
-	while (isdigit(str[idx]))
-		idx++;
-	if (idx == str.size())
-		return (0);
-	if (str[idx] != '.')
-		return (1);
-	idx++;
-	if (!isdigit(str[idx]))
-		return (1);
-	while (isdigit(str[idx]))
-		idx++;
-	if (idx != str.size())
-		return (1);
+	if (str.substr(idx, str.size()) != "1.1" && str.substr(idx, str.size()) != "1.0")
+		return (505);
+	// if (!isdigit(str[idx]))
+	// 	return (1);
+	// while (isdigit(str[idx]))
+	// 	idx++;
+	// if (idx == str.size())
+	// 	return (0);
+	// if (str[idx] != '.')
+	// 	return (1);
+	// idx++;
+	// if (!isdigit(str[idx]))
+	// 	return (1);
+	// while (isdigit(str[idx]))
+	// 	idx++;
+	// if (idx != str.size())
+	// 	return (1);
 	return (0);
 }
 
@@ -170,7 +172,7 @@ int Request::parseRequestLine()
 	this->_uri = std::string(this->_line, idx, r_idx - idx);
 	version = this->_line.substr(r_idx + 1, std::string::npos);
 	if (checkVersion(version))
-		return (this->_fillError(400, "Request line incorrect syntax"));
+		return (this->_fillError(500, "HTTP version not implemented"));
 	return (0);
 }
 
