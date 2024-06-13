@@ -6,5 +6,5 @@ int	main(int argc, char **argv, char **env)
 	(void)argv;
 	(void)env;
 
-	printf("Location: /pascal.html\r\n\r\n");
+	printf("Location:/pascal.html\r\n\r\n");
 }

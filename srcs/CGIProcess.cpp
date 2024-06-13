@@ -58,6 +58,8 @@ int CGIProcess::_extract_header()
 	if (idx == std::string::npos)
 		return (500);
 	key = _line.substr(0, idx);
+	while (!key.empty() && key[0] == 32)
+		key.erase(0,1);
 	value = _line.substr(idx + 1, _line.size());
 	_cgi_headers[key] = value;
 	_line.clear();
@@ -94,7 +96,6 @@ int CGIProcess::_inspectHeaders()
 	}
 	else if (_retrieveHeader("Location", value) && value[0] == '/')
 	{
-		LOGD("redirects to = %ss", &value);
 		hints.redir_type = REDIR_LOCAL;
 		hints.path = value;
 		return (CGI_RES_LOCAL_REDIRECT);
