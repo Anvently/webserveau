@@ -24,7 +24,6 @@ enum {GET, POST, DELETE};
 enum {TERM, ONGOING, RLINE,NEW};
 enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
 enum {REQ_TYPE_NO_MATCH = 0, REQ_TYPE_CGI, REQ_TYPE_STATIC, REQ_TYPE_DIR};
-enum {NONE, REDIR_LOCAL, REDIR_CLIENT};
 
 static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
 #define METHOD_NBR 3
@@ -88,7 +87,7 @@ typedef struct ResHints {
 	std::string							verboseError;
 	int									status;
 	int									type;
-	int									redir_type;
+	int									cgiRedir;
 	int									index;
 	const Location*						locationRules;
 	const CGIConfig*					cgiRules;

@@ -130,7 +130,7 @@ int	changeEpoll(int epollfd, int fd, int flags) {
 }
 
 int	handleEpollIn(epoll_event* event, int sock, std::ifstream& infile) {
-	if (event->data.fd == 0) {
+	if (event->data.fd == STDIN_FILENO) {
 		
 	} else {
 		switch (readSock(sock))

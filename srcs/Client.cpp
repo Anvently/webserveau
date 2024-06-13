@@ -371,6 +371,9 @@ void	Client::clear() {
 
 void	Client::terminate(void) {
 	LOGD("terminating client (%d)", this->getfd());
+	if (cgiProcess && cgiProcess->getPID()) {
+		kill(cgiProcess->getPID(), SIGKILL);
+	}
 	IControl::removeFromEpoll(_socket.fd);
 	clear();
 	if (_host) {

@@ -83,6 +83,8 @@ int CGIProcess::_inspectHeaders()
 {
 	ResHints&   hints = _request.resHints;
 	std::string value;
+	if (_cgi_headers.size() == 0)
+		return (CGI_RES_ERROR);
 	if (_retrieveHeader("Location", value) && value.substr(0, 7) == "http://")
 	{
 		hints.headers["Location"] = value;
@@ -96,7 +98,6 @@ int CGIProcess::_inspectHeaders()
 	}
 	else if (_retrieveHeader("Location", value) && value[0] == '/')
 	{
-		hints.redir_type = REDIR_LOCAL;
 		hints.path = value;
 		return (CGI_RES_LOCAL_REDIRECT);
 	}
@@ -136,10 +137,12 @@ int	CGIProcess::checkEnd() {
 	if (waitpid(_pid, &status, WNOHANG) == 0) {
 		if (getDuration(_fork_time) > CGI_TIME_OUT) {
 			kill(_pid, SIGKILL);
+			_pid = 0;
 			return (-1);
 		}
 		return (0);
 	}
+	_pid = 0;
 	if (WEXITSTATUS(status) != 0 || WIFSIGNALED(status))
 		return (1); //!!TP CHANGE !!!!
 	return (1);
