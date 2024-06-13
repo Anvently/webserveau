@@ -223,6 +223,7 @@ int	IControl::handleClientIn(Client& client)
 	res = client.parseRequest(buffer_c, n_read);
 	if (res < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
+			client.setBodyStatus(BODY_STATUS_NONE);
 			if ((res = handleRequestHeaders(client, *client.getRequest())))
 				return (res);
 			if (client.getBodyStatus() != BODY_STATUS_NONE)
@@ -274,24 +275,34 @@ int	IControl::handleCGIProcess(Client& client) {
 	if (res == 0)
 		return (0);
 	if (res < 0) {
-		unlink(client.getRequest()->resHints.path.c_str());
-		generateResponse(client, RES_SERVICE_UNAVAILABLE);
+		client.deleteCGIProcess();
+		res = generateResponse(client, RES_SERVICE_UNAVAILABLE);
 	}
 	else if (res > 0) {
 		res = client.cgiProcess->parseHeaders();
 		client.getRequest()->resHints.cgiRedir = res;
-		if (res == CGI_RES_ERROR)
-			generateResponse(client, RES_SERVICE_UNAVAILABLE);
+		if (res == CGI_RES_ERROR) {
+			client.deleteCGIProcess();
+			res = generateResponse(client, RES_SERVICE_UNAVAILABLE);
+		}
 		else if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
-			generateResponse(client);
+			res = generateResponse(client);
 		else if (res == CGI_RES_LOCAL_REDIRECT) {
-			handleRequestHeaders(client, *client.getRequest());
-			generateResponse(client);
+			client.deleteCGIProcess();
+			if ((res = handleRequestHeaders(client, *client.getRequest())))
+				res = generateResponse(client, res);
+			else if (client.getRequest()->type != REQ_TYPE_CGI || res != 0)
+				res = generateResponse(client, res);	
+			else if ((res = generateCGIProcess(client))) {
+				client.deleteCGIProcess();
+				res = generateResponse(client, RES_INTERNAL_ERROR);
+			}
+			return (res);
 		}
 	}
 	if (client.cgiProcess)
 		client.deleteCGIProcess();
-	return (0);
+	return (res);
 }
 
 // int	AssignHost(Client *client)
@@ -401,14 +412,13 @@ extractPathInfo(URI&, extension) {
 int	IControl::handleRequestHeaders(Client& client, Request& request) {
 	int	res = 0;
 
-	client.setBodyStatus(BODY_STATUS_NONE);
 	if ((res = assignHost(client, request)))
 		return (res);
 	if ((res = request.parseURI()))
 		return (res);
 	if ((res = checkForbiddenHeaders(request)))
 		return (res);
-	if ((res = checkBodyLength(client, request)))
+	if (request.resHints.cgiRedir == CGI_RES_NONE && (res = checkBodyLength(client, request)))
 		return (res);
 	if ((res = client.getHost()->checkRequest(request)))
 		return (res);

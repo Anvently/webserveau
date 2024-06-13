@@ -2,10 +2,8 @@ import cgi, cgitb
 
 form = cgi.FieldStorage()
 
-print("Content-type:text/html\r\n\r\n")
-
-while(1):
-	continue
+print("Location:http://upload_file.html")
+print("content-type: text/html\r\n")
 
 print("<html>")
 print("<head>")

@@ -29,6 +29,8 @@ class IControl
 		static int	handleClientOut(Client&);
 		static int	handleClientHup(Client&);
 
+		static int	handleClientStatusChanged(Client&);
+
 		/**
 		@brief Should be called once the full header is parsed
 			- if header READY
