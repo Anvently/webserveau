@@ -1,15 +1,14 @@
 import cgi, cgitb
- 
+
 form = cgi.FieldStorage()
- 
+
 username = form["username"].value
 emailaddress = form["emailaddress"].value
 
 
 print("Content-type:text/html\r\n\r\n")
-while (1):
-		continue
- 
+
+
 print("<html>")
 print("<head>")
 print("<title> MY FIRST CGI FILE </title>")
