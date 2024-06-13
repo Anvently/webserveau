@@ -496,6 +496,7 @@ void IParseConfig::parsePorts(std::istream &istream, Host &host)
 void IParseConfig::parseHostName(std::istream &istream, Host &host)
 {
 	std::string word;
+	host._addr.clear();
 	if (getNextWord(istream, host._addr))
 		throw (MissingTokenException("host"));
 }

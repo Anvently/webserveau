@@ -627,10 +627,14 @@ void Request::extractPathInfo(const std::string &extension)
 	resHints.parsedUri.pathInfo = resHints.parsedUri.path.substr(idx + extension.length());
 	resHints.parsedUri.path = resHints.parsedUri.path.substr(0, idx + extension.length());
 	idx = resHints.parsedUri.path.find_last_of('/');
-	if (idx == std::string::npos)
+	if (idx == std::string::npos) {
+		resHints.parsedUri.filename = "";
 		resHints.parsedUri.root = "/";
-	else
+	}
+	else {
 		resHints.parsedUri.root = resHints.parsedUri.path.substr(0, idx + 1);
+		resHints.parsedUri.filename = resHints.parsedUri.path.substr(idx + 1);
+	}
 	resHints.parsedUri.extension = extension;
 	LOGD("path = |%ss| root = |%ss| filename = |%ss| extension = |%ss| query = |%ss| pathinfo = |%ss|",
 		 &resHints.parsedUri.path, &resHints.parsedUri.root, &resHints.parsedUri.filename, &resHints.parsedUri.extension, &resHints.parsedUri.query,
