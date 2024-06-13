@@ -156,6 +156,7 @@ class	Request
 		int					getError() const;
 		void				setChunked(bool);
 		void				setContentLength(int);
+		void				setUri(std::string &new_uri);
 
 		const std::string&	getHeader(std::string const &key) const;
 		int					getHostName(std::string &hostname) const;
