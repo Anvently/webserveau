@@ -607,6 +607,7 @@ int Request::parseURI(const std::string &suffix)
 int Request::parseURI()
 {
 	resHints.parsedUri.query = _uri;
+	resHints.parsedUri.pathInfo = "";
 	if (pruneScheme(resHints.parsedUri.query))
 		return (_fillError(400, "Bad uri"));
 	pruneDelim(resHints.parsedUri.query, "@");

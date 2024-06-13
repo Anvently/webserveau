@@ -285,6 +285,7 @@ int	IControl::handleCGIProcess(Client& client) {
 		else if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
 			generateResponse(client);
 		else if (res == CGI_RES_LOCAL_REDIRECT) {
+			
 			handleRequestHeaders(client, *client.getRequest());
 			generateResponse(client);
 		}
