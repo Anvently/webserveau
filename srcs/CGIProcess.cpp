@@ -85,6 +85,7 @@ int CGIProcess::_inspectHeaders()
 	std::string value;
 	if (_cgi_headers.size() == 0)
 		return (CGI_RES_ERROR);
+	_retrieveHeader("Location", value);
 	if (_retrieveHeader("Location", value) && value.substr(0, 7) == "http://")
 	{
 		hints.headers["Location"] = value;
@@ -144,7 +145,7 @@ int	CGIProcess::checkEnd() {
 	}
 	_pid = 0;
 	if (WEXITSTATUS(status) != 0 || WIFSIGNALED(status))
-		return (1); //!!TP CHANGE !!!!
+		return (-1); //!!TP CHANGE !!!!
 	return (1);
 }
 
