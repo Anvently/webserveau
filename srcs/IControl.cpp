@@ -285,7 +285,8 @@ int	IControl::handleCGIProcess(Client& client) {
 		else if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
 			generateResponse(client);
 		else if (res == CGI_RES_LOCAL_REDIRECT) {
-			
+			client.deleteCGIProcess();
+			unlink(client.getRequest()->resHints.path.c_str());
 			handleRequestHeaders(client, *client.getRequest());
 			generateResponse(client);
 		}
@@ -419,8 +420,7 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 		request.resHints.status = RES_EXPECTATION_FAILED;
 		return (RES_EXPECTATION_FAILED);
 	}
-	if (request.resHints.cgiRedir == CGI_RES_NONE)
-		defineBodyParsing(client, *client.getRequest());
+	defineBodyParsing(client, *client.getRequest());
 	client.setHeaderStatus(HEADER_STATUS_DONE);
 	if (res == RES_CONTINUE) {
 		generateContinueResponse(client);
@@ -443,7 +443,8 @@ static int	checkFileExist(const char *path) {
 int	IControl::defineBodyParsing(Client& client, Request& request)
 {
 	if (request.type == REQ_TYPE_CGI) {
-		if (client.getBodyStatus() != BODY_STATUS_NONE)
+		if (client.getBodyStatus() == BODY_STATUS_DONE);
+		else if (client.getBodyStatus() != BODY_STATUS_NONE)
 			client.setBodyFile(generate_name(&client.getHost()->getServerNames().front()));
 		else
 			client.setBodyFile("");
