@@ -279,7 +279,10 @@ int	IControl::handleCGIProcess(Client& client) {
 	}
 	else if (res > 0) {
 		res = client.cgiProcess->parseHeaders();
-		if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
+		client.getRequest()->resHints.cgiRedir = res;
+		if (res == CGI_RES_ERROR)
+			generateResponse(client, RES_SERVICE_UNAVAILABLE);
+		else if (res == CGI_RES_DOC || res == CGI_RES_CLIENT_REDIRECT)
 			generateResponse(client);
 		else if (res == CGI_RES_LOCAL_REDIRECT) {
 			handleRequestHeaders(client, *client.getRequest());
@@ -415,7 +418,8 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 		request.resHints.status = RES_EXPECTATION_FAILED;
 		return (RES_EXPECTATION_FAILED);
 	}
-	defineBodyParsing(client, *client.getRequest());
+	if (request.resHints.cgiRedir == CGI_RES_NONE)
+		defineBodyParsing(client, *client.getRequest());
 	client.setHeaderStatus(HEADER_STATUS_DONE);
 	if (res == RES_CONTINUE) {
 		generateContinueResponse(client);

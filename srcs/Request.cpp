@@ -9,11 +9,11 @@ URI::URI(const URI &copy) : filename(copy.filename), path(copy.path), root(copy.
 							extension(copy.extension), query(copy.query) {}
 
 ResHints::ResHints(void) : alreadyExist(false), unlink(false), hasBody(false), status(0), type(0),
-						   redir_type(0), index(0), locationRules(NULL), cgiRules(NULL) {}
+						   cgiRedir(0), index(0), locationRules(NULL), cgiRules(NULL) {}
 
 ResHints::ResHints(const ResHints &copy) : parsedUri(copy.parsedUri), path(copy.path), alreadyExist(copy.alreadyExist),
 										   unlink(copy.unlink), hasBody(copy.hasBody), verboseError(copy.verboseError), status(copy.status),
-										   type(copy.type), redir_type(copy.redir_type), index(copy.index), locationRules(copy.locationRules),
+										   type(copy.type), cgiRedir(copy.cgiRedir), index(copy.index), locationRules(copy.locationRules),
 										   cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers) {}
 
 Request::Request()
