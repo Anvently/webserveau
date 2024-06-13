@@ -168,20 +168,43 @@ int CGIProcess::execCGI()
 	return (0);
 }
 
+
+
 void    CGIProcess::_launchCGI()
 {
 	int     fd_out = open(_request.resHints.path.c_str(), O_RDWR | O_TRUNC | O_CREAT, 0644);
 	int     fd_in;
+	int		i = 0;
 	char    **argv = new char*[3];
+	std::string	cgi_root = _request.resHints.cgiRules->root;
+	cgi_root.erase(0,1);
 
 	// close(_client.getfd());
+	char	work_path[1024];
+	getcwd(work_path, sizeof(work_path));
+	if (!_request.resHints.bodyFileName.empty()){
+		_request.resHints.bodyFileName.erase(0,1);
+		_request.resHints.bodyFileName = work_path + _request.resHints.bodyFileName;
+	}
+	_request.resHints.scriptPath.erase(0,1);
+	_request.resHints.scriptPath = work_path + _request.resHints.scriptPath;
+	cgi_root = work_path + cgi_root;
+
+
+	if (chdir(cgi_root.c_str())){
+		throw(CGIProcess::child_exit_exception());
+	}
 	argv[2] = NULL;
-	argv[0] = new char[_request.resHints.cgiRules->exec.size() + 1];
-	argv[0][_request.resHints.cgiRules->exec.size()] = '\0';
-	argv[1] = new char[_request.resHints.scriptPath.size() + 1];
-	argv[1][_request.resHints.scriptPath.size()] = 0;
-	std::copy(&_request.resHints.cgiRules->exec.c_str()[0], &_request.resHints.cgiRules->exec.c_str()[_request.resHints.cgiRules->exec.size()], &argv[0][0]);
-	std::copy(&_request.resHints.scriptPath.c_str()[0], &_request.resHints.scriptPath.c_str()[_request.resHints.scriptPath.size()], &argv[1][0]);
+	if (_request.resHints.cgiRules->extension != ".out"){
+		argv[0] = new char[_request.resHints.cgiRules->exec.size() + 1];
+		argv[0][_request.resHints.cgiRules->exec.size()] = '\0';
+		std::copy(&_request.resHints.cgiRules->exec.c_str()[0], &_request.resHints.cgiRules->exec.c_str()[_request.resHints.cgiRules->exec.size()], &argv[0][0]);
+		i++;
+	}
+	argv[i] = new char[_request.resHints.scriptPath.size() + 1];
+	argv[i][_request.resHints.scriptPath.size()] = 0;
+	std::copy(&_request.resHints.scriptPath.c_str()[0], &_request.resHints.scriptPath.c_str()[_request.resHints.scriptPath.size()], &argv[i][0]);
+	argv[i + 1] = NULL;
 	if (!_request.resHints.bodyFileName.empty())
 	{
 		fd_in = open(_request.resHints.bodyFileName.c_str(), O_RDONLY);
@@ -199,7 +222,8 @@ void    CGIProcess::_launchCGI()
 	_setVariables();
 	execv(argv[0], argv);
 	delete[] argv[0];
-	delete[] argv[1];
+	if (i)
+		delete[] argv[1];
 	delete[] argv;
 	LOGE("The script %ss failed", &_request.resHints.scriptPath);
 	throw (CGIProcess::child_exit_exception());
