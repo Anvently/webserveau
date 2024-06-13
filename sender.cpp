@@ -129,6 +129,38 @@ int	changeEpoll(int epollfd, int fd, int flags) {
 	return (0);
 }
 
+int	handleEpollIn(epoll_event* event, int sock, std::ifstream& infile) {
+	if (event->data.fd == 0) {
+		
+	} else {
+		switch (readSock(sock))
+		{
+			case -1:
+				printf("Read 0 characters. Closing connection\n");
+				close(sock);
+				return (0);
+
+			case 1:
+				return (1);
+		}
+	}
+}
+
+int	handleEpollOut(int epollfd, epoll_event* event, int sock, std::ifstream& infile) {
+	if (checkTimer()) {
+		switch (sendFile(infile, sock))
+		{
+			case -1: //File is fully sent
+				if (changeEpoll(epollfd, sock, EPOLLIN | EPOLLHUP))
+					return (1);
+				break;
+
+			case 1:
+				return (1);
+		}
+	}
+}
+
 int	epoll_loop(int epollfd, int sock, std::ifstream& infile) {
 	struct	epoll_event	events[10];
 	int					nbr_events = 0;
@@ -136,38 +168,12 @@ int	epoll_loop(int epollfd, int sock, std::ifstream& infile) {
 	while ((nbr_events = epoll_wait(epollfd, events, 10, -1)) >= 0) {
 		for (int i = 0; i < nbr_events; i++) {
 			if (events[i].events & EPOLLOUT) {
-				if (status != RECEIVING_CONTINUE && checkTimer()) {
-					switch (sendFile(infile, sock))
-					{
-						case -1:
-							if (status == SENDING_HEADER) {
-								infile.close();
-								if (openFile(infile, bodyFile))
-									return (error("opening body file"));
-								status = RECEIVING_CONTINUE;
-							}
-							else {
-								if (changeEpoll(epollfd, sock, EPOLLIN | EPOLLHUP))
-									return (1);
-							}
-							break;
-
-						case 1:
-							return (1);
-					}
-				}
+				if (handleEpollOut(epollfd, &events[i], sock, infile))
+					return (1);
 			}
 			if (events[i].events & EPOLLIN) {
-				switch (readSock(sock))
-				{
-					case -1:
-						printf("Read 0 characters. Closing connection\n");
-						close(sock);
-						return (0);
-
-					case 1:
-						return (1);
-				}
+				if (handleEpollIn(&events[i], sock, infile))
+					return (1);
 			}
 			if (events[i].events & EPOLLHUP) {
 				close(sock);
