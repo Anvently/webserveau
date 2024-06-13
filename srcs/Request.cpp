@@ -671,3 +671,8 @@ void	Request::prunePercent()
 	translatePercent(resHints.parsedUri.extension);
 	translatePercent(resHints.parsedUri.filename);
 }
+
+void	Request::setUri(std::string &new_uri)
+{
+	_uri = new_uri;
+}
