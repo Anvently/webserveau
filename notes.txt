@@ -26,10 +26,7 @@ TODO
 
 	- test track fd
 	- improve sender to read stdin
-	- check undeleted body file
 	- build error_pages
 	- dir listing
-	- test more cgi
-		- test redirections
 	- cookies
 	- add verification about HTTP version

@@ -13,11 +13,11 @@
 #define ADDRESS "127.0.0.1"
 #define PORT 8080
 
-enum STATUS {SENDING_HEADER, RECEIVING_CONTINUE, SENDING_BODY};
+// enum STATUS {SENDING_HEADER, RECEIVING_CONTINUE, SENDING_BODY};
 
-static char*	bodyFile = NULL;
-int				status = SENDING_BODY;
-const char		continueBuffer[] = "HTTP/1.1 100 Continue";
+// static char*	bodyFile = NULL;
+// int				status = SENDING_BODY;
+// const char		continueBuffer[] = "HTTP/1.1 100 Continue";
 
 int	error(const char* context) {
 	std::cout << context << std::endl;
@@ -77,19 +77,21 @@ int	readSock(int sock) {
 	buffer[nread] = '\0';
 	printf("%s", buffer);
 	fflush(stdout);
-	if (status == RECEIVING_CONTINUE) {
-		response += std::string(buffer, nread);
-		if (response.find("HTTP/1.1 100 Continue") != std::string::npos) {
-			printf("Received 100-Continue status, resume sending body\n");
-			status = SENDING_BODY;
-		}
-	}
+	if (nread != BUFFER_SIZE)
+		printf("\n");
+	// if (status == RECEIVING_CONTINUE) {
+	// 	response += std::string(buffer, nread);
+	// 	if (response.find("HTTP/1.1 100 Continue") != std::string::npos) {
+	// 		printf("Received 100-Continue status, resume sending body\n");
+	// 		status = SENDING_BODY;
+	// 	}
+	// }
 	return (0);
 }
 
 int	openFile(std::ifstream& infile,  char* path) {
 	infile.open(path);
-	if (infile.bad())
+	if (infile.is_open() == false || infile.bad())
 		return (1);
 	return (0);
 }
@@ -129,41 +131,63 @@ int	changeEpoll(int epollfd, int fd, int flags) {
 	return (0);
 }
 
-int	handleEpollIn(epoll_event* event, int sock, std::ifstream& infile) {
+int	readStdin(std::ifstream& infile, int sock, int epollfd) {
+	char	line[128];
+	size_t	nread = 0;
+
+	nread = read(STDIN_FILENO, line, 127);
+	if (nread <= 0)
+		return (1);
+	line[nread - 1] = '\0';
+	infile.close();
+	if (openFile(infile, line))
+		printf("could not open file (%s)\n", line);
+	if (changeEpoll(epollfd, sock, EPOLLIN | EPOLLHUP | EPOLLOUT))
+		return (1);
+	return (0);
+}
+
+int	handleEpollIn(int epollfd, epoll_event* event, int sock, std::ifstream& infile) {
 	if (event->data.fd == STDIN_FILENO) {
-		
+		if (readStdin(infile, sock, epollfd)) {
+			close (sock);
+			return (-1);
+		}
+			
 	} else {
 		switch (readSock(sock))
 		{
 			case -1:
 				printf("Read 0 characters. Closing connection\n");
 				close(sock);
-				return (0);
+				return (-1);
 
 			case 1:
 				return (1);
 		}
 	}
+	return (0);
 }
 
 int	handleEpollOut(int epollfd, epoll_event* event, int sock, std::ifstream& infile) {
-	if (checkTimer()) {
-		switch (sendFile(infile, sock))
-		{
-			case -1: //File is fully sent
-				if (changeEpoll(epollfd, sock, EPOLLIN | EPOLLHUP))
-					return (1);
-				break;
-
-			case 1:
+	if (checkTimer() == false)
+		return (0);
+	switch (sendFile(infile, sock))
+	{
+		case -1: //File is fully sent
+			if (changeEpoll(epollfd, sock, EPOLLIN | EPOLLHUP))
 				return (1);
-		}
+			break;
+
+		case 1:
+			return (1);
 	}
+	return (0);
 }
 
 int	epoll_loop(int epollfd, int sock, std::ifstream& infile) {
 	struct	epoll_event	events[10];
-	int					nbr_events = 0;
+	int					nbr_events = 0, res = 0;
 
 	while ((nbr_events = epoll_wait(epollfd, events, 10, -1)) >= 0) {
 		for (int i = 0; i < nbr_events; i++) {
@@ -172,8 +196,10 @@ int	epoll_loop(int epollfd, int sock, std::ifstream& infile) {
 					return (1);
 			}
 			if (events[i].events & EPOLLIN) {
-				if (handleEpollIn(&events[i], sock, infile))
+				if ((res = handleEpollIn(epollfd, &events[i], sock, infile)) > 0)
 					return (1);
+				else if (res < 0)
+					return (0);
 			}
 			if (events[i].events & EPOLLHUP) {
 				close(sock);
@@ -186,14 +212,11 @@ int	epoll_loop(int epollfd, int sock, std::ifstream& infile) {
 }
 
 int	main(int argc, char** argv) {
-	int				sock = -1, epollfd = -1, res;
+	int				sock = -1, epollfd = -1, res = 0;
+
 	std::ifstream	infile;
-	if (argc < 2 || argc > 3)
+	if (argc < 2)
 		return (error("invalid number of arguments"));
-	if (argc > 2) {
-		status = SENDING_HEADER;
-		bodyFile = argv[2];
-	}
 	if (openFile(infile, argv[1]))
 		return (error("failed to open file"));
 	if (connectSock(&sock))
@@ -202,6 +225,8 @@ int	main(int argc, char** argv) {
 		return (error("failed to create epoll"));
 	if (registerToEpoll(epollfd, sock, EPOLLIN | EPOLLOUT | EPOLLHUP))
 		return (error("failed to register to epollout"));
+	if (registerToEpoll(epollfd, STDIN_FILENO, EPOLLIN))
+		return (error("failed to register to stdin"));
 	if (epoll_loop(epollfd, sock, infile))
 		return (error("error in loop"));
 	close (epollfd);
