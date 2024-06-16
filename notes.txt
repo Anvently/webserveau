@@ -26,7 +26,7 @@ TODO
 
 	- test track fd
 	- improve sender to read stdin
-	- build error_pages
+	- build error_pages OK?
 	- dir listing
 	- cookies
-	- add verification about HTTP version
+	- add verification about HTTP version OK
