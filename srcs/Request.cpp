@@ -172,7 +172,7 @@ int Request::parseRequestLine()
 	this->_uri = std::string(this->_line, idx, r_idx - idx);
 	version = this->_line.substr(r_idx + 1, std::string::npos);
 	if (checkVersion(version))
-		return (this->_fillError(500, "HTTP version not implemented"));
+		return (this->_fillError(505, "HTTP version not implemented"));
 	return (0);
 }
 

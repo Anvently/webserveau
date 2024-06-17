@@ -161,9 +161,9 @@ int	IControl::handleListenEvent(epoll_event* event)
 }
 
 
-/// @brief 
-/// @param event 
-/// @param client 
+/// @brief
+/// @param event
+/// @param client
 /// @return ```< 0``` if error or connection closed from client side
 int	IControl::handleClientEvent(epoll_event *event, Client& client)
 {
@@ -206,9 +206,9 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 	return (0);
 }
 
-/// @brief 
-/// @param client 
-/// @return ``` < 0``` if error. ```> 0 (status)``` if a response can be generated 
+/// @brief
+/// @param client
+/// @return ``` < 0``` if error. ```> 0 (status)``` if a response can be generated
 int	IControl::handleClientIn(Client& client)
 {
 	char	buffer_c[BUFFER_SIZE + 1];
@@ -292,7 +292,7 @@ int	IControl::handleCGIProcess(Client& client) {
 			if ((res = handleRequestHeaders(client, *client.getRequest())))
 				res = generateResponse(client, res);
 			else if (client.getRequest()->type != REQ_TYPE_CGI || res != 0)
-				res = generateResponse(client, res);	
+				res = generateResponse(client, res);
 			else if ((res = generateCGIProcess(client))) {
 				client.deleteCGIProcess();
 				res = generateResponse(client, RES_INTERNAL_ERROR);
@@ -612,6 +612,7 @@ void	IControl::generateContinueResponse(Client& client) {
 /// @return ```-1``` if error
 int	IControl::generateResponse(Client& client, int status)
 {
+	LOGD("status is %d", status);
 	AResponse*	response = NULL;
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure

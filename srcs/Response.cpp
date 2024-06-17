@@ -489,3 +489,23 @@ void	DynamicResponse::addSpecificHeaders()
 }
 
 
+void	DynamicResponse::generateDirListing()
+{
+	std::string	dir = hints.path;
+	DIR	*d = opendir(dir.c_str());
+	if (!d)
+		return ; //overload the verbose generate to make a 500 error response
+	struct dirent	*files;
+	_body += "<html><head><title> dir list </title></head><body><style>";
+	_body += "#two{text-align:center;font-size:150%;}</style>";
+	_body += "<p id=\"one\"> Contents of" + dir +  " </p>";
+	_body += "<ul>";
+	while ((files = readdir(d)))
+	{
+		if (files->d_type != 8 && files->d_type != 4)
+			continue;
+		_body += "<li><a href = \"";
+		_body += files->d_name +  "\">";
+		_body += files->d_name;
+
+

@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 // 1xx indicates an informational message only
 // 2xx indicates success of some kind
@@ -157,6 +158,7 @@ class	DynamicResponse : public HeaderResponse
 		void	generateRedirBody();
 		void	generateSimpleRedirBody();
 		void	generateVerboseBody();
+		void	generateDirListing();
 		virtual void	addSpecificHeaders();
 		virtual int		writeResponse(std::queue<std::string>& outQueue);
 };
