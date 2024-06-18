@@ -535,6 +535,7 @@ void	DynamicResponse::generateDirListing()
 		_body += "</a></li>";
 	}
 	_body += "</ul></body></html>";
+	closedir(d);
 	addHeader("Content-Type", "text/html");
 	addHeader("Content-Length", itostr(_body.size()));
 }
