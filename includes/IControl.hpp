@@ -79,6 +79,7 @@ class IControl
 		static int	checkForbiddenHeaders(Request& request);
 		static int	assignHost(Client& client, Request& request);
 		static int	checkBodyLength(Client& client, Request& request);
+		static int	checkContinue(Client& client, Request& request);
 
 		static int	handleDeleteMethod(Request& request);
 		static int	handleCGIProcess(Client& client);

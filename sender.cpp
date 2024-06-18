@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <string.h>
+#include <signal.h>
 
 #define BUFFER_SIZE 500
 #define PAUSE_TIME 0

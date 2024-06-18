@@ -191,8 +191,10 @@ int	Client::parseRequest(const char* bufferIn, int n_read) {
 			_bodyStatus = BODY_STATUS_DONE;
 		return(res);
 	}
-	else
+	else {
+		LOGI("header status = %d, body_status = %d", _headerStatus, _bodyStatus);
 		return (0);
+	}
 
 
 
@@ -371,7 +373,7 @@ void	Client::clear() {
 
 void	Client::terminate(void) {
 	LOGD("terminating client (%d)", this->getfd());
-	if (cgiProcess && cgiProcess->getPID()) {
+	if (cgiProcess && cgiProcess->getPID() > 0) {
 		kill(cgiProcess->getPID(), SIGKILL);
 	}
 	IControl::removeFromEpoll(_socket.fd);
