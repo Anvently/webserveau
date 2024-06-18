@@ -53,14 +53,14 @@ int	IControl::handleCommandPrompt(epoll_event* event) {
 void	IControl::handleKillCommand(std::deque<std::string>& words)
 {
 	if (words.size() < 2 || words.size() > 4)
-		LOGV("Invalid number of argument.\n"\
+		LOGI("Invalid number of argument.\n"\
 			"	- kill all\n"\
 			"	- kill [server_ip] [port]\n"\
 			"	- kill [server_ip] [port] [host]");
 	else if (words[1] == "all")
 		ListenServer::removeServers();
 	else if (words.size() == 3) {
-			LOGV("Trying to remove server %ss:%ss", &words[1], &words[2]);
+			LOGI("Trying to remove server %ss:%ss", &words[1], &words[2]);
 			ListenServer::removeServer(words[1], words[2]);
 	}
 	else if (words.size() == 4) {
@@ -68,10 +68,10 @@ void	IControl::handleKillCommand(std::deque<std::string>& words)
 		{
 			std::list<ListenServer>::iterator it = ListenServer::findServer(words[1], words[2]);
 			if (it->removeHost(words[3]))
-				LOGV("Host (%ss) was not found in server %ss:%ss", &words[3], &words[1], &words[2]);
+				LOGI("Host (%ss) was not found in server %ss:%ss", &words[3], &words[1], &words[2]);
 		}
 		else
-			LOGV("Invalid server");
+			LOGI("Invalid server");
 	}
 }
 
@@ -80,24 +80,24 @@ void	IControl::handlePrintCommand(std::deque<std::string>& words)
 	if (words.size() < 2) {
 		for (std::list<ListenServer>::const_iterator it = ListenServer::getServerListBegin();
 			it != ListenServer::getServerListEnd(); it++)
-				LOGV("%Ls", &*it);
+				LOGI("%Ls", &*it);
 	}
 	else if (words.size() > 2) {
 		if (ListenServer::serverExist(words[1], words[2]))
 		{
 			std::list<ListenServer>::iterator it = ListenServer::findServer(words[1], words[2]);
 			if (words.size() == 3)
-				LOGV("%Ls", &*it);
+				LOGI("%Ls", &*it);
 			else if (words.size() >= 4) {
 				Host*	host = it->findHost(words[3]);
 				if (host)
-					LOGV("%H", host);
+					LOGI("%H", host);
 				else
-					LOGV("Invalid host");
+					LOGI("Invalid host");
 			}
 		}
 		else
-			LOGV("Invalid server");
+			LOGI("Invalid server");
 	}
 }
 
@@ -127,7 +127,6 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 		return (-1);
 	for (int i = 0; i < nbr_event; i++)
 	{
-		// LOGD("event => fd = %d | event = %d", events[i].data.fd, events[i].events);
 		if (events[i].data.fd == STDIN_FILENO) {
 			if (handleCommandPrompt(&events[i]))
 				return (1);
@@ -138,11 +137,7 @@ int	IControl::handleEpoll(struct epoll_event* events, int nbr_event)
 			if (handleClientEvent(&events[i], *ptr_client) < 0)
 				ptr_client->terminate();
 		}
-		//handle CGI event
-		//.....
-
 	}
-	//also need to check to timeout some connections
 	return (0);
 }
 
@@ -185,7 +180,6 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 		}
 	}
 	else if ((event->events & EPOLLOUT) && client.getMode() == CLIENT_MODE_WRITE) {
-		// LOGE("client fd = %d", client.getfd());
 		if (client.cgiProcess && handleCGIProcess(client))
 			return (-1);
 		if (client.getResponse()) {
@@ -244,7 +238,7 @@ int	IControl::handleClientOut(Client& client) {
 
 	if (client.outBuffers.size() >= 1) {
 		nwrite = write(client.getfd(), client.outBuffers.front().c_str(), client.outBuffers.front().size());
-		LOGI("Sending response outbuffer:\n%ss", &client.outBuffers.front());
+		LOGD("Sending response outbuffer:\n%ss", &client.outBuffers.front());
 		if (nwrite < 0) {
 			LOGE("Write error");
 			return (SITUATION_CLOSE);
@@ -308,16 +302,6 @@ int	IControl::handleCGIProcess(Client& client) {
 	return (res);
 }
 
-// int	AssignHost(Client *client)
-// {
-// 	std::string	hostname;
-// 	if (client->getRequest()->getHostName(hostname))
-// 		return (1);
-// 	client->setHost(hostname);
-// 	client->getFrontRequest()->setBodyMaxSize(client->getHost()->getMaxSize());
-// 	return(0);
-// }
-
 /**
 @brief check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
 **/
@@ -335,15 +319,6 @@ int	IControl::checkForbiddenHeaders(Request& request) {
 	request.resHints.status = RES_NOT_IMPLEMENTED;
 	return (RES_NOT_IMPLEMENTED);
 }
-
-/*
-[4] line = GET / HTTP/1.1
-[4] line = Host: localhost:8080
-[3] line = GET / HTTP/1.1
-[3] line = Host: localhost:8080
-
-
-*/
 
 /**
 @brief check if host is given, empty or not, assign correct or first host found.
@@ -406,31 +381,6 @@ int	IControl::checkContinue(Client& client, Request& request) {
 	return (res);
 }
 
-/**
-	@brief Should be called once the full header is parsed
-		- if header READY
-			- check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
-			- check host and assign one to client
-			- check if there is a body provided
-			- parse uri
-			- check with host if the request must be rejected
-				- if continue
-					- generate body parsing config (creating ostream and max_chunk_length)
-					- genereate CONTINUE RESPONSE
-				- else if body
-					- resume body parsing as CGI
-	@return ```status``` of the response, or ```100``` for continue response
-
-localhost:80/dir1/subdir3/subdir.dir/index.php/file
-parseuri->getpath
-/dir1/subdir3/subdir.dir/index.php/file
-
-
-extractPathInfo(URI&, extension) {
-
-}
-
-**/
 int	IControl::handleRequestHeaders(Client& client, Request& request) {
 	int	res = 0;
 
@@ -610,9 +560,6 @@ void	IControl::fillResponse(Client& client, Request& request) {
 	fillErrorPage(client.getHost(), request.resHints);
 	fillAdditionnalHeaders(request);
 	fillVerboseError(request);
-	if (request.resHints.status)
-		LOGI("Client %d : Generating response status %d | verbose = %ss",
-			client.getfd(), request.resHints.status, &request.resHints.verboseError);
 	request.resHints.type = request.type;
 	request.resHints.extension = request.resHints.parsedUri.extension;
 }
@@ -631,7 +578,7 @@ void	IControl::generateContinueResponse(Client& client) {
 /// @return ```-1``` if error
 int	IControl::generateResponse(Client& client, int status)
 {
-	LOGD("status is %d", status);
+	LOGD("response status is %d", status);
 	AResponse*	response = NULL;
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
@@ -678,104 +625,3 @@ int	IControl::cleanExit(int code) {
 	close(_epollfd);
 	return(code);
 }
-
-
-/**
-
-switch (status)
-	{
-		case RES_CONTINUE:
-			client.setResponse(new SingleLineResponse(100, "Continue"));
-			break;
-
-		case RES_OK: //For Static/dir GET or CGI operation
-
-				If cgi
-					- file path
-					- cgiConfig
-					- method && headers
-				If dir_listing
-					- locationRule
-				If static
-					- file path
-
-			break;
-
-		case RES_CREATED: //Need path
-			// client.setResponse(new StaticPageResponse());
-			break;
-
-		case RES_NO_CONTENT: //ok but no body, for DELETE
-
-			break;
-
-		case RES_MULTIPLE_CHOICE:
-			//List of redirections in body, with the first one in location header
-			//Dynamic body
-			break;
-
-		case RES_MOVED_PERMANENTLY:
-			//The new URI should be given in location field
-			//Dynamic body containing html redirection
-			break;
-
-		case RES_FOUND:
-			//The new URI should be given in location field
-			//Dynamic body containing html redirection
-			break;
-
-		case RES_SEE_OTHER:
-			//The new URI should be given in location field
-			//Dynamic body containing html redirection
-			break;
-
-		case RES_TEMPORARY_REDIRECT:
-			//The new URI should be given in location field
-			//Dynamic body containing html redirection
-			break;
-
-		case RES_BAD_REQUEST: //Verbose hint
-			//Dynamic body
-			break;
-
-		case RES_NOT_FOUND: //Full static page
-
-		break;
-
-		case RES_METHOD_NOT_ALLOWED: //Full static page, must contains allow header
-
-		break;
-
-		case RES_TIMEOUT: //Full static page
-
-		break;
-
-		case RES_LENGTH_REQUIRED: //Full static page
-
-		break;
-
-		case RES_REQUEST_ENTITY_TOO_LARGE: //Full static page
-
-		break;
-
-		case RES_REQUEST_URI_TOO_LONG: //Full static page
-
-		break;
-
-		case RES_EXPECTATION_FAILED: //Full static page
-
-		break;
-
-		case RES_INTERNAL_ERROR: //Full static page
-
-		break;
-
-		case RES_NOT_IMPLEMENTED: //Full static page
-
-		break;
-
-		default:
-			LOGE("Unknow status: %d", status);
-			break;
-	}
-**/
