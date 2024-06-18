@@ -2,7 +2,7 @@ import cgi, cgitb
 
 form = cgi.FieldStorage()
 
-print("Location:http://upload_file.html")
+print("Location:http://localhost:8080/upload_file.html")
 print("content-type: text/html\r\n")
 
 print("<html>")

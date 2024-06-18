@@ -175,6 +175,7 @@ int CGIProcess::execCGI()
 	pid = fork();
 	if (pid == 0)
 	{
+		close(IControl::_epollfd);
 		_launchCGI();
 	}
 	else if (pid > 0)
