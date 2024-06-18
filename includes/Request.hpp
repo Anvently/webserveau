@@ -12,7 +12,7 @@
 #include <vector>
 
 
-#define HEADER_MAX_SIZE 500
+#define HEADER_MAX_SIZE 4000
 #define	HEADER_MAX_BUFFER 4
 
 #define CRLF "\r\n"
@@ -139,7 +139,6 @@ class	Request
 		int									method;
 		ResHints							resHints;
 
-		void		addHeader(std::string const &name, std::string const &value);
 		int			getLine(std::string &buffer);
 		int			getChunkedSize(std::string &buffer);
 		void		trimSpace();
@@ -160,7 +159,8 @@ class	Request
 		void				setUri(std::string &new_uri);
 
 		const std::string&	getHeader(std::string const &key) const;
-		int					getHostName(std::string &hostname) const;
+		void				removeHeader(const std::string& key);
+
 		bool				checkHeader(const std::string& key) const;
 
 		void	formatHeaders();
@@ -173,7 +173,6 @@ class	Request
 		int		checkPath();
 		void	prunePath();
 		void	prunePercent();
-		void	splitVar(std::string &str);
 
 		//DEBUG
 		void	printRequest() const;

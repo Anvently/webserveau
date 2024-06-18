@@ -252,8 +252,10 @@ int	IControl::handleClientOut(Client& client) {
 		client.outBuffers.pop();
 	}
 	if (client.outBuffers.empty()) {
-		if (client.getRequest()->getHeader("expect") == "100-continue")
+		if (client.getRequest()->getHeader("expect") == "100-continue" && client.getRequest()->resHints.status == RES_CONTINUE) {
+			client.getRequest()->removeHeader("expect");
 			return (SITUATION_CONTINUE);
+		}
 		else if (client.getRequest()->resHints.headers["connection"] == "close")
 			return (SITUATION_CLOSE);
 		else
@@ -384,6 +386,25 @@ int	IControl::checkBodyLength(Client& client, Request& request)
 	}
 	return (0);
 }
+int	IControl::checkContinue(Client& client, Request& request) {
+	int	res = 0;
+
+	if (request.getHeader("expect") == "100-continue") {
+		if (client.getBodyStatus() == BODY_STATUS_NONE) {
+			request.resHints.status = RES_BAD_REQUEST;
+			request.resHints.verboseError = "Expect continue without entity";
+			request.removeHeader("expect");
+			return (RES_BAD_REQUEST);
+		}
+		res = RES_CONTINUE;
+	}
+	else if (request.getHeader("expect") != "") {
+		request.resHints.status = RES_EXPECTATION_FAILED;
+		request.removeHeader("expect");
+		return (RES_EXPECTATION_FAILED);
+	}
+	return (res);
+}
 
 /**
 	@brief Should be called once the full header is parsed
@@ -423,12 +444,8 @@ int	IControl::handleRequestHeaders(Client& client, Request& request) {
 		return (res);
 	if ((res = client.getHost()->checkRequest(request)))
 		return (res);
-	if (request.getHeader("expect") == "100-continue")
-		res = RES_CONTINUE;
-	else if (request.getHeader("expect") != "") {
-		request.resHints.status = RES_EXPECTATION_FAILED;
-		return (RES_EXPECTATION_FAILED);
-	}
+	if ((res = checkContinue(client, request)) && res != RES_CONTINUE)
+		return (res);
 	if (request.resHints.cgiRedir == CGI_RES_NONE)
 		defineBodyParsing(client, *client.getRequest());
 	client.setHeaderStatus(HEADER_STATUS_DONE);
@@ -533,6 +550,7 @@ void	IControl::fillErrorPage(const Host* host, ResHints& resHints) {
 			resHints.path =  IParseConfig::default_error_pages \
 				+ IntToString(resHints.status, 10) + ".html";
 		resHints.unlink = false;
+		resHints.headers["content-type"] = "text/html";
 	}
 }
 
@@ -645,8 +663,10 @@ int	IControl::generateResponse(Client& client, int status)
 
 int IControl::generateCGIProcess(Client& client) {
 	client.cgiProcess = new CGIProcess(client);
-	if (client.cgiProcess->execCGI())
+	if (client.cgiProcess->execCGI()) {
+		client.deleteCGIProcess();
 		return (RES_INTERNAL_ERROR);
+	}
 	client.setMode(CLIENT_MODE_WRITE);
 	return (0);
 }

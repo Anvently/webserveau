@@ -55,6 +55,10 @@ const std::string &Request::getHeader(std::string const &key) const
 	return (it->second);
 }
 
+void	Request::removeHeader(const std::string& key) {
+	_headers.erase(key);
+}
+
 int Request::_fillError(int error, std::string const &verbose)
 {
 	this->resHints.status = error;

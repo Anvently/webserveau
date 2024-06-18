@@ -9,7 +9,7 @@
 
 char**  CGIProcess::_env;
 
-CGIProcess::CGIProcess(Client& client) : _index(0), _pid(-1), _status(0), _client(client), _request(*client.getRequest()) {}
+CGIProcess::CGIProcess(Client& client) : _index(0), _pid(0), _status(0), _client(client), _request(*client.getRequest()) {}
 
 CGIProcess::~CGIProcess(void) {
 	unlink(_request.resHints.path.c_str());
