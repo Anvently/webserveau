@@ -50,6 +50,16 @@ int CGIProcess::_getLine(std::string &buffer)
 	return (1);
 }
 
+bool	isLowerEqual(const char *a, const char *b)
+{
+	while (*a && tolower(*a) == tolower(*b))
+	{
+		a++;
+		b++;
+	}
+	return (((unsigned char) tolower(*a)) - ((unsigned char) tolower(*b)));
+}
+
 int CGIProcess::_extract_header()
 {
 	std::string key;
@@ -61,7 +71,12 @@ int CGIProcess::_extract_header()
 	value = _line.substr(idx + 1, _line.size());
 	while (!value.empty() && value[0] == 32)
 		value.erase(0,1);
-	_cgi_headers[key] = value;
+	if (!isLowerEqual(key.c_str(), "Set-Cookie"))
+	{
+		_request.resHints.cookies.push_back(value);
+	}
+	else
+		_cgi_headers[key] = value;
 	_line.clear();
 	return (0);
 }
@@ -281,31 +296,13 @@ void    CGIProcess::_setVariables()
 		setenv("CONTENT_TYPE", _request.getHeader("Content-Type").c_str(), 1);
 	else
 		unsetenv("CONTENT_TYPE");
-
+	if (_request.getHeader("Cookie") != "")
+		setenv("HTTP_COOKIE", _request.getHeader("Cookie").c_str(), 1);
+	else
+		unsetenv("HTTP_COOKIE");
 }
 
 
-/*
-CGI ENV variables:
-
-CONTENT_TYPE -> if the input includes a body this is the content-type of the request
-GATEWAY_INTERFACE -> CGI/1.1
-PATH_INFO -> the path following the cgi in the uri
-PATH_TRANSLATED -> example http://host:port/path/to/script.cgi/path/info
-					-> path info = /path/info
-					->path_translated = /root/path/info
-		IF path_info = NULL => path_translated=NULL
-
-QUERY STRING -> the query string, if not query set it as ""
-
-REMOTE_ADDR = the IP of the client ????
-REMOTE_HOST = domain name of the client
-
-REQUEST_METHOD -> get, post, delete (case sensitive)
-SCRIPT_NAME -> should identify the cgi script
-SERVER_NAME -> name of the server host dealing with the request (==Host: header)\
-SERVER_PORT -> ...
-SERVER_PROTOCOL -> HTTP/1.1
 
 
 
@@ -315,4 +312,5 @@ SERVER_PROTOCOL -> HTTP/1.1
 
 
 
-*/
+
+

@@ -244,6 +244,7 @@ int	IControl::handleClientOut(Client& client) {
 
 	if (client.outBuffers.size() >= 1) {
 		nwrite = write(client.getfd(), client.outBuffers.front().c_str(), client.outBuffers.front().size());
+		LOGI("Sending response outbuffer:\n%ss", &client.outBuffers.front());
 		if (nwrite < 0) {
 			LOGE("Write error");
 			return (SITUATION_CLOSE);

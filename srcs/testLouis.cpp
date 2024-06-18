@@ -17,6 +17,8 @@
 #include <cstring>
 #include <algorithm>
 #include <string>
+#include <dirent.h>
+#include <sys/stat.h>
 
 
 // void	DynamicResponse::generateSimpleRedirBody()
@@ -34,29 +36,32 @@
 
 int	main(){
 
-	std::string line = "300 Multiple Choices";
+
 	std::string	_body;
-	std::vector<std::string>	vec;
-	vec.push_back("http://ici");
-	vec.push_back("http://labas");
-	vec.push_back("http://plutotla");
 
-	_body += "<html><head><title> " + line + " </title></head><body><style>";
-	_body += "#one{color:darkred;text-align:center;font-size:300%;}";
-	_body += "#two{text-align:center;font-size:150%;}</style>";
-	_body += "<p id=\"one\">" + line + "</p>";
-	_body += "<p id=\"two\"> The document has been moved to: </p>";
+
+	std::string	dir = "dir";
+	DIR	*d = opendir(dir.c_str());
+	if (!d)
+		return 0; //overload the verbose generate to make a 500 error response
+	struct dirent	*files;
+	_body += "<html><head><title> dir list </title></head><body><style>";
+	_body += "#two{text-align:center;font-size:250%;color:lightblue}</style>";
+	_body += "<p id=\"two\"> Contents of " + dir +  " </p>";
 	_body += "<ul>";
-	for (std::vector<std::string>::const_iterator it = vec.begin(); it != vec.end(); it++)
+	while ((files = readdir(d)))
 	{
-		_body += "<li><a href=\"" + *it + "\">" + *it + "</a></li>";
+		if (files->d_type != 8 && files->d_type != 4)
+			continue;
+		_body += "<li><a href = \"";
+		_body += files->d_name;
+		_body += "\">";
+		_body += files->d_name;
+		_body += "</a></li>";
 	}
-	_body += "</ul>";
-	_body += "</body></html>";
-
-	int	fd = open("test.html", O_CREAT | O_TRUNC | O_WRONLY, 0777);
-	write(fd, _body.c_str(), _body.size());
-
+	_body += "</ul></body></html>";
+	std::cout << _body;
+	return (0);
 }
 
 //<meta http-equiv=\"refresh\"content=\"0; url=" + redir + "\">

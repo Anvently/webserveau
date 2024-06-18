@@ -232,6 +232,11 @@ void	HeaderResponse::_formatHeaders()
 		_formated_headers += it->first + ": ";
 		_formated_headers += it->second + "\r\n";
 	}
+	for (std::vector<std::string>::iterator it = hints.cookies.begin(); it != hints.cookies.end(); it++)
+	{
+		_formated_headers += "Set-Cookie: ";
+		_formated_headers += *it + "\r\n";
+	}
 	_formated_headers += "\r\n";
 }
 
@@ -315,12 +320,13 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 {
 	AResponse	*response = NULL;
 
+	LOGD("type is: %d", hints.type);
 	if (hints.status == 100)
 	{
 		response = new SingleLineResponse(hints.status, hints.verboseError);
 		return (response);
 	}
-	else if (hints.path.empty())
+	else if (hints.path.empty() || hints.type == REQ_TYPE_DIR)
 	{
 		response = new DynamicResponse(hints);
 		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
@@ -403,6 +409,11 @@ int FileResponse::_retrieveType(std::string key, std::string &value)
 
 void	DynamicResponse::generateBody()
 {
+	if (hints.type == REQ_TYPE_DIR)
+	{
+		generateDirListing();
+		return ;
+	}
 	switch(hints.status / 100)
 	{
 		case(3):
@@ -489,23 +500,41 @@ void	DynamicResponse::addSpecificHeaders()
 }
 
 
+std::string	extractDir(std::string &path)
+{
+	std::string	dir;
+
+	if (path.size() == 1)
+		return ("root");
+	size_t	idx = path.find_last_of("/", path.size() - 2);
+	return (path.substr(idx + 1));
+
+}
+
 void	DynamicResponse::generateDirListing()
 {
 	std::string	dir = hints.path;
+	std::string dir_name = extractDir(dir);
 	DIR	*d = opendir(dir.c_str());
 	if (!d)
 		return ; //overload the verbose generate to make a 500 error response
 	struct dirent	*files;
 	_body += "<html><head><title> dir list </title></head><body><style>";
-	_body += "#two{text-align:center;font-size:150%;}</style>";
-	_body += "<p id=\"one\"> Contents of" + dir +  " </p>";
-	_body += "<ul>";
+	_body += "#two{text-align:center;font-size:200%;}";
+	_body += "#one{list-style-type:disc; line-height:150%;}</style>";
+	_body += "<p id=\"two\"> Contents of " + dir_name +  " </p>";
+	_body += "<ul id=\"one\">";
 	while ((files = readdir(d)))
 	{
 		if (files->d_type != 8 && files->d_type != 4)
 			continue;
 		_body += "<li><a href = \"";
-		_body += files->d_name +  "\">";
 		_body += files->d_name;
-
-
+		_body += "\">";
+		_body += files->d_name;
+		_body += "</a></li>";
+	}
+	_body += "</ul></body></html>";
+	addHeader("Content-Type", "text/html");
+	addHeader("Content-Length", itostr(_body.size()));
+}

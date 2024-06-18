@@ -14,7 +14,7 @@ ResHints::ResHints(void) : alreadyExist(false), unlink(false), hasBody(false), s
 ResHints::ResHints(const ResHints &copy) : parsedUri(copy.parsedUri), path(copy.path), alreadyExist(copy.alreadyExist),
 										   unlink(copy.unlink), hasBody(copy.hasBody), verboseError(copy.verboseError), status(copy.status),
 										   type(copy.type), cgiRedir(copy.cgiRedir), index(copy.index), locationRules(copy.locationRules),
-										   cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers) {}
+										   cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers), cookies(copy.cookies) {}
 
 Request::Request()
 	: _status(NEW), _header_size(0), _body_max_size(0), _len(0),

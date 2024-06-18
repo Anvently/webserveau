@@ -76,23 +76,24 @@ struct i_less {
 //http:localhost:80/cgi-bin/script.php/images/pic.jpg
 //path translated = root + pathinfo
 typedef struct ResHints {
-	URI									parsedUri;
-	std::string							path; // /cgi-bin/script.php
-	std::string							extension;
-	std::string							scriptPath; // root + path
-	std::string							bodyFileName;
-	bool								alreadyExist;
-	bool								unlink;
-	bool								hasBody;
-	std::string							verboseError;
-	int									status;
-	int									type;
-	int									cgiRedir;
-	int									index;
-	const Location*						locationRules;
-	const CGIConfig*					cgiRules;
-	const std::vector<std::string>*		redirList;
+	URI											parsedUri;
+	std::string									path; // /cgi-bin/script.php
+	std::string									extension;
+	std::string									scriptPath; // root + path
+	std::string									bodyFileName;
+	bool										alreadyExist;
+	bool										unlink;
+	bool										hasBody;
+	std::string									verboseError;
+	int											status;
+	int											type;
+	int											cgiRedir;
+	int											index;
+	const Location*								locationRules;
+	const CGIConfig*							cgiRules;
+	const std::vector<std::string>*				redirList;
 	std::map<std::string, std::string, i_less>	headers;
+	std::vector<std::string>					cookies;
 
 	ResHints(void);
 	ResHints(const ResHints&);
