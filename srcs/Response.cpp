@@ -517,7 +517,7 @@ void	DynamicResponse::generateDirListing()
 	std::string dir_name = extractDir(dir);
 	DIR	*d = opendir(dir.c_str());
 	if (!d)
-		return ; //overload the verbose generate to make a 500 error response
+		throw(std::system_error());
 	struct dirent	*files;
 	_body += "<html><head><title> dir list </title></head><body><style>";
 	_body += "#two{text-align:center;font-size:200%;}";

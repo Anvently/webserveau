@@ -30,3 +30,13 @@ TODO
 	- dir listing
 	- cookies
 	- add verification about HTTP version OK
+
+
+index/html
+	=> link to pascal.html
+	=> link to upload.html
+	=> link to full static site
+
+	=> link to php cgi
+	=> link to counter cookies
+	=> link to color cookies
