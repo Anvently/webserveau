@@ -138,6 +138,7 @@ std::map<int, std::string>	init_response()
 	mipmap.insert(std::pair<int, std::string>(300, "Multiple Choices"));   //DYNAMIC LIST
 	mipmap.insert(std::pair<int, std::string>(301, "Move Permanently"));//DYNAMIC
 	mipmap.insert(std::pair<int, std::string>(302, "Found"));//DYNAMIC
+	mipmap.insert(std::pair<int, std::string>(303, "See other"));//DYNAMIC
 	mipmap.insert(std::pair<int, std::string>(307, "Temporary Redirect"));//DYNAMIC
 	mipmap.insert(std::pair<int, std::string>(308, "Permanent Redirect"));//DYNAMIC LIST
 	mipmap.insert(std::pair<int, std::string>(400, "Bad Request")); //DYNAMIC
@@ -320,7 +321,6 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 {
 	AResponse	*response = NULL;
 
-	LOGD("type is: %d", hints.type);
 	if (hints.status == 100)
 	{
 		response = new SingleLineResponse(hints.status, hints.verboseError);

@@ -2,9 +2,11 @@
 a.out
 *.o
 .objs/
-*.out
+/*.out
 tmp/*
 logs/*
 tmp/
 logs/
 webserv
+sender/*.out
+

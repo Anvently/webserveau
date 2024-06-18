@@ -238,7 +238,7 @@ int	IControl::handleClientOut(Client& client) {
 
 	if (client.outBuffers.size() >= 1) {
 		nwrite = write(client.getfd(), client.outBuffers.front().c_str(), client.outBuffers.front().size());
-		LOGD("Sending response outbuffer:\n%ss", &client.outBuffers.front());
+		// LOGD("Sending response outbuffer:\n%ss", &client.outBuffers.front());
 		if (nwrite < 0) {
 			LOGE("Write error");
 			return (SITUATION_CLOSE);
@@ -589,22 +589,21 @@ int	IControl::generateResponse(Client& client, int status)
 	try
 	{
 		response = AResponse::genResponse(request.resHints);
+		if (response)
+				response->writeResponse(client.outBuffers);
+		client.setResponse(response);
+		client.setMode(CLIENT_MODE_WRITE);
 	}
 	catch(const std::exception& e)
 	{
 		LOGE("Response exception : %s", e.what());
 		if (request.resHints.status == RES_INTERNAL_ERROR)
-			client.terminate();
+			return (-1);
 		else {
 			client.clearResponse();
 			generateResponse(client, RES_INTERNAL_ERROR);
 		}
-		return (-1);
 	}
-	if (response)
-		response->writeResponse(client.outBuffers);
-	client.setResponse(response);
-	client.setMode(CLIENT_MODE_WRITE);
 	return (0);
 }
 

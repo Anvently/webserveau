@@ -521,8 +521,8 @@ void IParseConfig::parseAllowedMethods(std::istream &istream, int &dest)
 {
 	std::deque<std::string> methods;
 	parseValues(istream, methods);
-	if (methods.size() == 0)
-		throw (MissingTokenException("method"));
+	// if (methods.size() == 0)
+	// 	throw (MissingTokenException("method"));
 	dest = 0;
 	for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++)
 	{
