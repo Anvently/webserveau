@@ -20,7 +20,7 @@ if fileitem.filename:
     # strip leading path from file name
     # to avoid directory traversal attacks
     fn = os.path.basename(fileitem.filename)
-    open('../../../../tmp/' + fn, 'wb').write(fileitem.file.read())
+    open('../../data/images/' + fn, 'wb').write(fileitem.file.read())
     message = 'The file "' + fn + '" was uploaded successfully'
 
 else:
@@ -31,7 +31,7 @@ Content-Type: text/html\r\n
 
 <html>
       <head>
-      <meta http-equiv="refresh"content="0; url=http://localhost:8080/tmp/%s">
+      <meta http-equiv="refresh"content="0; url=http://localhost:8080/images/%s">
       </head>
       <body>
 <p>%s</p>
