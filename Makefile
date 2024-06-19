@@ -32,6 +32,7 @@ all: $(NAME)
 
 $(NAME): $(OBJS)
 	$(CPP) $(CPP_FLAGS) $(OBJS) -o $(NAME)
+	mkdir -p tmp/
 
 $(OBJS_FOLDER)%.o: $(SRCS_FOLDER)%.cpp Makefile
 	mkdir -p $(dir $@)
@@ -47,6 +48,7 @@ $(TEST): $(OBJS_TEST)
 clean:
 	rm -rfd $(OBJS_FOLDER)
 	rm -rfd $(OBJS_TFOLDER)
+	rm -rfd tmp/
 
 fclean: clean
 	rm -f $(NAME)

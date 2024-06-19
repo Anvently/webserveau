@@ -191,7 +191,13 @@ int CGIProcess::execCGI()
 	return (0);
 }
 
-
+static	void deleteArgv(char** argv) {
+	if (argv[0])
+		delete[] argv[0];
+	if (argv[1])
+		delete[] argv[1];
+	delete[]	argv;
+}
 
 void    CGIProcess::_launchCGI()
 {
@@ -202,7 +208,7 @@ void    CGIProcess::_launchCGI()
 	std::string	cgi_root = _request.resHints.cgiRules->root;
 	cgi_root.erase(0,1);
 
-	// close(_client.getfd());
+	memset(argv, 0, 3 * sizeof(char*));
 	char	work_path[1024];
 	getcwd(work_path, sizeof(work_path));
 	if (!_request.resHints.bodyFileName.empty()){
@@ -214,7 +220,8 @@ void    CGIProcess::_launchCGI()
 	cgi_root = work_path + cgi_root;
 
 
-	if (chdir(cgi_root.c_str())){
+	if (chdir(cgi_root.c_str())) {
+		deleteArgv(argv);
 		throw(CGIProcess::child_exit_exception());
 	}
 	argv[2] = NULL;
@@ -231,23 +238,22 @@ void    CGIProcess::_launchCGI()
 	if (!_request.resHints.bodyFileName.empty())
 	{
 		fd_in = open(_request.resHints.bodyFileName.c_str(), O_RDONLY);
-		if (dup2(fd_in, STDIN_FILENO) < 0) {
+		if (fd_in < 0 || dup2(fd_in, STDIN_FILENO) < 0) {
 			close (fd_in);
+			deleteArgv(argv);
 			throw (CGIProcess::child_exit_exception());
 		}
 		close(fd_in);
 	}
-	if (dup2(fd_out, STDOUT_FILENO) < 0) {
+	if (fd_out < 0 || dup2(fd_out, STDOUT_FILENO) < 0) {
 		close(fd_out);
+		deleteArgv(argv);
 		throw (CGIProcess::child_exit_exception());
 	}
 	close(fd_out);
 	_setVariables();
 	execv(argv[0], argv);
-	delete[] argv[0];
-	if (i)
-		delete[] argv[1];
-	delete[] argv;
+	deleteArgv(argv);
 	LOGE("The script %ss failed", &_request.resHints.scriptPath);
 	throw (CGIProcess::child_exit_exception());
 }
