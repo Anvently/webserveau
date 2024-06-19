@@ -208,8 +208,6 @@ int	IControl::handleClientIn(Client& client)
 	char	buffer_c[BUFFER_SIZE + 1];
 	int		n_read, res = 0;
 
-	// if (client.getMode() != CLIENT_MODE_READ)
-	// 	return (0);
 	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
 		return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
 	if (n_read == 0) //Connection closed

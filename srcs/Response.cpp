@@ -531,6 +531,7 @@ void	DynamicResponse::generateDirListing()
 			continue;
 		_body += "<li><a href = \"";
 		_body += files->d_name;
+		_body += (files->d_type == 4 ? "/" : "");
 		_body += "\">";
 		_body += files->d_name;
 		_body += "</a></li>";
