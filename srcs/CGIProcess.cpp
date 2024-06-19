@@ -115,6 +115,7 @@ int CGIProcess::_inspectHeaders()
 	else if (_retrieveHeader("Location", value) && value[0] == '/')
 	{
 		_request.setUri(value);
+		_request.resHints.index = 0;
 		return (CGI_RES_LOCAL_REDIRECT);
 	}
 	else

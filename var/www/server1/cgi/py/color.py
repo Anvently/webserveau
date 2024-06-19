@@ -4,7 +4,7 @@ from http.cookies import SimpleCookie
 
 
 def choseColor(plate):
-	print("Location: /choseColor.html\r\n", end='\r\n')
+	print("Location: /chosecolor.html\r\n", end='\r\n')
 
 def makePage(plate):
 	style = plate['color'].value

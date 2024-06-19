@@ -364,6 +364,7 @@ int	FileResponse::inspectFile(ResHints &hints)
 		throw(std::domain_error(("Could not open target file: " + hints.path).c_str()));
 	}
 	_fstr.seekg((hints.index));
+	hints.index = 0;
 	hints.headers["Content-Length"] = itostr(length);
 	this->checkType();
 	return (0);
@@ -517,7 +518,7 @@ void	DynamicResponse::generateDirListing()
 	std::string dir_name = extractDir(dir);
 	DIR	*d = opendir(dir.c_str());
 	if (!d)
-		throw(std::system_error());
+		throw(std::exception());
 	struct dirent	*files;
 	_body += "<html><head><title> dir list </title></head><body><style>";
 	_body += "#two{text-align:center;font-size:200%;}";
