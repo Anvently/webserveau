@@ -558,7 +558,7 @@ int Request::checkPath()
 	std::vector<std::string> v;
 
 	if (resHints.parsedUri.path[0] == '.' && resHints.parsedUri.path[1] == '/')
-		resHints.parsedUri.path.erase(0, 1);
+		resHints.parsedUri.path.erase(0, 2);
 	while ((idx = resHints.parsedUri.path.find("//", 0)) != std::string::npos)
 		resHints.parsedUri.path.erase(idx, 1);
 	while ((idx = resHints.parsedUri.path.find("/./", 0)) != std::string::npos)
