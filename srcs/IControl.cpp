@@ -244,7 +244,7 @@ int	IControl::handleClientOut(Client& client) {
 		client.outBuffers.pop();
 	}
 	if (client.outBuffers.empty()) {
-		if (client.getRequest()->getHeader("expect") == "100-continue" && client.getRequest()->resHints.status == RES_CONTINUE) {
+		if (client.getRequest()->getHeader("expect") == "100-continue" && client.getResponse()->getStatus() == RES_CONTINUE) {
 			client.getRequest()->removeHeader("expect");
 			return (SITUATION_CONTINUE);
 		}
@@ -595,11 +595,13 @@ int	IControl::generateResponse(Client& client, int status)
 	catch(const std::exception& e)
 	{
 		LOGE("Response exception : %s", e.what());
-		if (request.resHints.status == RES_INTERNAL_ERROR)
+		if (request.resHints.status == RES_INTERNAL_ERROR) {
+			client.clearResponse();
 			return (-1);
+		}
 		else {
 			client.clearResponse();
-			generateResponse(client, RES_INTERNAL_ERROR);
+			return (generateResponse(client, RES_INTERNAL_ERROR));
 		}
 	}
 	return (0);

@@ -162,6 +162,13 @@ std::map<int, std::string>	init_response()
 static std::map<int, std::string> ResponseLine = init_response();
 static std::map<std::string, std::string> mimeType = init_mimes();
 
+AResponse::AResponse(void) : _status(0) {}
+
+int	AResponse::getStatus(void) const {
+	return (_status);
+}
+
+SingleLineResponse::SingleLineResponse(void) : AResponse::AResponse() {}
 
 SingleLineResponse::SingleLineResponse(int status, const std::string& description)
 {
@@ -185,6 +192,7 @@ int	SingleLineResponse::writeResponse(std::queue<std::string>& outQueue)
 }
 
 SingleLineResponse::~SingleLineResponse(void) {}
+
 HeaderResponse::HeaderResponse(ResHints &hints) : hints(hints)
 {
 	_status = hints.status;
@@ -261,6 +269,7 @@ FileResponse::~FileResponse(void) {}
 
 FileResponse::FileResponse(ResHints &hints): HeaderResponse(hints)
 {
+	_status = hints.status;
 	_path = hints.path;
 	//_ifstream.open(_path.c_str(), std::ios_base::in | std::ios_base::binary); // le fichier devrait tjrs etre ouvrable ?
 }
@@ -270,7 +279,7 @@ int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
 	std::string	portion;
 	char	*buff = new char[HEADER_MAX_SIZE];
 	this->_formatHeaders();
-	while(!_formated_headers.empty())
+	while (!_formated_headers.empty())
 	{
 		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
 		outQueue.push(portion);
@@ -326,7 +335,7 @@ AResponse*	AResponse::genResponse(ResHints &hints)
 		response = new SingleLineResponse(hints.status, hints.verboseError);
 		return (response);
 	}
-	else if (hints.path.empty() || hints.type == REQ_TYPE_DIR)
+	else if (hints.path.empty() || (hints.status == RES_OK && hints.type == REQ_TYPE_DIR))
 	{
 		response = new DynamicResponse(hints);
 		static_cast<DynamicResponse *>(response)->addHintHeaders(hints);
@@ -410,7 +419,7 @@ int FileResponse::_retrieveType(std::string key, std::string &value)
 
 void	DynamicResponse::generateBody()
 {
-	if (hints.type == REQ_TYPE_DIR)
+	if (hints.status == RES_OK && hints.type == REQ_TYPE_DIR)
 	{
 		generateDirListing();
 		return ;
@@ -517,8 +526,11 @@ void	DynamicResponse::generateDirListing()
 	std::string	dir = hints.path;
 	std::string dir_name = extractDir(dir);
 	DIR	*d = opendir(dir.c_str());
-	if (!d)
-		throw(std::exception());
+	if (!d) {
+		closedir(d);
+		delete (this);
+		throw (std::exception());
+	}
 	struct dirent	*files;
 	_body += "<html><head><title> dir list </title></head><body><style>";
 	_body += "#two{text-align:center;font-size:200%;}";

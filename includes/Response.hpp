@@ -65,7 +65,7 @@ class	AResponse
 {
 	protected:
 
-		AResponse(void) {}
+		AResponse(void);
 		int									_status;
 		std::string							_description;
 
@@ -74,6 +74,8 @@ class	AResponse
 		virtual ~AResponse() {}
 		virtual int			writeResponse(std::queue<std::string>& outQueue) = 0;
 		static AResponse	*genResponse(ResHints &hints);
+
+		int							getStatus(void) const;
 
 };
 
