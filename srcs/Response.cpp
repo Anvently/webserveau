@@ -374,7 +374,7 @@ int	FileResponse::inspectFile(ResHints &hints)
 void	FileResponse::checkType()
 {
 	std::string	type;
-	if (_retrieveType(hints.extension, type))
+	if (_retrieveType(hints.extension, type) && hints.status < 400)
 	{
 		hints.headers["Content-Type"] = type;
 	}
