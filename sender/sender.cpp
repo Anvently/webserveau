@@ -10,7 +10,7 @@
 #include <signal.h>
 
 #define BUFFER_SIZE 100
-#define PAUSE_TIME 10000 //pause time in MICROSECOND (us)
+#define PAUSE_TIME 40000 //pause time in MICROSECOND (us)
 #define ADDRESS "127.0.0.1"
 #define PORT 8000
 
@@ -55,7 +55,7 @@ int	sendFile(std::ifstream& infile, int sock) {
 	nwrite = write(sock, buffer, nread);
 	if (nwrite < 0) {
 		perror("");
-		if (errno == 32) {//If broken pipe, connection closed from server-side
+		if (errno == ECONNRESET || errno == EPIPE) {//If broken pipe, connection closed from server-side
 			infile.close();
 			return (-1);
 		}
@@ -74,9 +74,9 @@ int	sendFile(std::ifstream& infile, int sock) {
 
 int	readSock(int sock) {
 	static std::string	response;
-	char		buffer[BUFFER_SIZE]; 
+	char		buffer[BUFFER_SIZE + 1]; 
 	int			nread = 0;
-	if ((nread = read(sock, buffer, BUFFER_SIZE - 1)) < 0)
+	if ((nread = read(sock, buffer, BUFFER_SIZE)) < 0)
 		return (error("reading socket"));
 	else if (nread == 0)
 		return (-1);
@@ -206,7 +206,7 @@ int	epoll_loop(int epollfd, int sock, std::ifstream& infile) {
 				// This may happen with small buffer_size when the server close the socket
 				// while the sender didn't read its full response yet.
 				// Feel free to print EPOLLHUP, but this may parasit printing the response
-				printf("EPOLLHUP !");
+				// printf("EPOLLHUP !");
 			}
 		}
 	}

@@ -172,10 +172,10 @@ void	Client::clearBuffer()
 }
 
 int	Client::parseRequest(const char* bufferIn, int n_read) {
-	_buffer += std::string(bufferIn, n_read);
 	Request*	request = getRequest();
 	int			res = 0;
 
+	_buffer += std::string(bufferIn, n_read);
 	LOGD("fullBuffer: %ss", &_buffer);
 	if (_headerStatus < HEADER_STATUS_READY)
 	{

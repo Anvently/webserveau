@@ -25,11 +25,11 @@ class IControl
 		static int	handleListenEvent(epoll_event* event);
 		static int	handleClientEvent(epoll_event* event, Client&);
 
-		static int	handleClientIn(Client&);
+		static int	handleClientIn(Client&, bool incoming = true);
 		static int	handleClientOut(Client&);
 		static int	handleClientHup(Client&);
 
-		static int	handleClientStatusChanged(Client&);
+		static int	handleClientResponse(Client&, int);
 
 		/**
 		@brief Should be called once the full header is parsed

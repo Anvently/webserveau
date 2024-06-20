@@ -155,6 +155,13 @@ int	IControl::handleListenEvent(epoll_event* event)
 	return (0);
 }
 
+int	IControl::handleClientResponse(Client& client, int response) {
+	if (client.getRequest()->type != REQ_TYPE_CGI || response != RES_OK)
+		return (generateResponse(client, response));
+	else if (generateCGIProcess(client))
+		return (generateResponse(client, RES_INTERNAL_ERROR));
+	return (0);
+}
 
 /// @brief
 /// @param event
@@ -169,12 +176,8 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 	else if ((event->events & EPOLLIN) && ((client.getMode() == CLIENT_MODE_READ)
 										|| (client.getBodyStatus() != BODY_STATUS_ONGOING))) {
 		if ((res = IControl::handleClientIn(client))) {
-			if (res > 0) {
-				if (client.getRequest()->type != REQ_TYPE_CGI || res != RES_OK)
-					res = generateResponse(client, res);
-				else if ((res = generateCGIProcess(client)))
-					res = generateResponse(client, RES_INTERNAL_ERROR);
-			}
+			if (res > 0)
+				return (handleClientResponse(client, res));
 			if (res < 0)
 				return (-1);
 		}
@@ -187,7 +190,10 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 				if (res == SITUATION_KEEP_ALIVE) {
 					client.clear();
 					client.setMode(CLIENT_MODE_READ);
-					return (0);
+					res = handleClientIn(client, false);
+					if (res > 0)
+						return (handleClientResponse(client, res));
+					return (res);
 				} else if (res == SITUATION_CONTINUE) {
 					client.clearResponse();
 					client.setMode(CLIENT_MODE_READ);
@@ -203,16 +209,19 @@ int	IControl::handleClientEvent(epoll_event *event, Client& client)
 /// @brief
 /// @param client
 /// @return ``` < 0``` if error. ```> 0 (status)``` if a response can be generated
-int	IControl::handleClientIn(Client& client)
+int	IControl::handleClientIn(Client& client, bool incoming)
 {
 	char	buffer_c[BUFFER_SIZE + 1];
 	int		n_read, res = 0;
 
-	if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
-		return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
-	if (n_read == 0) //Connection closed
-		return (-1);
-	res = client.parseRequest(buffer_c, n_read);
+	if (incoming) {
+		if ((n_read = read(client.getfd(), buffer_c, BUFFER_SIZE)) < 0)
+			return (-1); //NEED TO REMOVE THIS CLIENT FATAL CLIENT_MODE_ERROR
+		if (n_read == 0) //Connection closed
+			return (-1);
+		res = client.parseRequest(buffer_c, n_read);
+	} else
+		res = client.parseRequest("", 0);
 	if (res < 0) { //Status changed
 		if (client.getHeaderStatus() == HEADER_STATUS_READY) {
 			client.setBodyStatus(BODY_STATUS_NONE);
