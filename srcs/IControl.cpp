@@ -576,7 +576,7 @@ void	IControl::generateContinueResponse(Client& client) {
 /// @return ```-1``` if error
 int	IControl::generateResponse(Client& client, int status)
 {
-	LOGD("response status is %d", status);
+	LOGI("response status is %d", status);
 	AResponse*	response = NULL;
 	Request&	request = *client.getRequest();
 	if (client.getResponse()) //Not sure
