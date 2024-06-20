@@ -79,8 +79,8 @@ siege -c 500 -b http://localhost:8080/images/forest.jpeg
 # Get on CGI 
 siege -c 500 -b "http://localhost:8080/pascal.out?taille=7"
 
-# Post with form data on a CGI that will fail 
-siege -c 500 -b "http://localhost:8080/form.py POST wrongVariable=pouetpouet&anotherWrongVariable=ping"
+# Post with form data on a CGI 
+siege -c 500 -b "http://localhost:8080/form.py POST username=pouetpouet&emailaddress=ping"
 
 # Get on a CGI will an infinite loop (default cgi time out is 10s)
 siege -c 500 -b "http://localhost:8080/infinity.py"
