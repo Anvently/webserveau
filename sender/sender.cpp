@@ -9,16 +9,18 @@
 #include <string.h>
 #include <signal.h>
 
-#define BUFFER_SIZE 500
-#define PAUSE_TIME 0
+#define BUFFER_SIZE 100
+#define PAUSE_TIME 10000 //pause time in MICROSECOND (us)
 #define ADDRESS "127.0.0.1"
 #define PORT 8000
 
-// enum STATUS {SENDING_HEADER, RECEIVING_CONTINUE, SENDING_BODY};
+static void	catchSigPipe() {
+	struct sigaction	action_sa;
 
-// static char*	bodyFile = NULL;
-// int				status = SENDING_BODY;
-// const char		continueBuffer[] = "HTTP/1.1 100 Continue";
+	memset(&action_sa, 0, sizeof(struct sigaction));
+	action_sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &action_sa, NULL);
+}
 
 int	error(const char* context) {
 	std::cout << context << std::endl;
@@ -53,7 +55,10 @@ int	sendFile(std::ifstream& infile, int sock) {
 	nwrite = write(sock, buffer, nread);
 	if (nwrite < 0) {
 		perror("");
-		// recv(sock, NULL, 10, 0);
+		if (errno == 32) {//If broken pipe, connection closed from server-side
+			infile.close();
+			return (-1);
+		}
 		return (error("write error"));
 	}
 	else if (nwrite != nread)
@@ -79,14 +84,7 @@ int	readSock(int sock) {
 	printf("%s", buffer);
 	fflush(stdout);
 	if (nread != BUFFER_SIZE)
-		printf("\n");
-	// if (status == RECEIVING_CONTINUE) {
-	// 	response += std::string(buffer, nread);
-	// 	if (response.find("HTTP/1.1 100 Continue") != std::string::npos) {
-	// 		printf("Received 100-Continue status, resume sending body\n");
-	// 		status = SENDING_BODY;
-	// 	}
-	// }
+		printf("\n"); // Commenting this may help readability with small buffer_size
 	return (0);
 }
 
@@ -203,9 +201,12 @@ int	epoll_loop(int epollfd, int sock, std::ifstream& infile) {
 					return (0);
 			}
 			if (events[i].events & EPOLLHUP) {
-				close(sock);
+				// We want to ignore EPOLLHUP caused by broken pipe
+				// as long as there is still something to be read in the socket.
+				// This may happen with small buffer_size when the server close the socket
+				// while the sender didn't read its full response yet.
+				// Feel free to print EPOLLHUP, but this may parasit printing the response
 				printf("EPOLLHUP !");
-				return (0);
 			}
 		}
 	}
@@ -218,6 +219,7 @@ int	main(int argc, char** argv) {
 	std::ifstream	infile;
 	if (argc < 2)
 		return (error("invalid number of arguments"));
+	catchSigPipe();
 	if (openFile(infile, argv[1]))
 		return (error("failed to open file"));
 	if (connectSock(&sock))

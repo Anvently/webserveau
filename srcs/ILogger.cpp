@@ -278,7 +278,7 @@ int	ILogger::addLogFile(const std::string& path, bool (&levels)[LOG_LVL_MAX], bo
 	if (fileStream.fail())
 	{
 		removeLogFile(path);
-		LOGE("Error adding log file : unable to open %ss", &path);
+		LOGE("Error adding log file : unable to open %ss. If it refers to a subdir, is the subdir created ?", &path);
 		return (1);
 	}
 	_logStream.addStream(fileStream, levels, colorize, true);

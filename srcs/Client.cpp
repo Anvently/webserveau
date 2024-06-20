@@ -176,7 +176,7 @@ int	Client::parseRequest(const char* bufferIn, int n_read) {
 	Request*	request = getRequest();
 	int			res = 0;
 
-	LOGI("fullBuffer: %ss", &_buffer);
+	LOGD("fullBuffer: %ss", &_buffer);
 	if (_headerStatus < HEADER_STATUS_READY)
 	{
 		res = request->parseHeaders(_buffer);
@@ -372,7 +372,7 @@ void	Client::clear() {
 }
 
 void	Client::terminate(void) {
-	LOGD("terminating client (%d)", this->getfd());
+	LOGI("terminating client (%d)", this->getfd());
 	if (cgiProcess && cgiProcess->getPID() > 0) {
 		kill(cgiProcess->getPID(), SIGKILL);
 	}
