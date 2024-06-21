@@ -183,7 +183,7 @@ int	SingleLineResponse::writeResponse(std::queue<std::string>& outQueue)
 
 	while(!_response.empty())
 	{
-		portion = _response.substr(0, HEADER_MAX_SIZE);
+		portion = _response.substr(0, BUFFER_SIZE);
 		outQueue.push(portion);
 		_response.erase(0, portion.size());
 		portion.clear();
@@ -256,7 +256,7 @@ int	HeaderResponse::writeResponse(std::queue<std::string>& outQueue)
 	_formatHeaders();
 	while(!_formated_headers.empty())
 	{
-		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
+		portion = _formated_headers.substr(0, BUFFER_SIZE);
 		outQueue.push(portion);
 		_formated_headers.erase(0, portion.size());
 		portion.clear();
@@ -276,20 +276,13 @@ FileResponse::FileResponse(ResHints &hints): HeaderResponse(hints)
 
 int	FileResponse::writeResponse(std::queue<std::string>& outQueue)
 {
-	std::string	portion;
-	char	*buff = new char[HEADER_MAX_SIZE];
-	this->_formatHeaders();
-	while (!_formated_headers.empty())
-	{
-		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
-		outQueue.push(portion);
-		_formated_headers.erase(0, portion.size());
-		portion.clear();
-	}
-	portion.clear();
+	HeaderResponse::writeResponse(outQueue);
+	if (hints.method == HEAD)
+		return (0);
+	char	*buff = new char[BUFFER_SIZE];
 	do
 	{
-		_fstr.read(buff, HEADER_MAX_SIZE);
+		_fstr.read(buff, BUFFER_SIZE);
 		if (_fstr.gcount() == 0)
 			break;
 		std::string	outBuff(buff, _fstr.gcount());
@@ -307,18 +300,10 @@ DynamicResponse::~DynamicResponse(void) {}
 int	DynamicResponse::writeResponse(std::queue<std::string>& outQueue) {
 
 	std::string	portion;
-	this->_formatHeaders();
-	while (!_formated_headers.empty())
+	HeaderResponse::writeResponse(outQueue);
+	while (!_body.empty() && hints.method != HEAD)
 	{
-		portion = _formated_headers.substr(0, HEADER_MAX_SIZE);
-		outQueue.push(portion);
-		_formated_headers.erase(0, portion.size());
-		portion.clear();
-	}
-	portion.clear();
-	while (!_body.empty())
-	{
-		portion = _body.substr(0, HEADER_MAX_SIZE);
+		portion = _body.substr(0, BUFFER_SIZE);
 		outQueue.push(portion);
 		_body.erase(0, portion.size());
 		portion.clear();
@@ -420,18 +405,19 @@ int FileResponse::_retrieveType(std::string key, std::string &value)
 void	DynamicResponse::generateBody()
 {
 	if (hints.status == RES_OK && hints.type == REQ_TYPE_DIR)
-	{
 		generateDirListing();
-		return ;
+	else {
+		switch(hints.status / 100)
+		{
+			case(3):
+				generateRedirBody();
+				break;
+			default:
+				generateVerboseBody();
+		}
 	}
-	switch(hints.status / 100)
-	{
-		case(3):
-			generateRedirBody();
-			break;
-		default:
-			generateVerboseBody();
-	}
+	addHeader("Content-Length", itostr(_body.size()));
+	addHeader("Content-Type", "text/html");
 }
 
 std::string	getRedirPath(const std::string& redir, const std::string& filename) {
@@ -465,9 +451,6 @@ void	DynamicResponse::generateSimpleRedirBody()
 	_body += "#two{text-align:center;font-size:150%;}</style>";
 	_body += "<p id=\"one\">" + line + "</p>";
 	_body += "<p id=\"two\"> The document can be found at <a href=\"" + redir + "\">" + redir + "</a></p></body></html>";
-
-	addHeader("Content-Length", itostr(_body.size()));
-	addHeader("Content-Type", "text/html");
 }
 
 void	DynamicResponse::generateVerboseBody()
@@ -479,8 +462,6 @@ void	DynamicResponse::generateVerboseBody()
 	_body += "#two{color:brown;text-align:center;font-size:150%;}</style>";
 	_body += "<p id=\"one\">" + line + "</p>";
 	_body += "<p id=\"two\">" + hints.verboseError + "</p></body></html>";
-	addHeader("Content-Length", itostr(_body.size()));
-	addHeader("Content-Type", "text/html");
 }
 
 void	DynamicResponse::generateListBody()
@@ -498,15 +479,13 @@ void	DynamicResponse::generateListBody()
 	}
 	_body += "</ul>";
 	_body += "</body></html>";
-	addHeader("Content-Type", "text/html");
-	addHeader("Content-Length", itostr(_body.size()));
 
 }
 
 void	DynamicResponse::addSpecificHeaders()
 {
 	if (hints.status / 100 == 3)
-		addHeader("Location",getRedirPath(hints.redirList->front(), hints.parsedUri.filename));
+		addHeader("Location", getRedirPath(hints.redirList->front(), hints.parsedUri.filename));
 }
 
 
@@ -550,6 +529,4 @@ void	DynamicResponse::generateDirListing()
 	}
 	_body += "</ul></body></html>";
 	closedir(d);
-	addHeader("Content-Type", "text/html");
-	addHeader("Content-Length", itostr(_body.size()));
 }

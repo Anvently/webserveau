@@ -18,7 +18,7 @@ class Client;
 #define DFT_VALUE_ADDR "localhost"
 #define DFT_VALUE_PORT "8080"
 #define DFT_VALUE_MAX_BODY_SIZE INT32_MAX
-#define DFT_VALUE_METHOD (1 << GET)
+#define DFT_VALUE_METHOD ((1 << GET) | (1 << HEAD))
 
 typedef struct Location
 {

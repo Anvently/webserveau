@@ -12,7 +12,7 @@
 #include <vector>
 
 
-#define HEADER_MAX_SIZE 4000
+#define BUFFER_SIZE 4000
 #define	HEADER_MAX_BUFFER 4
 
 #define CRLF "\r\n"
@@ -20,13 +20,13 @@
 
 
 enum {none, chuncked, mesured};
-enum {GET, POST, DELETE};
+enum {GET, POST, DELETE, HEAD};
 enum {TERM, ONGOING, RLINE,NEW};
 enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
 enum {REQ_TYPE_NO_MATCH = 0, REQ_TYPE_CGI, REQ_TYPE_STATIC, REQ_TYPE_DIR};
 
-static std::string METHOD_STR[] = {"GET", "POST", "DELETE"};
-#define METHOD_NBR 3
+static std::string METHOD_STR[] = {"GET", "POST", "DELETE", "HEAD"};
+#define METHOD_NBR 4
 #define METHOD_IS_INVALID (&METHODS_STR[METHODS_NBR])
 
 std::string	generate_name(const std::string* hostname);
@@ -89,6 +89,7 @@ typedef struct ResHints {
 	int											type;
 	int											cgiRedir;
 	int											index;
+	int											method;
 	const Location*								locationRules;
 	const CGIConfig*							cgiRules;
 	const std::vector<std::string>*				redirList;

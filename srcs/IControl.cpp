@@ -569,6 +569,7 @@ void	IControl::fillResponse(Client& client, Request& request) {
 	fillVerboseError(request);
 	request.resHints.type = request.type;
 	request.resHints.extension = request.resHints.parsedUri.extension;
+	request.resHints.method = request.method;
 }
 
 void	IControl::generateContinueResponse(Client& client) {

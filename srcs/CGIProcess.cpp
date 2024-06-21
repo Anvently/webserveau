@@ -18,8 +18,8 @@ CGIProcess::~CGIProcess(void) {
 int CGIProcess::parseHeaders()
 {
 	std::fstream    fstream(_request.resHints.path.c_str());
-	char            *c_buffer = new char[HEADER_MAX_SIZE];
-	fstream.read(c_buffer, HEADER_MAX_SIZE);
+	char            *c_buffer = new char[BUFFER_SIZE];
+	fstream.read(c_buffer, BUFFER_SIZE);
 	std::string     buffer(c_buffer, fstream.gcount());
 	delete[] c_buffer;
 

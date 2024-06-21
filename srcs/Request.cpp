@@ -9,11 +9,11 @@ URI::URI(const URI &copy) : filename(copy.filename), path(copy.path), root(copy.
 							extension(copy.extension), query(copy.query) {}
 
 ResHints::ResHints(void) : alreadyExist(false), unlink(false), hasBody(false), status(0), type(0),
-						   cgiRedir(0), index(0), locationRules(NULL), cgiRules(NULL) {}
+						   cgiRedir(0), index(0), method(-1), locationRules(NULL), cgiRules(NULL) {}
 
 ResHints::ResHints(const ResHints &copy) : parsedUri(copy.parsedUri), path(copy.path), alreadyExist(copy.alreadyExist),
 										   unlink(copy.unlink), hasBody(copy.hasBody), verboseError(copy.verboseError), status(copy.status),
-										   type(copy.type), cgiRedir(copy.cgiRedir), index(copy.index), locationRules(copy.locationRules),
+										   type(copy.type), cgiRedir(copy.cgiRedir), index(copy.index), method(copy.method), locationRules(copy.locationRules),
 										   cgiRules(copy.cgiRules), redirList(copy.redirList), headers(copy.headers), cookies(copy.cookies) {}
 
 Request::Request()
@@ -112,17 +112,6 @@ static void nextSpace(std::string::size_type &idx, std::string &str)
 		idx++;
 }
 
-static int identifyMethod(std::string mtd)
-{
-	if (mtd == "GET")
-		return (0);
-	if (mtd == "POST")
-		return (1);
-	if (mtd == "DELETE")
-		return (2);
-	return (-1);
-}
-
 static int checkVersion(std::string &str)
 {
 	std::string::size_type idx = 0;
@@ -131,21 +120,6 @@ static int checkVersion(std::string &str)
 	idx = 5;
 	if (str.substr(idx, str.size()) != "1.1" && str.substr(idx, str.size()) != "1.0")
 		return (505);
-	// if (!isdigit(str[idx]))
-	// 	return (1);
-	// while (isdigit(str[idx]))
-	// 	idx++;
-	// if (idx == str.size())
-	// 	return (0);
-	// if (str[idx] != '.')
-	// 	return (1);
-	// idx++;
-	// if (!isdigit(str[idx]))
-	// 	return (1);
-	// while (isdigit(str[idx]))
-	// 	idx++;
-	// if (idx != str.size())
-	// 	return (1);
 	return (0);
 }
 
@@ -165,18 +139,19 @@ int Request::parseRequestLine()
 {
 	std::string::size_type idx = 0;
 	std::string::size_type r_idx = 0;
-	std::string version;
+	std::string version, method_str;
 	// LOGD("line = %ss", &_line);
 	nextSpace(idx, this->_line);
-	if ((this->method = identifyMethod(this->_line.substr(0, idx))) < 0)
-		return (this->_fillError(501, "Method Not Implemented"));
+	method_str = this->_line.substr(0, idx);
+	if ((method = getMethodIndex(method_str)) < 0)
+		return (this->_fillError(RES_NOT_IMPLEMENTED, "Method Not Implemented"));
 	skipSpaces(idx, this->_line);
 	r_idx = idx;
 	nextSpace(r_idx, this->_line);
 	this->_uri = std::string(this->_line, idx, r_idx - idx);
 	version = this->_line.substr(r_idx + 1, std::string::npos);
 	if (checkVersion(version))
-		return (this->_fillError(505, "HTTP version not implemented"));
+		return (this->_fillError(RES_HTTP_VERSION_NOT_SUPPORTED, "HTTP version not implemented"));
 	return (0);
 }
 
@@ -204,7 +179,7 @@ int Request::parseHeaders(std::string &buffer)
 	{
 		if (this->getLine(buffer))
 			return (this->_checkSizes());
-		if (this->_line.size() > HEADER_MAX_SIZE)
+		if (this->_line.size() > BUFFER_SIZE)
 			return (this->_fillError(414, "Request uri too long"));
 		if (this->parseRequestLine())
 			return (getError());
@@ -225,7 +200,7 @@ int Request::parseHeaders(std::string &buffer)
 		this->trimSpace();
 		if (getHeaderName(this->_line, header_name))
 			return (this->_fillError(400, "Invalid header line"));
-		if (this->_line.size() > HEADER_MAX_SIZE)
+		if (this->_line.size() > BUFFER_SIZE)
 			return (this->_fillError(431, "The " + header_name + " header was too large"));
 		while (this->_line[0] == 32 || this->_line[0] == 9)
 			this->_line.erase(0, 1);
@@ -303,7 +278,7 @@ int Request::getChunkedSize(std::string &buffer)
 	if (this->_chunked_status == 1)
 		return (0);
 	if (this->getLine(buffer)) {
-		if (this->_line.size() > HEADER_MAX_SIZE)
+		if (this->_line.size() > BUFFER_SIZE)
 			return (this->_fillError(400, "Chunked body length line too long"));
 		else
 			return (0);
@@ -437,7 +412,7 @@ int Request::parseTrailerHeaders(std::string &buffer)
 		this->trimSpace();
 		if (getHeaderName(this->_line, header_name) || header_name == "Trailer" || header_name == "Content-Length" || header_name == "Transfer-Encoding")
 			return (this->_fillError(400, "Invalid trailer header line"));
-		if (this->_line.size() > HEADER_MAX_SIZE)
+		if (this->_line.size() > BUFFER_SIZE)
 			return (this->_fillError(431, "The " + header_name + " header was too large"));
 		this->trimSpace();
 		header_value = this->_line;
@@ -453,7 +428,7 @@ int Request::_checkSizes()
 {
 	if (this->_status == ONGOING || this->_status == NEW)
 	{
-		if (this->_header_size > HEADER_MAX_BUFFER * HEADER_MAX_SIZE || this->_line.size() > HEADER_MAX_SIZE)
+		if (this->_header_size > HEADER_MAX_BUFFER * BUFFER_SIZE || this->_line.size() > BUFFER_SIZE)
 			return (this->_fillError(431, "Request header too large"));
 		else
 			return (0);
@@ -466,7 +441,7 @@ int Request::_checkSizes()
 	}
 	if (this->_trailer_status == ONGOING)
 	{
-		if (this->_trailer_size > HEADER_MAX_SIZE)
+		if (this->_trailer_size > BUFFER_SIZE)
 			return (this->_fillError(400, "Trailer header too large"));
 		return (0);
 	}
