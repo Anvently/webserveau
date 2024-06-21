@@ -286,16 +286,17 @@ void	ListenServer::shutdown()
 // Start all the servers using the start function.
 int	ListenServer::startServers(int epollfd)
 {
-	for (std::list<ListenServer>::iterator it = _serverList.begin(); it != _serverList.end(); it++)
+	for (std::list<ListenServer>::iterator it = _serverList.begin(); it != _serverList.end();)
 	{
 		if (it->registerToEpoll(epollfd))
 		{
-			_serverList.erase(it);
-			LOGE("Could not listen on host:%s port:%s\n", it->_ip.c_str(), it->_port.c_str());
+			LOGE("Could not listen on host:%s port:%s => %s", it->_ip.c_str(), it->_port.c_str(), strerror(errno));
+			_serverList.erase(it++);
 		}
 		else {
-			LOGI("Listening on host:%s port:%s\n", it->_ip.c_str(), it->_port.c_str());
+			LOGI("Listening on host:%s port:%s", it->_ip.c_str(), it->_port.c_str());
 			LOGI("%Ls", &*it);
+			it++;
 		}
 	}
 	return (0);
