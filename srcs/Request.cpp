@@ -298,28 +298,21 @@ int Request::getLenInfo()
 
 int Request::getChunkedSize(std::string &buffer)
 {
-	std::string::size_type idx;
 	int len = 0;
 
 	if (this->_chunked_status == 1)
 		return (0);
-	idx = buffer.find(CRLF, 0);
-	if (idx == std::string::npos)
-	{
-		this->_line += buffer;
-		buffer = "";
+	if (this->getLine(buffer)) {
 		if (this->_line.size() > HEADER_MAX_SIZE)
 			return (this->_fillError(400, "Chunked body length line too long"));
 		else
 			return (0);
 	}
-	this->_line += buffer.substr(0, idx);
 	if (getInt(this->_line, 16, len) || len < 0)
 		return (this->_fillError(400, "Syntax error parsing chunked body"));
 	this->_chunked_body_size -= this->_line.size();
 	this->_len = len;
 	this->_line = "";
-	buffer = buffer.substr(idx + strlen(CRLF), std::string::npos);
 	this->_chunked_status = 1;
 	return (0);
 }
@@ -332,7 +325,7 @@ int Request::_parseChunked(std::string &buffer, std::ofstream *filestream)
 	while (buffer != "")
 	{
 		if (this->getChunkedSize(buffer))
-			return (getError());
+			return (getError()); 
 		if (this->_chunked_status == 1 && this->_len == 0)
 		{
 			this->_b_status = TERM;
