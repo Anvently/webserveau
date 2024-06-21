@@ -31,43 +31,6 @@ class IControl
 
 		static int	handleClientResponse(Client&, int);
 
-		/**
-		@brief Should be called once the full header is parsed
-			- if header READY
-				- check forbidden headers; accept-ranges, content-encoding, transfrer-encoding != chuked
-				- check host rules
-					- identify host
-					- check headers content-length
-				- parse uri, get location (and parameters) and check for body
-					- check redirects
-					- if dir && default_uri
-						- change uri
-					- check if cgi or static/dir_listing
-					- check allowed methods
-					- if not static POST
-						- check ressource existence
-					- else
-						- check upload settings
-					- if continue
-						- generate body parsing config (creating ostream and max_chunk_length)
-						- genereate CONTINUE RESPONSE
-					- else if body
-						- resume body parsing as CGI
-			- WHILE (CONTINUE RESPONSE NOT SENT) && !NOT CLIENT_MODE_ERROR
-				- return
-				- if body
-					- resume body parsing with given config
-						- switch to CLIENT_MODE_READ
-			- if BODY READY && !CLIENT_MODE_ERROR
-				- generate response
-					- CGI
-					- dir_listing
-					- STATIC page
-					- switch to CLIENT_MODE_WRITE
-			- while (response NOT READY)
-				- wait
-			- send response
-		**/
 		static int	handleRequestHeaders(Client& client, Request& request);
 		static int	defineBodyParsing(Client& client, Request& request);
 		static int	handleRequestBodyDone(Request& request);

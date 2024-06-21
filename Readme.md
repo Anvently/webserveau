@@ -3,8 +3,8 @@
 Webserveau is an asynchronous HTTP server.
 
 # Features
-- Handles methods GET, POST and DELETE
-- Handles static file upload via post
+- Handles methods GET, POST, PUT, HEAD and DELETE
+- Handles static file upload/deletion via POST, PUT or DELETE
 - Modular and versatile configuration system via a .conf file
 - Handles multi-transaction connection via keep-alive HTTP headers
 - Handles request pipelining

@@ -20,13 +20,13 @@
 
 
 enum {none, chuncked, mesured};
-enum {GET, POST, DELETE, HEAD};
+enum {GET, POST, PUT, DELETE, HEAD};
 enum {TERM, ONGOING, RLINE,NEW};
 enum {HEADER, HOST, BODY, TRAILER, CONT, COMPLETE, ERROR};
 enum {REQ_TYPE_NO_MATCH = 0, REQ_TYPE_CGI, REQ_TYPE_STATIC, REQ_TYPE_DIR};
 
-static std::string METHOD_STR[] = {"GET", "POST", "DELETE", "HEAD"};
-#define METHOD_NBR 4
+static std::string METHOD_STR[] = {"GET", "POST", "PUT", "DELETE", "HEAD"};
+#define METHOD_NBR 5
 #define METHOD_IS_INVALID (&METHODS_STR[METHODS_NBR])
 
 std::string	generate_name(const std::string* hostname);

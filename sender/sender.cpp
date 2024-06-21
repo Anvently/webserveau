@@ -92,6 +92,7 @@ int	openFile(std::ifstream& infile,  char* path) {
 	infile.open(path);
 	if (infile.is_open() == false || infile.bad())
 		return (1);
+	printf("Sending %s\n", path);
 	return (0);
 }
 

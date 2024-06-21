@@ -405,7 +405,7 @@ int	Host::checkLocationRules(Request& request) const
 		request.resHints.status = RES_METHOD_NOT_ALLOWED;
 		return (RES_METHOD_NOT_ALLOWED);
 	}
-	if (request.method == POST && request.type == REQ_TYPE_STATIC) {
+	if ((request.method == POST || request.method == PUT) && request.type == REQ_TYPE_STATIC) {
 		if (request.resHints.locationRules->upload == false) {
 			request.resHints.status = RES_FORBIDDEN;
 			return (RES_FORBIDDEN);
@@ -455,7 +455,7 @@ int	Host::checkRessourceExistence(Request& request) const {
 		request.resHints.scriptPath = request.resHints.cgiRules->root + request.resHints.parsedUri.path;
 		res = checkRessourcePath(request.resHints.scriptPath, REQ_TYPE_CGI, R_OK);
 	} else {
-		if (request.method == POST) {
+		if (request.method == POST || request.method == PUT) {
 			path = (request.resHints.locationRules->upload_root != "" ? \
 							request.resHints.locationRules->upload_root : \
 							request.resHints.locationRules->root);

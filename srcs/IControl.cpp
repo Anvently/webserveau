@@ -433,7 +433,7 @@ int	IControl::defineBodyParsing(Client& client, Request& request)
 			client.setBodyFile("");
 		request.resHints.unlink = true;
 	}
-	else if (request.type == REQ_TYPE_STATIC && request.method == POST) {
+	else if (request.type == REQ_TYPE_STATIC && (request.method == POST || request.method == PUT)) {
 		std::string	filePath;
 		filePath =  (request.resHints.locationRules->upload_root != "" ? \
 					request.resHints.locationRules->upload_root : \
@@ -479,7 +479,7 @@ int	IControl::handleDeleteMethod(Request& request) {
 int	IControl::handleRequestBodyDone(Request& request)
 {
 	if (request.type == REQ_TYPE_STATIC) {
-		if (request.method == POST) {
+		if (request.method == POST || request.method == PUT) {
 			return (request.resHints.status);
 		}
 		else if (request.method == DELETE) {
