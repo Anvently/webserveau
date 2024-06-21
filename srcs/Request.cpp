@@ -285,7 +285,7 @@ int Request::getChunkedSize(std::string &buffer)
 	}
 	if (getInt(this->_line, 16, len) || len < 0)
 		return (this->_fillError(400, "Syntax error parsing chunked body"));
-	this->_chunked_body_size -= this->_line.size();
+	this->_chunked_body_size -= this->_line.size() + strlen(CRLF);
 	this->_len = len;
 	this->_line = "";
 	this->_chunked_status = 1;
@@ -347,6 +347,12 @@ int Request::parseBody(std::string &buffer, std::ofstream *filestream)
 int Request::getStatus(void) const
 {
 	return (this->_final_status);
+}
+
+int	Request::getBodySize(void) const {
+	if (_chunked == true)
+		return (_chunked_body_size);
+	return (_content_length);
 }
 
 void	Request::setContentLength(int value) {

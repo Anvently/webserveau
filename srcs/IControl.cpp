@@ -480,7 +480,9 @@ int	IControl::handleRequestBodyDone(Request& request)
 {
 	if (request.type == REQ_TYPE_STATIC) {
 		if (request.method == POST || request.method == PUT) {
-			return (request.resHints.status);
+			if (request.getBodySize() > 0)
+				return (request.resHints.status);
+			return (RES_NO_CONTENT);
 		}
 		else if (request.method == DELETE) {
 			handleDeleteMethod(request);

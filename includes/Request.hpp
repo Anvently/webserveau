@@ -152,6 +152,7 @@ class	Request
 		int					parseTrailerHeaders(std::string &buffer);
 		int					parseBody(std::string &buffer, std::ofstream *filestream);
 		int					getLenInfo();
+		int					getBodySize() const;
 		int					getStatus(void) const;
 		void				setStatus(int status);
 		int					getError() const;

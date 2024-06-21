@@ -25,6 +25,10 @@ Although there is some missing methods such as HEAD, PUT, TRACE or OPTIONS, as w
 
 See **Response.hpp** for the list of implemented HTTP response status code.
 
+**Notes regarding POST and PUT**
+
+**POST** method is currently handled exactly as **PUT** method and the server will behave exactly in the same way for both method (except that CGIs output may differ). The RFC specify that whereas **PUT** method is to be used to apply entity data directly to the ressource identified by the URI, **POST** method should transmit data entity to the ressource identified by the URI. This imply that **PUT** should be used for static upload and  **POST** method should be used addressing script/CGIs URI. However if one choose to allow in the config file static upload for a specific URI, it's his responsability to choose to enable/disable **POST** method for this location, because as long as the URI is not identified as a CGI, a **POST** method will be considered as an attempt of static upload directly to the ressource.
+
 # Asynchronous operations and security considerations
 
 In order to reduce hardware load in term of ressource and memory, all the I/O operations are performed in an asynchronous manner via *epoll()* kernel's API. The idea is that we ensure that every read/write operation with a client is performed when there is actually something to read from the client or something to be send to the client. Therefore none I/O operation would be blocking and the server will be able to serve multiple client at the same time without getting blocked with slow or malicious clients.
