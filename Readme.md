@@ -3,25 +3,25 @@
 Webserveau is an asynchronous HTTP server.
 
 ## Features
-- Handles methods GET, POST, PUT, HEAD and DELETE
-- Handles static file upload/deletion via POST, PUT or DELETE
+- Methods GET, POST, PUT, HEAD and DELETE
+- Static file upload/deletion via POST, PUT or DELETE
 - Modular and versatile configuration system via a .conf file
-- Handles multi-transaction connection via keep-alive HTTP headers
-- Handles request pipelining
-- Handles chunked request sent by client or proxy
+- Multi-transaction connection via keep-alive HTTP headers
+- Request pipelining
+- Chunked request sent by client or proxy
 - Handles "expect-continue" header for large upload
 - Handles interpreted languages CGIs and compiled CGIs.
-- Handle multiple host listening to the same port and/or to multiple ports at once. 
-- Handles HTTP redirection and CGI redirection (local or client-side)
-- Handles dir_listing on allowed routes
-- Handles CGI<->client session cookies transaction
+- Multiple host listening to the same port and/or to multiple ports at once. 
+- HTTP redirection and CGI redirection (local or client-side)
+- Automatic dir_listing on allowed routes
+- CGI<->client session cookies transaction
 - Comes with an handy transparent client sender program, allowing for specific test
 
 ## RFC 1.1 compliant
 
-The webserver was made to answer to the HTTP 1.1 specifications given by the RFC.
+The webserver was made to answer to the HTTP 1.1 specifications given by the RFC 2616 and 3875. Therefore a lot of HTTP features and headers are not implemented.
 
-Although there is some missing methods such as TRACE, OPTIONS or CONNECT as well as headers related to cache management or authorizations, all the response given to the client are consistent with RFC's specifications.
+Still, most of the response given by the server should be compliant with recent RFC's specification.
 
 See **Response.hpp** for the list of implemented HTTP response status code.
 
