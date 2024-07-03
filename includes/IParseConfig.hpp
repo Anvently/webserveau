@@ -73,6 +73,7 @@ class IParseConfig
 
 	public:
 
+		static bool				error;
 		static std::string		default_error_pages;
 
 		static int				parseConfigFile(const char* path);
@@ -105,6 +106,13 @@ class IParseConfig
 			public:
 				virtual const char*	what(void) const throw() {
 					return ("error with the stream");
+				}
+		};
+
+		class HostException : public IParseConfigException {
+			public:
+				virtual const char*	what(void) const throw() {
+					return ("error adding the host");
 				}
 		};
 

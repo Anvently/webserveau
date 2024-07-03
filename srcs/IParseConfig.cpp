@@ -8,6 +8,7 @@ std::string IParseConfig::_lineBuffer;
 int IParseConfig::_lineNbr = 1;
 int IParseConfig::_lineNbrEndOfBlock = 1;
 std::string IParseConfig::default_error_pages;
+bool IParseConfig::error = false;
 
 bool IParseConfig::checkFilePath(const char *path)
 {
@@ -235,7 +236,8 @@ void IParseConfig::parseHost(std::istream &istream)
 	{
 		parseBlock(hostStream, &host, handleHostToken);
 		checkHost(host);
-		Host::addHost(host);
+		if (Host::addHost(host))
+			throw (HostException());
 	}
 	catch (IParseConfigException &e)
 	{
@@ -246,6 +248,7 @@ void IParseConfig::parseHost(std::istream &istream)
 			tmp = "[End of block]";
 		LOGE("parsing host (%ss) configuration at line %d : %s\n -> ...%sl...", &host._addr, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
+		IParseConfig::error = true;
 	}
 }
 
@@ -278,6 +281,7 @@ void IParseConfig::parseCGIConfig(std::stringstream &istream, Host &host)
 			tmp = "[End of block]";
 		LOGE("parsing host (%ss) cgi config at line %d : %s\n -> %sl", &host._addr, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
+		IParseConfig::error = true;
 	}
 }
 
@@ -310,6 +314,7 @@ void IParseConfig::parseLocation(std::stringstream &istream, Host &host)
 			tmp = "[End of block]";
 		LOGE("parsing host (%ss) location at line %d : %s\n -> %sl", &host._addr, _lineNbr, e.what(), &tmp);
 		_lineNbr = _lineNbrEndOfBlock;
+		IParseConfig::error = true;
 	}
 }
 

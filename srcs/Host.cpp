@@ -77,9 +77,12 @@ std::list<Host>::iterator	Host::findHost(Host* host)
 /// @brief Append a host to the list of host and call
 /// addHost on ListenServer
 /// @param host
-void	Host::addHost(Host& host) {
+/// @return ```1``` if a listenServer failed to launch
+int	Host::addHost(Host& host) {
 	Host& newHost = *_hostList.insert(_hostList.end(), host);
-	ListenServer::registerHost(&newHost);
+	if (ListenServer::registerHost(&newHost))
+		return (1);
+	return (0);
 }
 
 void	Host::removeHost(Host* host) {

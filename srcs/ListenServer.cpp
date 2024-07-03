@@ -97,8 +97,10 @@ ListenServer*	ListenServer::addServer(const std::string& hostAddr, const std::st
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	if (getaddrinfo(NULL, hostPort.c_str(), &hints, &res))
+	if (getaddrinfo(hostAddr.c_str(), hostPort.c_str(), &hints, &res)) {
+		LOGE("Could not create a socket for host: %ss and port %ss\n", &hostAddr, &hostPort);
 		return (NULL);
+	}
 	new_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	if (new_socket < 0) {
 		freeaddrinfo(res);
@@ -286,12 +288,15 @@ void	ListenServer::shutdown()
 // Start all the servers using the start function.
 int	ListenServer::startServers(int epollfd)
 {
+	int	ret = 0;
+
 	for (std::list<ListenServer>::iterator it = _serverList.begin(); it != _serverList.end();)
 	{
 		if (it->registerToEpoll(epollfd))
 		{
 			LOGE("Could not listen on host:%s port:%s => %s", it->_ip.c_str(), it->_port.c_str(), strerror(errno));
 			_serverList.erase(it++);
+			ret = 1;
 		}
 		else {
 			LOGI("Listening on host:%s port:%s", it->_ip.c_str(), it->_port.c_str());
@@ -299,7 +304,7 @@ int	ListenServer::startServers(int epollfd)
 			it++;
 		}
 	}
-	return (0);
+	return (ret);
 }
 
 //Not sure it is needed since the destructor should close the socketfd anyway

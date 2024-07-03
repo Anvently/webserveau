@@ -52,8 +52,12 @@ int	main(int argc, char **argv, char **env)
 		IControl::_epollfd = epollfd;
 		if (IControl::registerCommandPrompt())
 			return (IControl::cleanExit(1));
-		ListenServer::startServers(epollfd);
-		LOGI("Servers have started");
+		if (ListenServer::startServers(epollfd))
+			LOGW("Warning: at least one listen server failed to launch. See error logs.");
+		else
+			LOGI("Servers have started");
+		if (IParseConfig::error)
+			LOGW("Warning: at least one error occured parsing config file. See error logs.");
 		while (ListenServer::getNbrServer()) {
 			nbr_events = epoll_wait(epollfd, events, EPOLL_EVENT_MAX_SIZE, 50);
 			if (nbr_events) {

@@ -110,7 +110,7 @@ class	Host {
 		Host(const Host &Copy);
 		~Host();
 
-		static void							addHost(Host& host);
+		static int							addHost(Host& host);
 		static void							removeHost(Host* host);
 		static std::list<Host>::iterator	findHost(Host* host);
 
